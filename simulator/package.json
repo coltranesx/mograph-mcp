@@ -1,5 +1,5 @@
 {
-  "name": "@aftr/simulator",
+  "name": "@mograph-mcp/simulator",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
-    "@aftr/shared": "*",
+    "@mograph-mcp/shared": "*",
     "ws": "8.21.0"
   }
 }

@@ -3,7 +3,7 @@ name: Docker
 # Build and push the container image to GitHub Container Registry.
 # Fires on a published release (tagged with the release version) and can be run
 # by hand. The image name is derived from the repo and lowercased by the
-# metadata action, so it lands at ghcr.io/<owner>/aftr.
+# metadata action, so it lands at ghcr.io/<owner>/mograph-mcp.
 on:
   release:
     types: [published]

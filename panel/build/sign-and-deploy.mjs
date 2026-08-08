@@ -37,7 +37,7 @@ const CERT_PASSWORD = 'ae-bridge-dev';
 const EXT_ROOT = process.platform === 'darwin'
   ? resolve(process.env.HOME, 'Library', 'Application Support', 'Adobe', 'CEP', 'extensions')
   : resolve(process.env.APPDATA, 'Adobe', 'CEP', 'extensions');
-const EXT_LINK = resolve(EXT_ROOT, 'com.ae-bridge.panel');
+const EXT_LINK = resolve(EXT_ROOT, 'com.coltranesx.mograph-mcp.panel');
 
 function log(msg) {
   console.log(`[deploy:panel] ${msg}`);
@@ -58,8 +58,8 @@ async function main() {
     await selfSignedCert({
       country: 'US',
       province: 'CA',
-      org: 'aftr Dev',
-      name: 'aftr Dev',
+      org: 'mograph-mcp Dev',
+      name: 'mograph-mcp Dev',
       password: CERT_PASSWORD,
       output: CERT_PATH,
     });
@@ -112,7 +112,7 @@ async function main() {
   if (!hasManifest || !hasSig) {
     throw new Error('Deploy incomplete: missing manifest or signature in installed extension.');
   }
-  log('DONE. Fully quit After Effects and relaunch, then Window > Extensions > aftr.');
+  log('DONE. Fully quit After Effects and relaunch, then Window > Extensions > mograph-mcp.');
 }
 
 main().catch((e) => {

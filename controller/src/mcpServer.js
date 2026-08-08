@@ -1,4 +1,4 @@
-// mcpServer.js — shared MCP tool surface for the aftr.
+// mcpServer.js — shared MCP tool surface for mograph-mcp.
 //
 // One place defines the tools; two transports use it:
 //   - controller/src/mcp.js  (stdio)  — backend forwards to the controller's REST
@@ -24,9 +24,9 @@ const CORE = new Set([
 ]);
 
 const META_TOOLS = [
-  { name: 'ae_status', description: 'aftr health: is the After Effects panel connected? Returns { status, agents, config }. Call this first if other tools report NO_PANEL.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
-  { name: 'ae_list_commands', description: 'List every aftr command with its description and required params. Use to discover what ae_command can run.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
-  { name: 'ae_command', description: 'Execute ANY aftr command by name (universal escape hatch). Params follow each command\'s documented shape; see ae_list_commands.', inputSchema: { type: 'object', properties: { command: { type: 'string' }, params: { type: 'object' } }, required: ['command'], additionalProperties: false } },
+  { name: 'ae_status', description: 'mograph-mcp health: is the After Effects panel connected? Returns { status, agents, config }. Call this first if other tools report NO_PANEL.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
+  { name: 'ae_list_commands', description: 'List every mograph-mcp command with its description and required params. Use to discover what ae_command can run.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
+  { name: 'ae_command', description: 'Execute ANY mograph-mcp command by name (universal escape hatch). Params follow each command\'s documented shape; see ae_list_commands.', inputSchema: { type: 'object', properties: { command: { type: 'string' }, params: { type: 'object' } }, required: ['command'], additionalProperties: false } },
   { name: 'ae_media_info', description: 'How to send a video TO the host and get rendered video back: upload URL + curl, the browser studio page, list/download URLs.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'ae_upload_video', description: 'Send a video to the host so AE can use it — the EASY way for remote callers: pass a public { url } (host downloads it) or small { dataBase64 }. With makeComp:true it also imports the footage and builds a comp sized to it, returning { comp:{ compId } } ready to render — so it is URL -> renderable comp in ONE call.', inputSchema: { type: 'object', properties: { url: { type: 'string', description: 'a public video URL the host will fetch' }, dataBase64: { type: 'string', description: 'base64 video bytes (for small clips)' }, name: { type: 'string' }, makeComp: { type: 'boolean', description: 'also import + place into a new comp matching the footage; returns comp.compId' }, compName: { type: 'string' } }, additionalProperties: false } },
   { name: 'ae_media_list', description: 'List uploaded (incoming) videos and rendered (output) videos, each with a download URL.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
@@ -51,7 +51,7 @@ const asError = (m) => ({ content: [{ type: 'text', text: m }], isError: true })
 //            mediaRender(args), errorHint?(err) }
 export function createAeMcpServer({ mode = 'core', allowDev = false, backend }) {
   const { tools, allCmds } = buildTools({ mode, allowDev });
-  const server = new Server({ name: 'aftr', version: '0.1.0' }, { capabilities: { tools: {} } });
+  const server = new Server({ name: 'mograph-mcp', version: '0.1.0' }, { capabilities: { tools: {} } });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 

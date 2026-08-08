@@ -1,4 +1,4 @@
-// host.jsx — ExtendScript entry point + shared helpers for the aftr.
+// host.jsx — ExtendScript entry point + shared helpers for mograph-mcp.
 // ES3 only — no let/const/arrow/template-literals/JSON-native (json2 polyfills JSON).
 //
 // Bundle order (see panel/build/bundle-jsx.js): json2.js, host.jsx, commands/*.jsx.

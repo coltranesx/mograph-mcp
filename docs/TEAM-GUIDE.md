@@ -1,4 +1,4 @@
-# aftr Team Guide
+# mograph-mcp Team Guide
 
 Drive a real **After Effects** instance from your MCP client (Claude Code, Claude
 Desktop, claude.ai). One teammate hosts AE + the bridge; everyone else connects
@@ -19,7 +19,7 @@ Ask the host for two things:
 
 **Claude Code:**
 ```bash
-claude mcp add --transport http aftr https://<host-tunnel>/mcp \
+claude mcp add --transport http mograph-mcp https://<host-tunnel>/mcp \
   --header "Authorization: Bearer <TOKEN>" \
   --header "ngrok-skip-browser-warning: 1"
 ```

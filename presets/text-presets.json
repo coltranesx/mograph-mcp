@@ -1,5 +1,5 @@
 {
-  "_doc": "Combinatorial text presets for the aftr: 4 styles x 8 eases. Call via the bridge command `applyTextStyle` with { compId, style, ease, text, ... }. wordReveal is approved/deterministic; the other three styles are interim and pending refinement.",
+  "_doc": "Combinatorial text presets for mograph-mcp: 4 styles x 8 eases. Call via the bridge command `applyTextStyle` with { compId, style, ease, text, ... }. wordReveal is approved/deterministic; the other three styles are interim and pending refinement.",
   "call": {
     "command": "applyTextStyle",
     "required": ["compId", "style", "ease (or bezier[4])", "text"],

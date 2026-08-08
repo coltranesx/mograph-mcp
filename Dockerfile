@@ -1,4 +1,4 @@
-# aftr controller + MCP server + headless simulator.
+# mograph-mcp controller + MCP server + headless simulator.
 #
 # The CEP panel needs a real After Effects host to connect over the socket, so it
 # is not part of this image. What runs here is everything that is headless: the
@@ -33,6 +33,6 @@ ENV AE_BRIDGE_HOST=0.0.0.0 \
 EXPOSE 8787
 
 # Default to the controller. Override to run the MCP server or simulator, e.g.:
-#   docker run --rm -it aftr node controller/src/mcp.js
-#   docker run --rm -it aftr node simulator/src/index.js
+#   docker run --rm -it mograph-mcp node controller/src/mcp.js
+#   docker run --rm -it mograph-mcp node simulator/src/index.js
 CMD ["node", "controller/src/server.js"]

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// mcp.js — aftr as a STDIO MCP server.
+// mcp.js — mograph-mcp as a STDIO MCP server.
 //
 // A thin adapter: forwards each tool call to the controller's REST surface
 // (POST /command, /media/*). Keeping it a client (not embedding the controller)
@@ -77,9 +77,9 @@ const backend = {
     if (r && r.downloadUrl) r.downloadUrl = absUrl(r.downloadUrl);
     return r;
   },
-  errorHint: (e) => `aftr controller unreachable at ${BASE} — start it with "npm run controller" and open the AE panel. (${e.message})`,
+  errorHint: (e) => `mograph-mcp controller unreachable at ${BASE} — start it with "npm run controller" and open the AE panel. (${e.message})`,
 };
 
 const server = createAeMcpServer({ mode: MODE, allowDev: ALLOW_DEV, backend });
 await server.connect(new StdioServerTransport());
-console.error(`[aftr-mcp] ready (stdio, ${MODE}), forwarding to ${BASE}`);
+console.error(`[mograph-mcp] ready (stdio, ${MODE}), forwarding to ${BASE}`);

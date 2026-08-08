@@ -54,7 +54,7 @@ COMMANDS.fireEffect = function (p) {
   var cx = center[0], cy = center[1];
   var pre = p.prefix || "fire_";
 
-  return AEB.undo("aftr: fireEffect", function () {
+  return AEB.undo("mograph-mcp: fireEffect", function () {
     var made = [];
 
     // ambient warm glow (will end up at the bottom of the fire layers)

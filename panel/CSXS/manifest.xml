@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  manifest.xml : CEP extension manifest for aftr.
+  manifest.xml : CEP extension manifest for mograph-mcp.
 
   Key values:
-  * ExtensionBundleId: com.ae-bridge.panel (unique across all CEP extensions)
+  * ExtensionBundleId: com.coltranesx.mograph-mcp.panel (unique across all CEP extensions;
+    deliberately distinct from upstream aftr's com.ae-bridge.panel so both can coexist)
   * Host: AEFT (After Effects). Version range covers AE 2024 through 2026+.
   * CEFCommandLine enables Node (see the Parameter elements below) so the panel
     can spawn aerender via child_process, plus a shared JS/Node scope.
@@ -18,12 +19,12 @@
     Windows: HKCU\Software\Adobe\CSXS.12  PlayerDebugMode = "1"
     macOS:   defaults write com.adobe.CSXS.12 PlayerDebugMode 1
 -->
-<ExtensionManifest Version="11.0" ExtensionBundleId="com.ae-bridge.panel"
-  ExtensionBundleVersion="0.1.0" ExtensionBundleName="aftr"
+<ExtensionManifest Version="11.0" ExtensionBundleId="com.coltranesx.mograph-mcp.panel"
+  ExtensionBundleVersion="0.1.0" ExtensionBundleName="mograph-mcp"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <ExtensionList>
-    <Extension Id="com.ae-bridge.panel.main" Version="0.1.0" />
+    <Extension Id="com.coltranesx.mograph-mcp.panel.main" Version="0.1.0" />
   </ExtensionList>
 
   <ExecutionEnvironment>
@@ -39,7 +40,7 @@
   </ExecutionEnvironment>
 
   <DispatchInfoList>
-    <Extension Id="com.ae-bridge.panel.main">
+    <Extension Id="com.coltranesx.mograph-mcp.panel.main">
       <DispatchInfo>
         <Resources>
           <MainPath>./index.html</MainPath>
@@ -53,7 +54,7 @@
         </Lifecycle>
         <UI>
           <Type>Panel</Type>
-          <Menu>aftr</Menu>
+          <Menu>mograph-mcp</Menu>
           <Geometry>
             <Size>
               <Height>300</Height>

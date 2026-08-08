@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/hero.png" alt="aftr" width="880" />
+<img src="docs/hero.png" alt="mograph-mcp" width="880" />
 
-# aftr
+# mograph-mcp
 
 ### Puppeteer for After Effects
 
@@ -10,9 +10,9 @@ Use After Effects with Claude Code to make production-ready videos.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
-[![npm](https://img.shields.io/npm/v/aftr-studio.svg)](https://www.npmjs.com/package/aftr-studio)
-[![PyPI](https://img.shields.io/pypi/v/aftr-studio.svg)](https://pypi.org/project/aftr-studio/)
-[![Docker](https://img.shields.io/badge/ghcr.io-aftr-2496ED?logo=docker&logoColor=white)](https://github.com/Arman-Luthra/aftr/pkgs/container/aftr)
+[![npm](https://img.shields.io/npm/v/mograph-mcp.svg)](https://www.npmjs.com/package/mograph-mcp)
+[![PyPI](https://img.shields.io/pypi/v/mograph-mcp.svg)](https://pypi.org/project/mograph-mcp/)
+[![Docker](https://img.shields.io/badge/ghcr.io-mograph-mcp-2496ED?logo=docker&logoColor=white)](https://github.com/coltranesx/mograph-mcp/pkgs/container/mograph-mcp)
 
 </div>
 
@@ -22,9 +22,9 @@ A Node controller sends JSON commands over a WebSocket to a CEP panel inside AE,
 
 <div align="center">
 
-<img src="docs/pals-title-demo.gif" alt="aftr demo: a title sequence built and rendered entirely through the bridge" width="880" />
+<img src="docs/pals-title-demo.gif" alt="mograph-mcp demo: a title sequence built and rendered entirely through the bridge" width="880" />
 
-*A title sequence built and rendered entirely through aftr. No manual After Effects work.<br>Video made for [tilion / fortress](https://github.com/tiliondev/fortress).<br>[Watch the full demo](https://www.youtube.com/watch?v=QkjTwlqPhNc)*
+*A title sequence built and rendered entirely through mograph-mcp. No manual After Effects work.<br>Video made for [tilion / fortress](https://github.com/tiliondev/fortress).<br>[Watch the full demo](https://www.youtube.com/watch?v=QkjTwlqPhNc)*
 
 </div>
 
@@ -32,23 +32,23 @@ A Node controller sends JSON commands over a WebSocket to a CEP panel inside AE,
 
 ## Get the MCP running
 
-Wire aftr into Claude Code in two commands. Start the controller (it serves the MCP endpoint), then point Claude Code at it.
+Wire mograph-mcp into Claude Code in two commands. Start the controller (it serves the MCP endpoint), then point Claude Code at it.
 
 ```bash
-npx aftr-studio controller                          # no install, needs Node 18+
-pip install aftr-studio && aftr controller          # pip
-docker run -p 8787:8787 ghcr.io/arman-luthra/aftr   # docker
+npx mograph-mcp controller                          # no install, needs Node 18+
+pip install mograph-mcp && mograph-mcp controller          # pip
+docker run -p 8787:8787 ghcr.io/coltranesx/mograph-mcp   # docker
 ```
 
 ```bash
-claude mcp add --transport http aftr http://127.0.0.1:8787/mcp
+claude mcp add --transport http mograph-mcp http://127.0.0.1:8787/mcp
 ```
 
-Open After Effects and the panel (Window > Extensions > aftr; deploy it once from a clone with `npm run deploy:panel`). Then ask Claude Code in plain language:
+Open After Effects and the panel (Window > Extensions > mograph-mcp; deploy it once from a clone with `npm run deploy:panel`). Then ask Claude Code in plain language:
 
 > Create a 1080p 5s comp, add a title "LAUNCH" with fire behind it, animate blurFade, then render to mp4.
 
-Claude Code sees every command as a tool: it calls `ae_status` first, lists the set with `ae_list_commands`, and runs anything through `ae_command`. Prefer a stdio server? Use `claude mcp add aftr -- npx -y aftr-studio mcp` (keep the controller running too).
+Claude Code sees every command as a tool: it calls `ae_status` first, lists the set with `ae_list_commands`, and runs anything through `ae_command`. Prefer a stdio server? Use `claude mcp add mograph-mcp -- npx -y mograph-mcp mcp` (keep the controller running too).
 
 ---
 
@@ -56,28 +56,28 @@ Claude Code sees every command as a tool: it calls `ae_status` first, lists the 
 
 | Method | Command |
 |---|---|
-| npm (global CLI) | `npm install -g aftr-studio`, then `aftr controller` |
-| npx (no install) | `npx aftr-studio controller` |
-| pip (Python launcher) | `pip install aftr-studio`, then `aftr controller` (needs Node 18+) |
-| Docker | `docker run --rm -p 8787:8787 ghcr.io/arman-luthra/aftr` |
+| npm (global CLI) | `npm install -g mograph-mcp`, then `mograph-mcp controller` |
+| npx (no install) | `npx mograph-mcp controller` |
+| pip (Python launcher) | `pip install mograph-mcp`, then `mograph-mcp controller` (needs Node 18+) |
+| Docker | `docker run --rm -p 8787:8787 ghcr.io/coltranesx/mograph-mcp` |
 | From source | clone this repo (below) |
 
-The npm, npx, and Docker paths run the controller, MCP server (`aftr mcp`), and simulator (`aftr sim`). Deploying the CEP panel into After Effects is done from a clone (`npm run deploy:panel`), since it self-signs and installs the extension. The pip package is a thin launcher that forwards to the npm CLI through `npx`.
+The npm, npx, and Docker paths run the controller, MCP server (`mograph-mcp mcp`), and simulator (`mograph-mcp sim`). Deploying the CEP panel into After Effects is done from a clone (`npm run deploy:panel`), since it self-signs and installs the extension. The pip package is a thin launcher that forwards to the npm CLI through `npx`.
 
 ---
 
 ## Get started in 60 seconds
 
 ```bash
-git clone https://github.com/Arman-Luthra/aftr.git
-cd aftr
+git clone https://github.com/coltranesx/mograph-mcp.git
+cd mograph-mcp
 npm install
 
 # 1) prove it's healthy with NO After Effects (headless simulator + tests)
 npm run build:jsx && npm test
 
 # 2) install the panel into AE (self-signs + deploys on Windows and macOS)
-npm run deploy:panel        # then quit and relaunch AE, Window > Extensions > aftr
+npm run deploy:panel        # then quit and relaunch AE, Window > Extensions > mograph-mcp
 
 # 3) start the bridge + open the UI
 npm run controller          # http://127.0.0.1:8787
@@ -206,8 +206,8 @@ CEP version maps to AE version: AE 2024 uses CEP 11 (`CSXS.11`); AE 2025 and 202
 You can validate the entire architecture (controller-to-bridge protocol, command dispatch, render plumbing) without After Effects, using the headless simulator. It is a Node process that speaks the exact same WebSocket protocol as the real panel and runs the real bundled JSX against a mock AE DOM.
 
 ```bash
-git clone https://github.com/Arman-Luthra/aftr.git
-cd aftr
+git clone https://github.com/coltranesx/mograph-mcp.git
+cd mograph-mcp
 npm install
 
 # build the JSX bundle once
@@ -249,7 +249,7 @@ npm run deploy:panel
 
 `deploy:panel` builds the JSX bundle, creates a self-signed dev certificate (cached in `dist/`), signs `panel/` into a `.zxp`, and unpacks the signed extension into your per-user CEP extensions folder.
 
-It works on both Windows and macOS (the [`zxp-sign-cmd`](https://www.npmjs.com/package/zxp-sign-cmd) tool ships the signer for both). After it runs, fully quit and relaunch After Effects, then open Window > Extensions > aftr.
+It works on both Windows and macOS (the [`zxp-sign-cmd`](https://www.npmjs.com/package/zxp-sign-cmd) tool ships the signer for both). After it runs, fully quit and relaunch After Effects, then open Window > Extensions > mograph-mcp.
 
 A signed extension is a snapshot. After you edit panel source, re-run `npm run deploy:panel` (and reopen AE) to make it permanent, or use the hot-reload dev loop (see [section 11](#11-dev-workflow-hot-reload--signing)) while iterating.
 
@@ -259,7 +259,7 @@ A signed extension is a snapshot. After you edit panel source, re-run `npm run d
 # from the repo root
 npm install
 npm run deploy:panel
-# then quit AE, relaunch, Window > Extensions > aftr
+# then quit AE, relaunch, Window > Extensions > mograph-mcp
 ```
 
 The signed panel installs to:
@@ -276,7 +276,7 @@ You may also set debug mode for remote DevTools, but it is not required once sig
 # from the repo root
 npm install
 npm run deploy:panel
-# then quit AE, relaunch, Window > Extensions > aftr
+# then quit AE, relaunch, Window > Extensions > mograph-mcp
 ```
 
 The signed panel installs to:
@@ -299,7 +299,7 @@ macOS specifics:
    npm run controller        # http://127.0.0.1:8787
    ```
 2. Launch After Effects.
-3. Open the panel: Window > Extensions > aftr. It dials the controller and the status dot goes green (`AE v26.x`).
+3. Open the panel: Window > Extensions > mograph-mcp. It dials the controller and the status dot goes green (`AE v26.x`).
 4. Open the UI at <http://127.0.0.1:8787>: buttons per command, a live event log, and a JSON response viewer.
 
 To run an autonomous demo (see [section 9](#9-the-orchestrator-autonomous-pipeline)): `npm run orchestrate`, `npm run orchestrate:fire`, or `npm run showreel`.
@@ -345,20 +345,20 @@ await ae.must('applyTextPreset', { compId, layer: 't', preset: 'blurFade' });
 Drive After Effects from any MCP client (Claude Desktop, Claude Code, and others). The MCP server (`controller/src/mcp.js`) is a thin stdio adapter that forwards each tool call to the running controller, so the AE panel, controller, and your project all behave exactly as above; the client just gets tools.
 
 ```bash
-# 1) start the bridge and open the AE panel (Window > Extensions > aftr)
+# 1) start the bridge and open the AE panel (Window > Extensions > mograph-mcp)
 npm run controller
 
 # 2a) Claude Code: register the MCP server
-claude mcp add aftr -- node /ABSOLUTE/PATH/aftr/controller/src/mcp.js
+claude mcp add mograph-mcp -- node /ABSOLUTE/PATH/mograph-mcp/controller/src/mcp.js
 ```
 
 ```jsonc
 // 2b) Claude Desktop: claude_desktop_config.json
 {
   "mcpServers": {
-    "aftr": {
+    "mograph-mcp": {
       "command": "node",
-      "args": ["/ABSOLUTE/PATH/aftr/controller/src/mcp.js"],
+      "args": ["/ABSOLUTE/PATH/mograph-mcp/controller/src/mcp.js"],
       "env": { "AE_BRIDGE_URL": "http://127.0.0.1:8787", "AE_MCP_TOOLS": "core" }
     }
   }
@@ -419,13 +419,13 @@ Remote MCP works two ways. The controller also serves MCP over HTTP at `POST /mc
 
 ```bash
 # (a) direct HTTP MCP: paste the URL into any MCP client
-claude mcp add --transport http aftr https://your-tunnel.example/mcp \
+claude mcp add --transport http mograph-mcp https://your-tunnel.example/mcp \
   --header "Authorization: Bearer your-secret"
 ```
 ```jsonc
 // (b) stdio adapter pointed at the tunnel
-{ "mcpServers": { "aftr": {
-  "command": "node", "args": ["/path/aftr/controller/src/mcp.js"],
+{ "mcpServers": { "mograph-mcp": {
+  "command": "node", "args": ["/path/mograph-mcp/controller/src/mcp.js"],
   "env": { "AE_BRIDGE_URL": "https://your-tunnel.example", "AE_BRIDGE_TOKEN": "your-secret" }
 }}}
 ```
@@ -630,7 +630,7 @@ The panel is the load-bearing, build-once part, identical locally and (later) in
 ## 13. Project structure
 
 ```
-aftr/
+mograph-mcp/
 ├── README.md
 ├── package.json              # workspaces + scripts
 ├── config.json               # endpoint config

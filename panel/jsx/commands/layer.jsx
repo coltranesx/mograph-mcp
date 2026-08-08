@@ -6,7 +6,7 @@ COMMANDS.addSolid = function (p) {
   var name = p.name || "Solid";
   var color = AEB.normColor(p.color);
   var w = p.width || comp.width, h = p.height || comp.height;
-  return AEB.undo("aftr: addSolid", function () {
+  return AEB.undo("mograph-mcp: addSolid", function () {
     var layer = comp.layers.addSolid(color, name, w, h, 1);
     return AEB.layerInfo(layer);
   });
@@ -15,7 +15,7 @@ COMMANDS.addSolid = function (p) {
 COMMANDS.addTextLayer = function (p) {
   var comp = AEB.requireComp(p);
   AEB.assert(p.text, "text is required");
-  return AEB.undo("aftr: addTextLayer", function () {
+  return AEB.undo("mograph-mcp: addTextLayer", function () {
     var layer = comp.layers.addText(p.text);
     if (p.fontSize || p.fillColor || p.font || p.justification !== undefined) {
       var tp = layer.property("Source Text");
@@ -40,7 +40,7 @@ COMMANDS.addTextLayer = function (p) {
 
 COMMANDS.addNull = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: addNull", function () {
+  return AEB.undo("mograph-mcp: addNull", function () {
     var layer = comp.layers.addNull(p.duration || comp.duration);
     if (p.name) layer.name = p.name;
     return AEB.layerInfo(layer);
@@ -49,7 +49,7 @@ COMMANDS.addNull = function (p) {
 
 COMMANDS.addAdjustmentLayer = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: addAdjustmentLayer", function () {
+  return AEB.undo("mograph-mcp: addAdjustmentLayer", function () {
     var solid = comp.layers.addSolid([1, 1, 1], p.name || "Adjustment", comp.width, comp.height, 1);
     solid.adjustmentLayer = true;
     return AEB.layerInfo(solid);
@@ -59,7 +59,7 @@ COMMANDS.addAdjustmentLayer = function (p) {
 COMMANDS.addCamera = function (p) {
   var comp = AEB.requireComp(p);
   var center = p.center || [comp.width / 2, comp.height / 2];
-  return AEB.undo("aftr: addCamera", function () {
+  return AEB.undo("mograph-mcp: addCamera", function () {
     var layer = comp.layers.addCamera(p.name || "Camera", center);
     return AEB.layerInfo(layer);
   });
@@ -68,7 +68,7 @@ COMMANDS.addCamera = function (p) {
 COMMANDS.addLight = function (p) {
   var comp = AEB.requireComp(p);
   var center = p.center || [comp.width / 2, comp.height / 2];
-  return AEB.undo("aftr: addLight", function () {
+  return AEB.undo("mograph-mcp: addLight", function () {
     var layer = comp.layers.addLight(p.name || "Light", center);
     if (p.lightType !== undefined) {
       var T = [LightType.PARALLEL, LightType.SPOT, LightType.POINT, LightType.AMBIENT];
@@ -80,7 +80,7 @@ COMMANDS.addLight = function (p) {
 
 COMMANDS.addShape = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: addShape", function () {
+  return AEB.undo("mograph-mcp: addShape", function () {
     var layer = comp.layers.addShape();
     if (p.name) layer.name = p.name;
     var contents = layer.property("ADBE Root Vectors Group");
@@ -114,7 +114,7 @@ COMMANDS.addShape = function (p) {
 COMMANDS.addPathShape = function (p) {
   var comp = AEB.requireComp(p);
   AEB.assert(p.vertices && p.vertices.length, "vertices[] is required");
-  return AEB.undo("aftr: addPathShape", function () {
+  return AEB.undo("mograph-mcp: addPathShape", function () {
     var layer = comp.layers.addShape();
     if (p.name) layer.name = p.name;
     var contents = layer.property("ADBE Root Vectors Group").addProperty("ADBE Vector Group").property("ADBE Vectors Group");
@@ -147,7 +147,7 @@ COMMANDS.addFootageLayer = function (p) {
     if ((p.itemId !== undefined && it.id === p.itemId) || (p.itemName && it.name === p.itemName)) { src = it; break; }
   }
   AEB.assert(src, "Source item not found (itemId/itemName)");
-  return AEB.undo("aftr: addFootageLayer", function () {
+  return AEB.undo("mograph-mcp: addFootageLayer", function () {
     var layer = comp.layers.add(src);
     if (p.name) layer.name = p.name;
     if (p.startTime !== undefined) layer.startTime = p.startTime;
@@ -161,7 +161,7 @@ COMMANDS.setLayerProperty = function (p) {
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.property, "property is required");
   AEB.assert(p.value !== undefined, "value is required");
-  return AEB.undo("aftr: setLayerProperty", function () {
+  return AEB.undo("mograph-mcp: setLayerProperty", function () {
     var key = String(p.property).toLowerCase();
     if (key === "name") layer.name = p.value;
     else if (key === "enabled") layer.enabled = !!p.value;
@@ -183,7 +183,7 @@ COMMANDS.setLayerProperty = function (p) {
 COMMANDS.setParent = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: setParent", function () {
+  return AEB.undo("mograph-mcp: setParent", function () {
     if (p.parent === null || p.parentName === null) { layer.parent = null; return { ok: true }; }
     var parentRef = (p.parent !== undefined) ? p.parent : p.parentName;
     layer.parent = AEB.resolveLayer(comp, parentRef);
@@ -194,7 +194,7 @@ COMMANDS.setParent = function (p) {
 COMMANDS.trimLayer = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: trimLayer", function () {
+  return AEB.undo("mograph-mcp: trimLayer", function () {
     if (p.inPoint !== undefined) layer.inPoint = p.inPoint;
     if (p.outPoint !== undefined) layer.outPoint = p.outPoint;
     if (p.startTime !== undefined) layer.startTime = p.startTime;
@@ -205,7 +205,7 @@ COMMANDS.trimLayer = function (p) {
 COMMANDS.moveLayer = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: moveLayer", function () {
+  return AEB.undo("mograph-mcp: moveLayer", function () {
     var to = p.toIndex;
     AEB.assert(to >= 1 && to <= comp.numLayers, "toIndex out of range");
     if (to === 1) layer.moveToBeginning();
@@ -218,7 +218,7 @@ COMMANDS.moveLayer = function (p) {
 COMMANDS.duplicateLayer = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: duplicateLayer", function () {
+  return AEB.undo("mograph-mcp: duplicateLayer", function () {
     var dup = layer.duplicate();
     if (p.name) dup.name = p.name;
     return AEB.layerInfo(dup);
@@ -228,7 +228,7 @@ COMMANDS.duplicateLayer = function (p) {
 COMMANDS.deleteLayer = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: deleteLayer", function () {
+  return AEB.undo("mograph-mcp: deleteLayer", function () {
     var name = layer.name;
     layer.remove();
     return { ok: true, removed: name };
@@ -255,7 +255,7 @@ COMMANDS.setBlendMode = function (p) {
   AEB.assert(p.mode, "mode is required");
   var key = _BLEND[String(p.mode).toLowerCase()];
   AEB.assert(key && BlendingMode[key] !== undefined, "unknown blend mode: " + p.mode);
-  return AEB.undo("aftr: setBlendMode", function () {
+  return AEB.undo("mograph-mcp: setBlendMode", function () {
     layer.blendingMode = BlendingMode[key];
     return { ok: true };
   });
@@ -270,7 +270,7 @@ COMMANDS.setTrackMatte = function (p) {
   var layer = AEB.requireLayer(comp, p);
   var key = _MATTE[String(p.type || "alpha").toLowerCase()];
   AEB.assert(key && TrackMatteType[key] !== undefined, "unknown track matte type: " + p.type);
-  return AEB.undo("aftr: setTrackMatte", function () {
+  return AEB.undo("mograph-mcp: setTrackMatte", function () {
     // Modern AE: setTrackMatte(layer, type). Fallback to trackMatteType.
     try {
       if (p.matteLayer !== undefined) layer.setTrackMatte(AEB.resolveLayer(comp, p.matteLayer), TrackMatteType[key]);
@@ -286,7 +286,7 @@ COMMANDS.setLayerFlag = function (p) {
   AEB.assert(p.flag, "flag is required");
   var key = String(p.flag).toLowerCase();
   var val = (p.value !== false);
-  return AEB.undo("aftr: setLayerFlag", function () {
+  return AEB.undo("mograph-mcp: setLayerFlag", function () {
     if (key === "motionblur") layer.motionBlur = val;
     else if (key === "adjustment") layer.adjustmentLayer = val;
     else if (key === "guide") layer.guideLayer = val;
@@ -305,7 +305,7 @@ COMMANDS.addLayerMarker = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.time !== undefined, "time is required");
-  return AEB.undo("aftr: addLayerMarker", function () {
+  return AEB.undo("mograph-mcp: addLayerMarker", function () {
     var mv = new MarkerValue(p.comment || "");
     if (p.duration !== undefined) mv.duration = p.duration;
     layer.property("Marker").setValueAtTime(p.time, mv);
@@ -317,7 +317,7 @@ COMMANDS.setTimeStretch = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.stretch !== undefined, "stretch (percent) is required");
-  return AEB.undo("aftr: setTimeStretch", function () {
+  return AEB.undo("mograph-mcp: setTimeStretch", function () {
     layer.stretch = p.stretch;
     return { ok: true, stretch: layer.stretch };
   });
@@ -326,7 +326,7 @@ COMMANDS.setTimeStretch = function (p) {
 COMMANDS.enableTimeRemap = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: enableTimeRemap", function () {
+  return AEB.undo("mograph-mcp: enableTimeRemap", function () {
     layer.timeRemapEnabled = (p.enabled !== false);
     return { ok: true };
   });
@@ -341,7 +341,7 @@ COMMANDS.replaceSource = function (p) {
     if ((p.itemId !== undefined && it.id === p.itemId) || (p.itemName && it.name === p.itemName)) { src = it; break; }
   }
   AEB.assert(src, "replacement item not found (itemId/itemName)");
-  return AEB.undo("aftr: replaceSource", function () {
+  return AEB.undo("mograph-mcp: replaceSource", function () {
     layer.replaceSource(src, (p.fixExpressions !== false));
     return { ok: true };
   });

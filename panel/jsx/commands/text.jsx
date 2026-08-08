@@ -6,7 +6,7 @@
 COMMANDS.setTextDocument = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: setTextDocument", function () {
+  return AEB.undo("mograph-mcp: setTextDocument", function () {
     var sp = layer.property("Source Text");
     var d = sp.value;
     if (p.text !== undefined) d.text = p.text;
@@ -86,7 +86,7 @@ COMMANDS.addTextAnimator = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(layer.property("ADBE Text Properties"), "layer is not a text layer");
-  return AEB.undo("aftr: addTextAnimator", function () {
+  return AEB.undo("mograph-mcp: addTextAnimator", function () {
     var animators = layer.property("ADBE Text Properties").property("ADBE Text Animators");
     var anim = animators.addProperty("ADBE Text Animator");
     if (p.name) anim.name = p.name;
@@ -453,7 +453,7 @@ COMMANDS.applyWordReveal = function (p) {
   var trk = (p.tracking !== undefined) ? p.tracking : 0;
   var prefix = p.namePrefix || "WR";
 
-  return AEB.undo("aftr: applyWordReveal", function () {
+  return AEB.undo("mograph-mcp: applyWordReveal", function () {
     // deterministic space width for this font/size/tracking
     var sp = _wrMeasure(comp, "n n", font, size, trk).width - _wrMeasure(comp, "nn", font, size, trk).width;
     if (!(sp > 0)) sp = size * 0.25;
@@ -558,7 +558,7 @@ COMMANDS.applyCharScale = function (p) {
   var trk = (p.tracking !== undefined) ? p.tracking : 0;
   var prefix = p.namePrefix || "CS";
 
-  return AEB.undo("aftr: applyCharScale", function () {
+  return AEB.undo("mograph-mcp: applyCharScale", function () {
     var rawLines = String(p.text).split("\n");
     var lines = [];
     for (var li = 0; li < rawLines.length; li++) { if (rawLines[li].length) lines.push(rawLines[li]); }

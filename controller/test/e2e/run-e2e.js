@@ -198,7 +198,7 @@ function cleanup() {
 // ---------------------------------------------------------------------------
 async function runTests() {
   console.log('\n═══════════════════════════════════════════');
-  console.log('  aftr E2E Test Suite');
+  console.log('  mograph-mcp E2E Test Suite');
   console.log('═══════════════════════════════════════════\n');
 
   // --- Setup ---

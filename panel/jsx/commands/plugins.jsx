@@ -61,7 +61,7 @@ var _DEEPGLOW = {
 COMMANDS.deepGlow = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: deepGlow", function () {
+  return AEB.undo("mograph-mcp: deepGlow", function () {
     var fx = _ensureEffect(layer, "PEDG2", "Deep Glow 2");
     var pairs = _collectPairs(p, _DEEPGLOW);
     // a `color` enables the Tint section and sets the glow color
@@ -89,7 +89,7 @@ var _SHADOWSTUDIO = {
 COMMANDS.shadowStudio = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: shadowStudio", function () {
+  return AEB.undo("mograph-mcp: shadowStudio", function () {
     var fx = _ensureEffect(layer, "PESS3", "Shadow Studio 3");
     var pairs = _collectPairs(p, _SHADOWSTUDIO);
     if (p.color !== undefined) pairs["PESS3-0006"] = _color4(p.color);

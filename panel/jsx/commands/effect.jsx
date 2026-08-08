@@ -23,7 +23,7 @@ COMMANDS.addEffect = function (p) {
   var layer = AEB.requireLayer(comp, p);
   var ref = p.matchName || p.effectName || p.effect;
   AEB.assert(ref, "matchName or effectName is required");
-  return AEB.undo("aftr: addEffect", function () {
+  return AEB.undo("mograph-mcp: addEffect", function () {
     var fx = AEB.effectsGroup(layer);
     AEB.assert(fx.canAddProperty(ref), 'Cannot add effect "' + ref + '" (bad matchName or unsupported)');
     var added = fx.addProperty(ref);
@@ -46,7 +46,7 @@ COMMANDS.setEffectParam = function (p) {
   AEB.assert(p.effect !== undefined, "effect (name/index/matchName) is required");
   AEB.assert(p.param !== undefined, "param (name/index) is required");
   AEB.assert(p.value !== undefined, "value is required");
-  return AEB.undo("aftr: setEffectParam", function () {
+  return AEB.undo("mograph-mcp: setEffectParam", function () {
     var effect = _resolveEffect(layer, p.effect);
     var param = (typeof p.param === "number") ? effect.property(p.param) : effect.property(p.param);
     AEB.assert(param, "param not found: " + p.param);
@@ -82,7 +82,7 @@ COMMANDS.addExpressionControl = function (p) {
   };
   var matchName = MN[T];
   AEB.assert(matchName, "unknown controlType: " + p.controlType);
-  return AEB.undo("aftr: addExpressionControl", function () {
+  return AEB.undo("mograph-mcp: addExpressionControl", function () {
     var fx = AEB.effectsGroup(layer);
     var ctrl = fx.addProperty(matchName);
     if (p.name) ctrl.name = p.name;

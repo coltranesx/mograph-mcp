@@ -17,7 +17,7 @@ function _maskMode(s) {
 COMMANDS.addMask = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: addMask", function () {
+  return AEB.undo("mograph-mcp: addMask", function () {
     var masks = layer.property("ADBE Mask Parade");
     var mask = masks.addProperty("ADBE Mask Atom");
     if (p.name) mask.name = p.name;
@@ -49,7 +49,7 @@ COMMANDS.addRectMask = function (p) {
   var y = (p.top !== undefined) ? p.top : 0;
   var w = (p.width !== undefined) ? p.width : comp.width;
   var h = (p.height !== undefined) ? p.height : comp.height;
-  return AEB.undo("aftr: addRectMask", function () {
+  return AEB.undo("mograph-mcp: addRectMask", function () {
     var masks = layer.property("ADBE Mask Parade");
     var mask = masks.addProperty("ADBE Mask Atom");
     if (p.name) mask.name = p.name;
@@ -67,7 +67,7 @@ COMMANDS.setMaskProperty = function (p) {
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.maskIndex >= 1 || p.maskName, "maskIndex or maskName is required");
   AEB.assert(p.property, "property is required");
-  return AEB.undo("aftr: setMaskProperty", function () {
+  return AEB.undo("mograph-mcp: setMaskProperty", function () {
     var masks = layer.property("ADBE Mask Parade");
     var mask = p.maskName ? masks.property(p.maskName) : masks.property(p.maskIndex);
     AEB.assert(mask, "mask not found");

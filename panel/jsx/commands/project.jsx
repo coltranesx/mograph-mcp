@@ -29,7 +29,7 @@ function _findItem(p) {
 }
 
 COMMANDS.createFolder = function (p) {
-  return AEB.undo("aftr: createFolder", function () {
+  return AEB.undo("mograph-mcp: createFolder", function () {
     var folder = app.project.items.addFolder(p.name || "Folder");
     return { id: folder.id, name: folder.name };
   });
@@ -44,7 +44,7 @@ COMMANDS.moveToFolder = function (p) {
     if (it instanceof FolderItem && ((p.folderId !== undefined && it.id === p.folderId) || (p.folderName && it.name === p.folderName))) { folder = it; break; }
   }
   AEB.assert(folder, "folder not found (folderId/folderName)");
-  return AEB.undo("aftr: moveToFolder", function () {
+  return AEB.undo("mograph-mcp: moveToFolder", function () {
     item.parentFolder = folder;
     return { ok: true };
   });
@@ -54,7 +54,7 @@ COMMANDS.setProxy = function (p) {
   var item = _findItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
   AEB.assert(p.path, "path is required");
-  return AEB.undo("aftr: setProxy", function () {
+  return AEB.undo("mograph-mcp: setProxy", function () {
     item.setProxy(new File(p.path));
     return { ok: true };
   });
@@ -64,7 +64,7 @@ COMMANDS.renameItem = function (p) {
   var item = _findItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
   AEB.assert(p.name, "name is required");
-  return AEB.undo("aftr: renameItem", function () {
+  return AEB.undo("mograph-mcp: renameItem", function () {
     item.name = p.name;
     return { ok: true, id: item.id, name: item.name };
   });
@@ -73,7 +73,7 @@ COMMANDS.renameItem = function (p) {
 COMMANDS.deleteItem = function (p) {
   var item = _findItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
-  return AEB.undo("aftr: deleteItem", function () {
+  return AEB.undo("mograph-mcp: deleteItem", function () {
     var n = item.name; item.remove();
     return { ok: true, removed: n };
   });

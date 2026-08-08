@@ -6,7 +6,7 @@ import {
   COMMANDS,
   validateCommand,
   commandList,
-} from '@aftr/shared/commands';
+} from '@mograph-mcp/shared/commands';
 
 describe('COMMANDS registry', () => {
   it('has all expected commands', () => {

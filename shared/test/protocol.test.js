@@ -11,7 +11,7 @@ import {
   parseEnvelope,
   serialize,
   ENVELOPE_TYPES,
-} from '@aftr/shared/protocol';
+} from '@mograph-mcp/shared/protocol';
 
 describe('newId', () => {
   it('generates unique ids', () => {

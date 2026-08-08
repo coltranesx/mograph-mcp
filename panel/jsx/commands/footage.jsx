@@ -12,7 +12,7 @@ COMMANDS.importFootage = function (p) {
   AEB.assert(p.path, "path is required");
   var f = new File(p.path);
   AEB.assert(f.exists, "file does not exist: " + p.path);
-  return AEB.undo("aftr: importFootage", function () {
+  return AEB.undo("mograph-mcp: importFootage", function () {
     var io = new ImportOptions(f);
     if (p.sequence) { try { io.sequence = true; } catch (e) {} }
     var item = app.project.importFile(io);
@@ -26,7 +26,7 @@ COMMANDS.compFromFootage = function (p) {
   AEB.assert(p.path, "path is required");
   var f = new File(p.path);
   AEB.assert(f.exists, "file does not exist: " + p.path);
-  return AEB.undo("aftr: compFromFootage", function () {
+  return AEB.undo("mograph-mcp: compFromFootage", function () {
     var io = new ImportOptions(f);
     var footage = app.project.importFile(io);
     var w = footage.width || p.width || 1920;

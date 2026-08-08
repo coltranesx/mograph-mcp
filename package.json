@@ -31,7 +31,7 @@
   },
   "type": "module",
   "bin": {
-    "aftr": "bin/aftr.js"
+    "mograph-mcp": "bin/mograph-mcp.js"
   },
   "files": [
     "bin",

@@ -1,4 +1,4 @@
-// protocol.js — envelope construction/parsing for the aftr wire format.
+// protocol.js — envelope construction/parsing for the mograph-mcp wire format.
 //
 // All socket traffic is JSON envelopes. Three envelope kinds:
 //   request  (controller -> panel): { id, type:'command', command, params }

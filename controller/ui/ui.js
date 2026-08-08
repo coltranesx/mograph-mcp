@@ -1,4 +1,4 @@
-/* aftr controller UI.
+/* mograph-mcp controller UI.
  * Connects to the /agent WebSocket: sends command envelopes, renders a live
  * log of results + panel events, and shows the last JSON response. The UI is
  * just another agent client of the same protocol. */

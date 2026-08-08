@@ -26,7 +26,7 @@ COMMANDS.createComp = function (p) {
   var dur = p.duration || 10;
   var fps = p.frameRate || 30;
 
-  app.beginUndoGroup("aftr: createComp");
+  app.beginUndoGroup("mograph-mcp: createComp");
   var comp = app.project.items.addComp(p.name, w, h, 1, dur, fps);
   app.endUndoGroup();
 
@@ -35,7 +35,7 @@ COMMANDS.createComp = function (p) {
 
 COMMANDS.setCompSettings = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: setCompSettings", function () {
+  return AEB.undo("mograph-mcp: setCompSettings", function () {
     if (p.name !== undefined) comp.name = p.name;
     if (p.width !== undefined) comp.width = p.width;
     if (p.height !== undefined) comp.height = p.height;
@@ -54,7 +54,7 @@ COMMANDS.setCompSettings = function (p) {
 COMMANDS.addCompMarker = function (p) {
   var comp = AEB.requireComp(p);
   AEB.assert(p.time !== undefined, "time is required");
-  return AEB.undo("aftr: addCompMarker", function () {
+  return AEB.undo("mograph-mcp: addCompMarker", function () {
     var mv = new MarkerValue(p.comment || "");
     if (p.duration !== undefined) mv.duration = p.duration;
     if (p.chapter) mv.chapter = p.chapter;

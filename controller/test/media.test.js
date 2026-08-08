@@ -68,7 +68,7 @@ describe('media routes (video in/out)', () => {
   it('serves the studio page', async () => {
     const r = await fetch(`${base}/studio`);
     assert.equal(r.status, 200);
-    assert.match(await r.text(), /aftr Studio/);
+    assert.match(await r.text(), /mograph-mcp Studio/);
   });
 
   it('synchronous render saves, waits, and returns a download URL', async () => {

@@ -17,7 +17,7 @@ var _RQ_STATUS = {};
 
 COMMANDS.addToRenderQueue = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: addToRenderQueue", function () {
+  return AEB.undo("mograph-mcp: addToRenderQueue", function () {
     var rqi = app.project.renderQueue.items.add(comp);
     if (p.settingsTemplate) { try { rqi.applyTemplate(p.settingsTemplate); } catch (e) {} }
     var om = rqi.outputModule(1);
@@ -41,7 +41,7 @@ COMMANDS.listRenderQueue = function () {
 
 COMMANDS.setOutputModule = function (p) {
   AEB.assert(p.rqIndex >= 1, "rqIndex is required");
-  return AEB.undo("aftr: setOutputModule", function () {
+  return AEB.undo("mograph-mcp: setOutputModule", function () {
     var rqi = app.project.renderQueue.item(p.rqIndex);
     var om = rqi.outputModule(p.omIndex || 1);
     if (p.template) { try { om.applyTemplate(p.template); } catch (e) {} }
@@ -51,7 +51,7 @@ COMMANDS.setOutputModule = function (p) {
 };
 
 COMMANDS.clearRenderQueue = function () {
-  return AEB.undo("aftr: clearRenderQueue", function () {
+  return AEB.undo("mograph-mcp: clearRenderQueue", function () {
     var rq = app.project.renderQueue;
     for (var i = rq.numItems; i >= 1; i--) rq.item(i).remove();
     return { ok: true };

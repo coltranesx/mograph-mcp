@@ -10,7 +10,7 @@ COMMANDS.setKeyframe = function (p) {
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.time !== undefined, "time is required");
   AEB.assert(p.value !== undefined, "value is required");
-  return AEB.undo("aftr: setKeyframe", function () {
+  return AEB.undo("mograph-mcp: setKeyframe", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     prop.setValueAtTime(p.time, p.value);
     return { ok: true, numKeys: prop.numKeys };
@@ -23,7 +23,7 @@ COMMANDS.setKeyframes = function (p) {
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.times && p.times.length, "times[] is required");
   AEB.assert(p.values && p.values.length === p.times.length, "values[] must match times[]");
-  return AEB.undo("aftr: setKeyframes", function () {
+  return AEB.undo("mograph-mcp: setKeyframes", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     prop.setValuesAtTimes(p.times, p.values);
     // optional easing applied left->right after all keys exist (HLD gotcha)
@@ -45,7 +45,7 @@ COMMANDS.setEase = function (p) {
   var inInf = (p.inInfluence !== undefined) ? p.inInfluence : 33.3333;
   var outInf = (p.outInfluence !== undefined) ? p.outInfluence : 33.3333;
   var inSpeed = p.inSpeed || 0, outSpeed = p.outSpeed || 0;
-  return AEB.undo("aftr: setEase", function () {
+  return AEB.undo("mograph-mcp: setEase", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     var e = AEB.makeEases(prop, inInf, outInf, inSpeed, outSpeed);
     prop.setInterpolationTypeAtKey(p.keyIndex, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
@@ -65,7 +65,7 @@ COMMANDS.setInterpolation = function (p) {
   };
   var inT = map[String(p.inType || "linear").toLowerCase()] || KeyframeInterpolationType.LINEAR;
   var outT = map[String(p.outType || p.inType || "linear").toLowerCase()] || inT;
-  return AEB.undo("aftr: setInterpolation", function () {
+  return AEB.undo("mograph-mcp: setInterpolation", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     prop.setInterpolationTypeAtKey(p.keyIndex, inT, outT);
     return { ok: true };
@@ -75,7 +75,7 @@ COMMANDS.setInterpolation = function (p) {
 COMMANDS.removeKeyframes = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: removeKeyframes", function () {
+  return AEB.undo("mograph-mcp: removeKeyframes", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     while (prop.numKeys > 0) prop.removeKey(1);
     return { ok: true };

@@ -9,7 +9,7 @@ COMMANDS.smokeEffect = function (p) {
   var sw = (p.width || W * 0.5) * (p.size || 1);
   var sh = (p.height || H * 0.7) * (p.size || 1);
   var cx = center[0], cy = center[1], pre = p.prefix || "smoke_";
-  return AEB.undo("aftr: smokeEffect", function () {
+  return AEB.undo("mograph-mcp: smokeEffect", function () {
     var L = _fireNoise(comp, pre + "smoke", { contrast: 45, brightness: 8, scaleW: 130, scaleH: 280, complexity: 4, evo: 45, rise: 190 });
     var tint = L.property("ADBE Effect Parade").addProperty("ADBE Tint");
     try { tint.property("Map Black To").setValue([0, 0, 0]); tint.property("Map White To").setValue(p.color || [0.72, 0.74, 0.8]); } catch (e) {}
@@ -24,7 +24,7 @@ COMMANDS.smokeEffect = function (p) {
 COMMANDS.glitchEffect = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: glitchEffect", function () {
+  return AEB.undo("mograph-mcp: glitchEffect", function () {
     var fx = layer.property("ADBE Effect Parade");
     var td = fx.addProperty("ADBE Turbulent Displace");
     try {
@@ -60,7 +60,7 @@ COMMANDS.cinematicGrade = function (p) {
 COMMANDS.neonGlow = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: neonGlow", function () {
+  return AEB.undo("mograph-mcp: neonGlow", function () {
     var fx = layer.property("ADBE Effect Parade");
     var g1 = fx.addProperty("ADBE Glo2");
     try { g1.property("Glow Radius").setValue(p.radius || 30); g1.property("Glow Intensity").setValue(2.2); } catch (e) {}

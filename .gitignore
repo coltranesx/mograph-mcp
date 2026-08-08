@@ -29,3 +29,5 @@ rendersave/
 .env
 controller/.env
 panel/config.local.js
+__pycache__/
+*.pyc

@@ -6,7 +6,7 @@
 COMMANDS.batch = function (p) {
   AEB.assert(p.commands && p.commands.length, "commands[] is required");
   var results = [];
-  app.beginUndoGroup(p.undoName || "aftr: batch");
+  app.beginUndoGroup(p.undoName || "mograph-mcp: batch");
   try {
     for (var i = 0; i < p.commands.length; i++) {
       var c = p.commands[i];
@@ -32,7 +32,7 @@ COMMANDS.batch = function (p) {
 COMMANDS.setWorkArea = function (p) {
   var comp = AEB.requireComp(p);
   AEB.assert(p.start !== undefined && p.duration !== undefined, "start and duration are required");
-  return AEB.undo("aftr: setWorkArea", function () {
+  return AEB.undo("mograph-mcp: setWorkArea", function () {
     comp.workAreaStart = p.start;
     comp.workAreaDuration = p.duration;
     return { ok: true, start: comp.workAreaStart, duration: comp.workAreaDuration };
@@ -42,7 +42,7 @@ COMMANDS.setWorkArea = function (p) {
 // Remove every layer in a comp (optionally keep a name prefix).
 COMMANDS.clearComp = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: clearComp", function () {
+  return AEB.undo("mograph-mcp: clearComp", function () {
     var removed = 0;
     for (var i = comp.numLayers; i >= 1; i--) {
       if (p.keepPrefix && comp.layer(i).name.indexOf(p.keepPrefix) === 0) continue;
@@ -68,7 +68,7 @@ COMMANDS.getCompTime = function (p) {
 // Duplicate a comp (deep copy of the comp item).
 COMMANDS.duplicateComp = function (p) {
   var comp = AEB.requireComp(p);
-  return AEB.undo("aftr: duplicateComp", function () {
+  return AEB.undo("mograph-mcp: duplicateComp", function () {
     var dup = comp.duplicate();
     if (p.name) dup.name = p.name;
     return { compId: dup.id, name: dup.name };
@@ -79,7 +79,7 @@ COMMANDS.duplicateComp = function (p) {
 COMMANDS.alignLayer = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: alignLayer", function () {
+  return AEB.undo("mograph-mcp: alignLayer", function () {
     var pos = layer.property("Transform").property("Position");
     var v = pos.value;
     var x = v[0], y = v[1];
@@ -102,7 +102,7 @@ COMMANDS.sequenceLayers = function (p) {
   AEB.assert(p.layers && p.layers.length, "layers[] is required");
   var step = (p.step !== undefined) ? p.step : 1;
   var start = (p.start !== undefined) ? p.start : 0;
-  return AEB.undo("aftr: sequenceLayers", function () {
+  return AEB.undo("mograph-mcp: sequenceLayers", function () {
     for (var i = 0; i < p.layers.length; i++) {
       var L = AEB.resolveLayer(comp, p.layers[i]);
       L.startTime = start + i * step;

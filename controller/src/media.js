@@ -285,13 +285,13 @@ export function mountMedia(app, { aeClient, cfg }) {
   };
 }
 
-const STUDIO_HTML = `<!doctype html><html><head><meta charset=utf8><title>aftr Studio</title>
+const STUDIO_HTML = `<!doctype html><html><head><meta charset=utf8><title>mograph-mcp Studio</title>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <style>body{font:15px/1.5 system-ui,sans-serif;max-width:680px;margin:40px auto;padding:0 16px;color:#111}
 h1{font-size:20px}input,button{font:inherit;padding:8px}button{cursor:pointer;border:1px solid #888;border-radius:6px;background:#f6f6f6}
 .row{margin:14px 0}.muted{color:#666;font-size:13px}a{color:#06c}#log{white-space:pre-wrap;background:#f6f6f6;padding:10px;border-radius:6px;min-height:40px}</style>
 </head><body>
-<h1>aftr Studio</h1>
+<h1>mograph-mcp Studio</h1>
 <p class=muted>Send a video to the After Effects host, then grab rendered results.</p>
 <div class=row><b>1. Send a video</b><br><input type=file id=f accept="video/*"> <input id=tok placeholder="token (if required)" size=14> <button onclick=up()>Upload</button></div>
 <div class=row><b>2. Files</b> <button onclick=list()>Refresh</button><div id=files class=muted></div></div>

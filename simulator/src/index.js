@@ -146,7 +146,7 @@ function sendEvent(event, data) {
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
-log('info', 'aftr Simulator starting…');
+log('info', 'mograph-mcp Simulator starting…');
 log('info', `JSX commands loaded: ${runner.commandNames.join(', ')}`);
 connect();
 

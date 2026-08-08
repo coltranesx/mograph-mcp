@@ -6,7 +6,7 @@ COMMANDS.setExpression = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
   AEB.assert(p.expression !== undefined, "expression is required");
-  return AEB.undo("aftr: setExpression", function () {
+  return AEB.undo("mograph-mcp: setExpression", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     prop.expression = p.expression;
     if (p.enabled === false) prop.expressionEnabled = false;
@@ -17,7 +17,7 @@ COMMANDS.setExpression = function (p) {
 COMMANDS.removeExpression = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: removeExpression", function () {
+  return AEB.undo("mograph-mcp: removeExpression", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     prop.expression = "";
     return { ok: true };
@@ -27,7 +27,7 @@ COMMANDS.removeExpression = function (p) {
 COMMANDS.enableExpression = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  return AEB.undo("aftr: enableExpression", function () {
+  return AEB.undo("mograph-mcp: enableExpression", function () {
     var prop = AEB.resolveProperty(layer, p.property);
     prop.expressionEnabled = (p.enabled !== false);
     return { ok: true, expressionEnabled: prop.expressionEnabled };

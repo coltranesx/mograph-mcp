@@ -34,7 +34,7 @@ COMMANDS.applyLumetri = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
   var settings = p.settings ? p.settings : p; // accept { settings:{...} } or flat
-  return AEB.undo("aftr: applyLumetri", function () {
+  return AEB.undo("mograph-mcp: applyLumetri", function () {
     var lumetri = _findOrAddLumetri(layer);
     var applied = {}, skipped = [];
     for (var key in settings) {

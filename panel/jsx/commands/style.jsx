@@ -17,7 +17,7 @@ COMMANDS.addLayerStyle = function (p) {
   var key = String(p.style || "").toLowerCase();
   var mn = _LAYER_STYLE[key];
   AEB.assert(mn, "unknown style: " + p.style + " (dropShadow|innerShadow|outerGlow|innerGlow|bevelEmboss|satin|colorOverlay|gradientOverlay|patternOverlay|stroke)");
-  return AEB.undo("aftr: addLayerStyle", function () {
+  return AEB.undo("mograph-mcp: addLayerStyle", function () {
     var styles = layer.property("ADBE Layer Styles");
     AEB.assert(styles, "layer does not support styles");
     var styleGroup = styles.property(mn);
@@ -37,7 +37,7 @@ COMMANDS.setLayerStyleEnabled = function (p) {
   var layer = AEB.requireLayer(comp, p);
   var mn = _LAYER_STYLE[String(p.style || "").toLowerCase()];
   AEB.assert(mn, "unknown style: " + p.style);
-  return AEB.undo("aftr: setLayerStyleEnabled", function () {
+  return AEB.undo("mograph-mcp: setLayerStyleEnabled", function () {
     layer.property("ADBE Layer Styles").property(mn).enabled = (p.enabled !== false);
     return { ok: true };
   });

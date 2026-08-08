@@ -53,7 +53,7 @@ export function simulateRender(env, runner, sendEnvelope, sendEvent, log) {
         mkdirSync(dirname(info.outputPath), { recursive: true });
         writeFileSync(
           info.outputPath,
-          `aftr simulated render\njob: ${jobId}\ncomp: ${info.compName}\nframes: ${total}\n`,
+          `mograph-mcp simulated render\njob: ${jobId}\ncomp: ${info.compName}\nframes: ${total}\n`,
         );
       } catch (e) {
         ok = false;

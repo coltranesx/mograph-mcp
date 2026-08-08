@@ -224,7 +224,7 @@ function _realizeTreatment(comp, prefix, tr, segStart, segEnd) {
 COMMANDS.removeLayersByPrefix = function (p) {
   var comp = AEB.requireComp(p);
   AEB.assert(p.prefix, "prefix is required");
-  return AEB.undo("aftr: removeLayersByPrefix", function () {
+  return AEB.undo("mograph-mcp: removeLayersByPrefix", function () {
     var removed = [];
     for (var i = comp.numLayers; i >= 1; i--) {
       var L = comp.layer(i);
@@ -243,7 +243,7 @@ COMMANDS.applySpec = function (p) {
   var segStart = (p.segment && p.segment.start !== undefined) ? p.segment.start : 0;
   var segEnd = (p.segment && p.segment.end !== undefined) ? p.segment.end : comp.duration;
 
-  return AEB.undo("aftr: applySpec " + prefix, function () {
+  return AEB.undo("mograph-mcp: applySpec " + prefix, function () {
     // 1. idempotent wipe
     for (var i = comp.numLayers; i >= 1; i--) {
       if (comp.layer(i).name.indexOf(prefix) === 0) comp.layer(i).remove();

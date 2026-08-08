@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// aftr CLI: launch the controller, the MCP server, or the headless simulator.
-// Usage: aftr [controller|mcp|sim] [args...]   (defaults to controller)
+// mograph-mcp CLI: launch the controller, the MCP server, or the headless simulator.
+// Usage: mograph-mcp [controller|mcp|sim] [args...]   (defaults to controller)
 
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -22,13 +22,13 @@ const rest = process.argv.slice(3);
 if (cmd === '-h' || cmd === '--help' || !TARGETS[cmd]) {
   const unknown = cmd && !TARGETS[cmd] && cmd !== '-h' && cmd !== '--help';
   const out = unknown ? console.error : console.log;
-  out(`aftr <command>
+  out(`mograph-mcp <command>
 
   controller   start the controller: WS server, REST, and web UI   [default]
   mcp          start the stdio MCP server (for Claude Code / Desktop)
   sim          start the headless After Effects simulator
 
-Docs: https://github.com/Arman-Luthra/aftr`);
+Docs: https://github.com/coltranesx/mograph-mcp`);
   process.exit(unknown ? 1 : 0);
 }
 
