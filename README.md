@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/hero.png" alt="mograph-mcp" width="880" />
+<img src="docs/hero.jpg" alt="mograph-mcp" width="880" />
 
 # mograph-mcp
 
