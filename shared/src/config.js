@@ -31,6 +31,15 @@ export function loadConfig() {
       process.env.AE_BRIDGE_TIMEOUT_MS || raw.commandTimeoutMs || 30000,
     ),
     allowDev: process.env.AE_BRIDGE_ALLOW_DEV === '1' || raw.allowDev === true,
+    // Comp defaults + named presets for createComp. Korhan works at 25fps, not
+    // AE's own 30fps default — see docs/DEVLOG.md 2026-08-08.
+    defaults: {
+      width: raw.defaults?.width ?? 1920,
+      height: raw.defaults?.height ?? 1080,
+      frameRate: raw.defaults?.frameRate ?? 25,
+      duration: raw.defaults?.duration ?? 10,
+    },
+    presets: raw.presets || {},
     // Optional shared-secret for remote hosting. When set, the media + command
     // REST routes require it (Bearer header or ?token=). Leave null for local.
     token: process.env.AE_BRIDGE_TOKEN || raw.token || null,

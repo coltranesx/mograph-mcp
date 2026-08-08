@@ -62,6 +62,10 @@
     "test": "npm run build:jsx && node --test $(find controller/test shared/test simulator/test -name '*.test.js')",
     "e2e": "npm run build:jsx && node controller/test/e2e/run-e2e.js",
     "deploy:panel": "node panel/build/sign-and-deploy.mjs",
+    "service:install": "node tools/service.mjs install",
+    "service:uninstall": "node tools/service.mjs uninstall",
+    "service:status": "node tools/service.mjs status",
+    "service:restart": "node tools/service.mjs restart",
     "orchestrate": "node controller/src/orchestrator/demo.js",
     "orchestrate:fire": "node controller/src/orchestrator/demo-fire.js",
     "showreel": "node controller/src/orchestrator/demo-showcase.js"

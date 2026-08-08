@@ -61,7 +61,7 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.equal(comp.width, 1920);
       assert.equal(comp.height, 1080);
       assert.equal(comp.duration, 10);
-      assert.equal(comp.frameRate, 30);
+      assert.equal(comp.frameRate, 25);
     });
 
     it('fails without name', () => {

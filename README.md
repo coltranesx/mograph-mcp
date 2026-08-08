@@ -298,6 +298,12 @@ macOS specifics:
    ```bash
    npm run controller        # http://127.0.0.1:8787
    ```
+   On macOS you'd rather it survive terminal/session closes and reboots, run it
+   as a per-user LaunchAgent instead:
+   ```bash
+   npm run service:install    # loads it, logs to ~/Library/Logs/mograph-mcp/
+   npm run service:status     # or: npm run service:uninstall / service:restart
+   ```
 2. Launch After Effects.
 3. Open the panel: Window > Extensions > mograph-mcp. It dials the controller and the status dot goes green (`AE v26.x`).
 4. Open the UI at <http://127.0.0.1:8787>: buttons per command, a live event log, and a JSON response viewer.

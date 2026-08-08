@@ -1,0 +1,3146 @@
+{
+  "generatedAt": "2026-08-08T20:12:32.684Z",
+  "ae": {
+    "aeVersion": "26.3x87",
+    "buildName": "26.3x87",
+    "extendScript": "4.5.6",
+    "os": "Macintosh OS 26.6.1/64",
+    "locale": "en_US",
+    "language": "en_US",
+    "fontCount": 217,
+    "projectPath": null,
+    "numItems": 3,
+    "memoryInUseMB": 180,
+    "availableGPUAccelTypes": "1814,1816"
+  },
+  "count": 625,
+  "totalInstalled": 625,
+  "fonts": [
+    {
+      "postScriptName": "AcademyEngravedLetPlain",
+      "family": "Academy Engraved Let Plain",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AdobeClean-Regular",
+      "family": "Adobe Clean",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AdobeClean-It",
+      "family": "Adobe Clean",
+      "style": "It"
+    },
+    {
+      "postScriptName": "AdobeClean-Bold",
+      "family": "Adobe Clean",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AdobeClean-BoldIt",
+      "family": "Adobe Clean",
+      "style": "BoldIt"
+    },
+    {
+      "postScriptName": "AdobeCleanUX-Regular",
+      "family": "Adobe Clean UX",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AdobeCleanUX-It",
+      "family": "Adobe Clean UX",
+      "style": "It"
+    },
+    {
+      "postScriptName": "AdobeCleanUX-Bold",
+      "family": "Adobe Clean UX",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AdobeCleanUX-BoldIt",
+      "family": "Adobe Clean UX",
+      "style": "BoldIt"
+    },
+    {
+      "postScriptName": "AmericanTypewriter-CondensedLight",
+      "family": "American Typewriter",
+      "style": "CondensedLight"
+    },
+    {
+      "postScriptName": "AmericanTypewriter-Condensed",
+      "family": "American Typewriter",
+      "style": "Condensed"
+    },
+    {
+      "postScriptName": "AmericanTypewriter-CondensedBold",
+      "family": "American Typewriter",
+      "style": "CondensedBold"
+    },
+    {
+      "postScriptName": "AmericanTypewriter-Light",
+      "family": "American Typewriter",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "AmericanTypewriter",
+      "family": "American Typewriter",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AmericanTypewriter-Semibold",
+      "family": "American Typewriter",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "AmericanTypewriter-Bold",
+      "family": "American Typewriter",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AndaleMono",
+      "family": "Andale Mono",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AppleBraille-Outline6Dot",
+      "family": "Apple Braille",
+      "style": "Outline6Dot"
+    },
+    {
+      "postScriptName": "AppleBraille-Outline8Dot",
+      "family": "Apple Braille",
+      "style": "Outline8Dot"
+    },
+    {
+      "postScriptName": "AppleBraille-Pinpoint6Dot",
+      "family": "Apple Braille",
+      "style": "Pinpoint6Dot"
+    },
+    {
+      "postScriptName": "AppleBraille-Pinpoint8Dot",
+      "family": "Apple Braille",
+      "style": "Pinpoint8Dot"
+    },
+    {
+      "postScriptName": "AppleBraille",
+      "family": "Apple Braille",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Apple-Chancery",
+      "family": "Apple",
+      "style": "Chancery"
+    },
+    {
+      "postScriptName": "AppleSymbols",
+      "family": "Apple Symbols",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ArialMT",
+      "family": "Arial",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Arial-ItalicMT",
+      "family": "Arial",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Arial-BoldMT",
+      "family": "Arial",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Arial-BoldItalicMT",
+      "family": "Arial",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Arial-Black",
+      "family": "Arial",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "ArialNarrow",
+      "family": "Arial Narrow",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ArialNarrow-Italic",
+      "family": "Arial Narrow",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "ArialNarrow-Bold",
+      "family": "Arial Narrow",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "ArialNarrow-BoldItalic",
+      "family": "Arial Narrow",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "ArialRoundedMTBold",
+      "family": "Arial Rounded MTBold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Avenir-Light",
+      "family": "Avenir",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Avenir-LightOblique",
+      "family": "Avenir",
+      "style": "LightOblique"
+    },
+    {
+      "postScriptName": "Avenir-Book",
+      "family": "Avenir",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "Avenir-Roman",
+      "family": "Avenir",
+      "style": "Roman"
+    },
+    {
+      "postScriptName": "Avenir-BookOblique",
+      "family": "Avenir",
+      "style": "BookOblique"
+    },
+    {
+      "postScriptName": "Avenir-Oblique",
+      "family": "Avenir",
+      "style": "Oblique"
+    },
+    {
+      "postScriptName": "Avenir-Medium",
+      "family": "Avenir",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "Avenir-MediumOblique",
+      "family": "Avenir",
+      "style": "MediumOblique"
+    },
+    {
+      "postScriptName": "Avenir-Black",
+      "family": "Avenir",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Avenir-BlackOblique",
+      "family": "Avenir",
+      "style": "BlackOblique"
+    },
+    {
+      "postScriptName": "Avenir-Heavy",
+      "family": "Avenir",
+      "style": "Heavy"
+    },
+    {
+      "postScriptName": "Avenir-HeavyOblique",
+      "family": "Avenir",
+      "style": "HeavyOblique"
+    },
+    {
+      "postScriptName": "AvenirNext-UltraLight",
+      "family": "Avenir Next",
+      "style": "UltraLight"
+    },
+    {
+      "postScriptName": "AvenirNext-UltraLightItalic",
+      "family": "Avenir Next",
+      "style": "UltraLightItalic"
+    },
+    {
+      "postScriptName": "AvenirNext-Regular",
+      "family": "Avenir Next",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AvenirNext-Italic",
+      "family": "Avenir Next",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "AvenirNext-Medium",
+      "family": "Avenir Next",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "AvenirNext-MediumItalic",
+      "family": "Avenir Next",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "AvenirNext-DemiBold",
+      "family": "Avenir Next",
+      "style": "DemiBold"
+    },
+    {
+      "postScriptName": "AvenirNext-DemiBoldItalic",
+      "family": "Avenir Next",
+      "style": "DemiBoldItalic"
+    },
+    {
+      "postScriptName": "AvenirNext-Bold",
+      "family": "Avenir Next",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AvenirNext-BoldItalic",
+      "family": "Avenir Next",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "AvenirNext-Heavy",
+      "family": "Avenir Next",
+      "style": "Heavy"
+    },
+    {
+      "postScriptName": "AvenirNext-HeavyItalic",
+      "family": "Avenir Next",
+      "style": "HeavyItalic"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-UltraLight",
+      "family": "Avenir Next Condensed",
+      "style": "UltraLight"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-UltraLightItalic",
+      "family": "Avenir Next Condensed",
+      "style": "UltraLightItalic"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-Regular",
+      "family": "Avenir Next Condensed",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-Italic",
+      "family": "Avenir Next Condensed",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-Medium",
+      "family": "Avenir Next Condensed",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-MediumItalic",
+      "family": "Avenir Next Condensed",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-DemiBold",
+      "family": "Avenir Next Condensed",
+      "style": "DemiBold"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-DemiBoldItalic",
+      "family": "Avenir Next Condensed",
+      "style": "DemiBoldItalic"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-Bold",
+      "family": "Avenir Next Condensed",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-BoldItalic",
+      "family": "Avenir Next Condensed",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-Heavy",
+      "family": "Avenir Next Condensed",
+      "style": "Heavy"
+    },
+    {
+      "postScriptName": "AvenirNextCondensed-HeavyItalic",
+      "family": "Avenir Next Condensed",
+      "style": "HeavyItalic"
+    },
+    {
+      "postScriptName": "Axiforma-Thin",
+      "family": "Axiforma",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "Axiforma-ThinItalic",
+      "family": "Axiforma",
+      "style": "ThinItalic"
+    },
+    {
+      "postScriptName": "Axiforma-Book",
+      "family": "Axiforma",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "Axiforma-Light",
+      "family": "Axiforma",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Axiforma-BookItalic",
+      "family": "Axiforma",
+      "style": "BookItalic"
+    },
+    {
+      "postScriptName": "Axiforma-LightItalic",
+      "family": "Axiforma",
+      "style": "LightItalic"
+    },
+    {
+      "postScriptName": "Axiforma-Regular",
+      "family": "Axiforma",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Axiforma-Italic",
+      "family": "Axiforma",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Axiforma-Medium",
+      "family": "Axiforma",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "Axiforma-MediumItalic",
+      "family": "Axiforma",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "Axiforma-SemiBold",
+      "family": "Axiforma",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "Axiforma-SemiBoldItalic",
+      "family": "Axiforma",
+      "style": "SemiBoldItalic"
+    },
+    {
+      "postScriptName": "Axiforma-Bold",
+      "family": "Axiforma",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Axiforma-BoldItalic",
+      "family": "Axiforma",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Axiforma-ExtraBold",
+      "family": "Axiforma",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "Axiforma-ExtraBoldItalic",
+      "family": "Axiforma",
+      "style": "ExtraBoldItalic"
+    },
+    {
+      "postScriptName": "Axiforma-Black",
+      "family": "Axiforma",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Axiforma-BlackItalic",
+      "family": "Axiforma",
+      "style": "BlackItalic"
+    },
+    {
+      "postScriptName": "Axiforma-Heavy",
+      "family": "Axiforma",
+      "style": "Heavy"
+    },
+    {
+      "postScriptName": "Axiforma-HeavyItalic",
+      "family": "Axiforma",
+      "style": "HeavyItalic"
+    },
+    {
+      "postScriptName": "Ayuthaya",
+      "family": "Ayuthaya",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Baskerville",
+      "family": "Baskerville",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Baskerville-Italic",
+      "family": "Baskerville",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Baskerville-SemiBold",
+      "family": "Baskerville",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "Baskerville-SemiBoldItalic",
+      "family": "Baskerville",
+      "style": "SemiBoldItalic"
+    },
+    {
+      "postScriptName": "Baskerville-Bold",
+      "family": "Baskerville",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Baskerville-BoldItalic",
+      "family": "Baskerville",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "BebasNeue",
+      "family": "Bebas Neue",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "BigCaslon-Medium",
+      "family": "Big Caslon",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoITCTT-Book",
+      "family": "Bodoni Svty Two ITCTT",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoITCTT-BookIta",
+      "family": "Bodoni Svty Two ITCTT",
+      "style": "BookIta"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoITCTT-Bold",
+      "family": "Bodoni Svty Two ITCTT",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoOSITCTT-Book",
+      "family": "Bodoni Svty Two OSITCTT",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoOSITCTT-BookIt",
+      "family": "Bodoni Svty Two OSITCTT",
+      "style": "BookIt"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoOSITCTT-Bold",
+      "family": "Bodoni Svty Two OSITCTT",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "BodoniSvtyTwoSCITCTT-Book",
+      "family": "Bodoni Svty Two SCITCTT",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "BodoniOrnamentsITCTT",
+      "family": "Bodoni Ornaments ITCTT",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "BradleyHandITCTT-Bold",
+      "family": "Bradley Hand ITCTT",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "BrushScriptMT",
+      "family": "Brush Script",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "CenturyGothicPro-BoldItalic",
+      "family": "Century Gothic Pro",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Chalkboard",
+      "family": "Chalkboard",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Chalkboard-Bold",
+      "family": "Chalkboard",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "ChalkboardSE-Light",
+      "family": "Chalkboard SE",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "ChalkboardSE-Regular",
+      "family": "Chalkboard SE",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ChalkboardSE-Bold",
+      "family": "Chalkboard SE",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Chalkduster",
+      "family": "Chalkduster",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Charter-Roman",
+      "family": "Charter",
+      "style": "Roman"
+    },
+    {
+      "postScriptName": "Charter-Italic",
+      "family": "Charter",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Charter-Bold",
+      "family": "Charter",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Charter-BoldItalic",
+      "family": "Charter",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Charter-Black",
+      "family": "Charter",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Charter-BlackItalic",
+      "family": "Charter",
+      "style": "BlackItalic"
+    },
+    {
+      "postScriptName": "Cochin",
+      "family": "Cochin",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Cochin-Italic",
+      "family": "Cochin",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Cochin-Bold",
+      "family": "Cochin",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Cochin-BoldItalic",
+      "family": "Cochin",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "ComicSansMS",
+      "family": "Comic Sans MS",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ComicSansMS-Bold",
+      "family": "Comic Sans MS",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Copperplate-Light",
+      "family": "Copperplate",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Copperplate",
+      "family": "Copperplate",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Copperplate-Bold",
+      "family": "Copperplate",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "CourierNewPSMT",
+      "family": "Courier New",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "CourierNewPS-ItalicMT",
+      "family": "Courier New",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "CourierNewPS-BoldMT",
+      "family": "Courier New",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "CourierNewPS-BoldItalicMT",
+      "family": "Courier New",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Didot",
+      "family": "Didot",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Didot-Italic",
+      "family": "Didot",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Didot-Bold",
+      "family": "Didot",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "DINAlternate-Bold",
+      "family": "DINAlternate",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "DINCondensed-Bold",
+      "family": "DINCondensed",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "EuphemiaUCAS",
+      "family": "Euphemia UCAS",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "EuphemiaUCAS-Italic",
+      "family": "Euphemia UCAS",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "EuphemiaUCAS-Bold",
+      "family": "Euphemia UCAS",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Fagun-Bold",
+      "family": "Fagun",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "FatFrank-Heavy",
+      "family": "Fat Frank",
+      "style": "Heavy"
+    },
+    {
+      "postScriptName": "Futura-CondensedMedium",
+      "family": "Futura",
+      "style": "CondensedMedium"
+    },
+    {
+      "postScriptName": "Futura-CondensedExtraBold",
+      "family": "Futura",
+      "style": "CondensedExtraBold"
+    },
+    {
+      "postScriptName": "Futura-Medium",
+      "family": "Futura",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "Futura-MediumItalic",
+      "family": "Futura",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "Futura-Bold",
+      "family": "Futura",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Galvji",
+      "family": "Galvji",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Galvji-Oblique",
+      "family": "Galvji",
+      "style": "Oblique"
+    },
+    {
+      "postScriptName": "Galvji-Bold",
+      "family": "Galvji",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Galvji-BoldOblique",
+      "family": "Galvji",
+      "style": "BoldOblique"
+    },
+    {
+      "postScriptName": "Geneva",
+      "family": "Geneva",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GeomGraphic-Regular",
+      "family": "Geom Graphic",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GeomGraphic-SemiBold",
+      "family": "Geom Graphic",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "GeomGraphic-Bold",
+      "family": "Geom Graphic",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Georgia",
+      "family": "Georgia",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Georgia-Italic",
+      "family": "Georgia",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Georgia-Bold",
+      "family": "Georgia",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Georgia-BoldItalic",
+      "family": "Georgia",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "GillSans-Light",
+      "family": "Gill Sans",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "GillSans-LightItalic",
+      "family": "Gill Sans",
+      "style": "LightItalic"
+    },
+    {
+      "postScriptName": "GillSans",
+      "family": "Gill Sans",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GillSans-Italic",
+      "family": "Gill Sans",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "GillSans-SemiBold",
+      "family": "Gill Sans",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "GillSans-SemiBoldItalic",
+      "family": "Gill Sans",
+      "style": "SemiBoldItalic"
+    },
+    {
+      "postScriptName": "GillSans-Bold",
+      "family": "Gill Sans",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "GillSans-BoldItalic",
+      "family": "Gill Sans",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "GillSans-UltraBold",
+      "family": "Gill Sans",
+      "style": "UltraBold"
+    },
+    {
+      "postScriptName": "GranthaSangamMN-Regular",
+      "family": "Grantha Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GranthaSangamMN-Bold",
+      "family": "Grantha Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Graphik-Thin",
+      "family": "Graphik",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "Graphik-ThinItalic",
+      "family": "Graphik",
+      "style": "ThinItalic"
+    },
+    {
+      "postScriptName": "Graphik-Extralight",
+      "family": "Graphik",
+      "style": "Extralight"
+    },
+    {
+      "postScriptName": "Graphik-ExtralightItalic",
+      "family": "Graphik",
+      "style": "ExtralightItalic"
+    },
+    {
+      "postScriptName": "Graphik-Light",
+      "family": "Graphik",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Graphik-LightItalic",
+      "family": "Graphik",
+      "style": "LightItalic"
+    },
+    {
+      "postScriptName": "Graphik-Regular",
+      "family": "Graphik",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Graphik-RegularItalic",
+      "family": "Graphik",
+      "style": "RegularItalic"
+    },
+    {
+      "postScriptName": "Graphik-Medium",
+      "family": "Graphik",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "Graphik-MediumItalic",
+      "family": "Graphik",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "Graphik-Semibold",
+      "family": "Graphik",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "Graphik-SemiboldItalic",
+      "family": "Graphik",
+      "style": "SemiboldItalic"
+    },
+    {
+      "postScriptName": "Graphik-Bold",
+      "family": "Graphik",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Graphik-BoldItalic",
+      "family": "Graphik",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Graphik-Black",
+      "family": "Graphik",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Graphik-BlackItalic",
+      "family": "Graphik",
+      "style": "BlackItalic"
+    },
+    {
+      "postScriptName": "Graphik-Super",
+      "family": "Graphik",
+      "style": "Super"
+    },
+    {
+      "postScriptName": "Graphik-SuperItalic",
+      "family": "Graphik",
+      "style": "SuperItalic"
+    },
+    {
+      "postScriptName": "Helvetica-Light",
+      "family": "Helvetica",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Helvetica-LightOblique",
+      "family": "Helvetica",
+      "style": "LightOblique"
+    },
+    {
+      "postScriptName": "Helvetica",
+      "family": "Helvetica",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Helvetica-Oblique",
+      "family": "Helvetica",
+      "style": "Oblique"
+    },
+    {
+      "postScriptName": "Helvetica-Bold",
+      "family": "Helvetica",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Helvetica-BoldOblique",
+      "family": "Helvetica",
+      "style": "BoldOblique"
+    },
+    {
+      "postScriptName": "HelveticaNeue-CondensedBold",
+      "family": "Helvetica Neue",
+      "style": "CondensedBold"
+    },
+    {
+      "postScriptName": "HelveticaNeue-CondensedBlack",
+      "family": "Helvetica Neue",
+      "style": "CondensedBlack"
+    },
+    {
+      "postScriptName": "HelveticaNeue-UltraLight",
+      "family": "Helvetica Neue",
+      "style": "UltraLight"
+    },
+    {
+      "postScriptName": "HelveticaNeue-UltraLightItalic",
+      "family": "Helvetica Neue",
+      "style": "UltraLightItalic"
+    },
+    {
+      "postScriptName": "HelveticaNeue-Thin",
+      "family": "Helvetica Neue",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "HelveticaNeue-ThinItalic",
+      "family": "Helvetica Neue",
+      "style": "ThinItalic"
+    },
+    {
+      "postScriptName": "HelveticaNeue-Light",
+      "family": "Helvetica Neue",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "HelveticaNeue-LightItalic",
+      "family": "Helvetica Neue",
+      "style": "LightItalic"
+    },
+    {
+      "postScriptName": "HelveticaNeue",
+      "family": "Helvetica Neue",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "HelveticaNeue-Italic",
+      "family": "Helvetica Neue",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "HelveticaNeue-Medium",
+      "family": "Helvetica Neue",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "HelveticaNeue-MediumItalic",
+      "family": "Helvetica Neue",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "HelveticaNeue-Bold",
+      "family": "Helvetica Neue",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "HelveticaNeue-BoldItalic",
+      "family": "Helvetica Neue",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Herculanum",
+      "family": "Herculanum",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "HoeflerText-Ornaments",
+      "family": "Hoefler Text",
+      "style": "Ornaments"
+    },
+    {
+      "postScriptName": "HoeflerText-Regular",
+      "family": "Hoefler Text",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "HoeflerText-Italic",
+      "family": "Hoefler Text",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "HoeflerText-Black",
+      "family": "Hoefler Text",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "HoeflerText-BlackItalic",
+      "family": "Hoefler Text",
+      "style": "BlackItalic"
+    },
+    {
+      "postScriptName": "Impact",
+      "family": "Impact",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Kailasa-Bold",
+      "family": "Kailasa",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Kailasa",
+      "family": "Kailasa",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Kanit-Regular",
+      "family": "Kanit",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Kanit-ExtraBold",
+      "family": "Kanit",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "KefaIII-Light",
+      "family": "Kefa III",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "KefaIII-Regular",
+      "family": "Kefa III",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KefaIII-Bold",
+      "family": "Kefa III",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KefaIII-ExtraBold",
+      "family": "Kefa III",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "KohinoorBangla-Light",
+      "family": "Kohinoor Bangla",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "KohinoorBangla-Regular",
+      "family": "Kohinoor Bangla",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KohinoorBangla-Medium",
+      "family": "Kohinoor Bangla",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "KohinoorBangla-Semibold",
+      "family": "Kohinoor Bangla",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "KohinoorBangla-Bold",
+      "family": "Kohinoor Bangla",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KohinoorDevanagari-Light",
+      "family": "Kohinoor Devanagari",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "KohinoorDevanagari-Regular",
+      "family": "Kohinoor Devanagari",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KohinoorDevanagari-Medium",
+      "family": "Kohinoor Devanagari",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "KohinoorDevanagari-Semibold",
+      "family": "Kohinoor Devanagari",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "KohinoorDevanagari-Bold",
+      "family": "Kohinoor Devanagari",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KohinoorTelugu-Light",
+      "family": "Kohinoor Telugu",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "KohinoorTelugu-Regular",
+      "family": "Kohinoor Telugu",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KohinoorTelugu-Medium",
+      "family": "Kohinoor Telugu",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "KohinoorTelugu-Semibold",
+      "family": "Kohinoor Telugu",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "KohinoorTelugu-Bold",
+      "family": "Kohinoor Telugu",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Kokonor",
+      "family": "Kokonor",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Krungthep",
+      "family": "Krungthep",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Lato-Regular",
+      "family": "Lato",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Lato-Bold",
+      "family": "Lato",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Lato-Black",
+      "family": "Lato",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "LindseySignature",
+      "family": "Lindsey Signature",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "LucidaGrande",
+      "family": "Lucida Grande",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "LucidaGrande-Bold",
+      "family": "Lucida Grande",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Luminari-Regular",
+      "family": "Luminari",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MarkerFelt-Thin",
+      "family": "Marker Felt",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "MarkerFelt-Wide",
+      "family": "Marker Felt",
+      "style": "Wide"
+    },
+    {
+      "postScriptName": "Menlo-Regular",
+      "family": "Menlo",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Menlo-Italic",
+      "family": "Menlo",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Menlo-Bold",
+      "family": "Menlo",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Menlo-BoldItalic",
+      "family": "Menlo",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "MicrosoftSansSerif",
+      "family": "Microsoft Sans Serif",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MinionPro-Regular",
+      "family": "Minion Pro",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Monaco",
+      "family": "Monaco",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Montserrat-Light",
+      "family": "Montserrat",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Montserrat-Regular",
+      "family": "Montserrat",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Montserrat-Medium",
+      "family": "Montserrat",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "Montserrat-SemiBold",
+      "family": "Montserrat",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "Montserrat-Bold",
+      "family": "Montserrat",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Montserrat-ExtraBold",
+      "family": "Montserrat",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "Montserrat-Black",
+      "family": "Montserrat",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Mshtakan",
+      "family": "Mshtakan",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MshtakanOblique",
+      "family": "Mshtakan Oblique",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MshtakanBold",
+      "family": "Mshtakan Bold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MshtakanBoldOblique",
+      "family": "Mshtakan Bold Oblique",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MuktaMahee-ExtraLight",
+      "family": "Mukta Mahee",
+      "style": "ExtraLight"
+    },
+    {
+      "postScriptName": "MuktaMahee-Light",
+      "family": "Mukta Mahee",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "MuktaMahee-Regular",
+      "family": "Mukta Mahee",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MuktaMahee-Medium",
+      "family": "Mukta Mahee",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "MuktaMahee-SemiBold",
+      "family": "Mukta Mahee",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "MuktaMahee-Bold",
+      "family": "Mukta Mahee",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "MuktaMahee-ExtraBold",
+      "family": "Mukta Mahee",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "MyriadPro-Regular",
+      "family": "Myriad Pro",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MyriadPro-SemiExt",
+      "family": "Myriad Pro",
+      "style": "SemiExt"
+    },
+    {
+      "postScriptName": "Noteworthy-Light",
+      "family": "Noteworthy",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Noteworthy-Bold",
+      "family": "Noteworthy",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NotoSansBatak-Regular",
+      "family": "Noto Sans Batak",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansNKo-Regular",
+      "family": "Noto Sans NKo",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-Thin",
+      "family": "Noto Sans Syriac",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-ExtraLight",
+      "family": "Noto Sans Syriac",
+      "style": "ExtraLight"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-Light",
+      "family": "Noto Sans Syriac",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-Regular",
+      "family": "Noto Sans Syriac",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-Medium",
+      "family": "Noto Sans Syriac",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-SemiBold",
+      "family": "Noto Sans Syriac",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-Bold",
+      "family": "Noto Sans Syriac",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-ExtraBold",
+      "family": "Noto Sans Syriac",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "NotoSansSyriac-Black",
+      "family": "Noto Sans Syriac",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "NotoSansTagalog-Regular",
+      "family": "Noto Sans Tagalog",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "OpenSans",
+      "family": "Open Sans",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Optima-Regular",
+      "family": "Optima",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Optima-Italic",
+      "family": "Optima",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Optima-Bold",
+      "family": "Optima",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Optima-BoldItalic",
+      "family": "Optima",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Optima-ExtraBlack",
+      "family": "Optima",
+      "style": "ExtraBlack"
+    },
+    {
+      "postScriptName": "Palatino-Roman",
+      "family": "Palatino",
+      "style": "Roman"
+    },
+    {
+      "postScriptName": "Palatino-Italic",
+      "family": "Palatino",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Palatino-Bold",
+      "family": "Palatino",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Palatino-BoldItalic",
+      "family": "Palatino",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Papyrus-Condensed",
+      "family": "Papyrus",
+      "style": "Condensed"
+    },
+    {
+      "postScriptName": "Papyrus",
+      "family": "Papyrus",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PartyLetPlain",
+      "family": "Party Let Plain",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PeckhamPress-Regular",
+      "family": "Peckham Press",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Phosphate-Inline",
+      "family": "Phosphate",
+      "style": "Inline"
+    },
+    {
+      "postScriptName": "Phosphate-Solid",
+      "family": "Phosphate",
+      "style": "Solid"
+    },
+    {
+      "postScriptName": "PingFangHK-Medium",
+      "family": "Ping Fang HK",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "PingFangMO-Medium",
+      "family": "Ping Fang MO",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "PingFangSC-Medium",
+      "family": "Ping Fang SC",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "PingFangTC-Medium",
+      "family": "Ping Fang TC",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "PlantagenetCherokee",
+      "family": "Plantagenet Cherokee",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PTMono-Regular",
+      "family": "PTMono",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PTMono-Bold",
+      "family": "PTMono",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "PTSans-Regular",
+      "family": "PTSans",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PTSans-Italic",
+      "family": "PTSans",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "PTSans-Bold",
+      "family": "PTSans",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "PTSans-BoldItalic",
+      "family": "PTSans",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "PTSans-Caption",
+      "family": "PTSans",
+      "style": "Caption"
+    },
+    {
+      "postScriptName": "PTSans-CaptionBold",
+      "family": "PTSans",
+      "style": "CaptionBold"
+    },
+    {
+      "postScriptName": "PTSans-Narrow",
+      "family": "PTSans",
+      "style": "Narrow"
+    },
+    {
+      "postScriptName": "PTSans-NarrowBold",
+      "family": "PTSans",
+      "style": "NarrowBold"
+    },
+    {
+      "postScriptName": "PTSerif-Regular",
+      "family": "PTSerif",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PTSerif-Italic",
+      "family": "PTSerif",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "PTSerif-Bold",
+      "family": "PTSerif",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "PTSerif-BoldItalic",
+      "family": "PTSerif",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "PTSerif-Caption",
+      "family": "PTSerif",
+      "style": "Caption"
+    },
+    {
+      "postScriptName": "PTSerif-CaptionItalic",
+      "family": "PTSerif",
+      "style": "CaptionItalic"
+    },
+    {
+      "postScriptName": "Roboto-Thin",
+      "family": "Roboto",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "Roboto-ThinItalic",
+      "family": "Roboto",
+      "style": "ThinItalic"
+    },
+    {
+      "postScriptName": "Roboto-Light",
+      "family": "Roboto",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Roboto-LightItalic",
+      "family": "Roboto",
+      "style": "LightItalic"
+    },
+    {
+      "postScriptName": "Roboto-Regular",
+      "family": "Roboto",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Roboto-Italic",
+      "family": "Roboto",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Roboto-Medium",
+      "family": "Roboto",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "Roboto-MediumItalic",
+      "family": "Roboto",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "Roboto-Bold",
+      "family": "Roboto",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Roboto-BoldItalic",
+      "family": "Roboto",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Roboto-Black",
+      "family": "Roboto",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Roboto-BlackItalic",
+      "family": "Roboto",
+      "style": "BlackItalic"
+    },
+    {
+      "postScriptName": "Rockwell-Regular",
+      "family": "Rockwell",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Rockwell-Italic",
+      "family": "Rockwell",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Rockwell-Bold",
+      "family": "Rockwell",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Rockwell-BoldItalic",
+      "family": "Rockwell",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Rubik-Black",
+      "family": "Rubik",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Sathu",
+      "family": "Sathu",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "SavoyeLetPlain",
+      "family": "Savoye Let Plain",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ShreeDev0714",
+      "family": "Shree Dev0714",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ShreeDev0714-Italic",
+      "family": "Shree Dev0714",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "ShreeDev0714-Bold",
+      "family": "Shree Dev0714",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "ShreeDev0714-BoldItalic",
+      "family": "Shree Dev0714",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "SignPainter-HouseScript",
+      "family": "Sign Painter",
+      "style": "HouseScript"
+    },
+    {
+      "postScriptName": "SignPainter-HouseScriptSemibold",
+      "family": "Sign Painter",
+      "style": "HouseScriptSemibold"
+    },
+    {
+      "postScriptName": "Silom",
+      "family": "Silom",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Skia-Black",
+      "family": "Skia",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Skia-Extended",
+      "family": "Skia",
+      "style": "Extended"
+    },
+    {
+      "postScriptName": "Skia-Condensed",
+      "family": "Skia",
+      "style": "Condensed"
+    },
+    {
+      "postScriptName": "Skia-Light",
+      "family": "Skia",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Skia-Regular",
+      "family": "Skia",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Skia-BlackExtended",
+      "family": "Skia",
+      "style": "BlackExtended"
+    },
+    {
+      "postScriptName": "Skia-LightExtended",
+      "family": "Skia",
+      "style": "LightExtended"
+    },
+    {
+      "postScriptName": "Skia-BlackCondensed",
+      "family": "Skia",
+      "style": "BlackCondensed"
+    },
+    {
+      "postScriptName": "Skia-LightCondensed",
+      "family": "Skia",
+      "style": "LightCondensed"
+    },
+    {
+      "postScriptName": "Skia-Bold",
+      "family": "Skia",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "SnellRoundhand",
+      "family": "Snell Roundhand",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "SnellRoundhand-Bold",
+      "family": "Snell Roundhand",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "SnellRoundhand-Black",
+      "family": "Snell Roundhand",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "SourceCodePro-Regular",
+      "family": "Source Code Pro",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "SourceCodePro-It",
+      "family": "Source Code Pro",
+      "style": "It"
+    },
+    {
+      "postScriptName": "SourceCodePro-Bold",
+      "family": "Source Code Pro",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "SourceCodePro-BoldIt",
+      "family": "Source Code Pro",
+      "style": "BoldIt"
+    },
+    {
+      "postScriptName": "SourceSans3-Regular",
+      "family": "Source Sans3",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STIXTwoMath-Regular",
+      "family": "STIXTwo Math",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STIXTwoText",
+      "family": "STIXTwo Text",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STIXTwoTextRoman-Medium",
+      "family": "STIXTwo Text Roman",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "STIXTwoTextRoman-SemiBold",
+      "family": "STIXTwo Text Roman",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "STIXTwoTextRoman-Bold",
+      "family": "STIXTwo Text Roman",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "STIXTwoText-Italic",
+      "family": "STIXTwo Text",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "STIXTwoTextItalic-MediumItalic",
+      "family": "STIXTwo Text Italic",
+      "style": "MediumItalic"
+    },
+    {
+      "postScriptName": "STIXTwoTextItalic-SemiBoldItalic",
+      "family": "STIXTwo Text Italic",
+      "style": "SemiBoldItalic"
+    },
+    {
+      "postScriptName": "STIXTwoTextItalic-BoldItalic",
+      "family": "STIXTwo Text Italic",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "SukhumvitSet-Thin",
+      "family": "Sukhumvit Set",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "SukhumvitSet-Light",
+      "family": "Sukhumvit Set",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "SukhumvitSet-Text",
+      "family": "Sukhumvit Set",
+      "style": "Text"
+    },
+    {
+      "postScriptName": "SukhumvitSet-Medium",
+      "family": "Sukhumvit Set",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "SukhumvitSet-SemiBold",
+      "family": "Sukhumvit Set",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "SukhumvitSet-Bold",
+      "family": "Sukhumvit Set",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Symbol",
+      "family": "Symbol",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Tahoma",
+      "family": "Tahoma",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Tahoma-Bold",
+      "family": "Tahoma",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TamilSangamMN",
+      "family": "Tamil Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "TamilSangamMN-Bold",
+      "family": "Tamil Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Thonburi-Light",
+      "family": "Thonburi",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "Thonburi",
+      "family": "Thonburi",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Thonburi-Bold",
+      "family": "Thonburi",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TimesNewRomanPSMT",
+      "family": "Times New Roman",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "TimesNewRomanPS-ItalicMT",
+      "family": "Times New Roman",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "TimesNewRomanPS-BoldMT",
+      "family": "Times New Roman",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TimesNewRomanPS-BoldItalicMT",
+      "family": "Times New Roman",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Transducer-CondensedBold",
+      "family": "Transducer",
+      "style": "CondensedBold"
+    },
+    {
+      "postScriptName": "Trattatello",
+      "family": "Trattatello",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "TrebuchetMS",
+      "family": "Trebuchet MS",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "TrebuchetMS-Italic",
+      "family": "Trebuchet MS",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "TrebuchetMS-Bold",
+      "family": "Trebuchet MS",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Trebuchet-BoldItalic",
+      "family": "Trebuchet",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Unbounded-Black",
+      "family": "Unbounded",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "Verdana",
+      "family": "Verdana",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Verdana-Italic",
+      "family": "Verdana",
+      "style": "Italic"
+    },
+    {
+      "postScriptName": "Verdana-Bold",
+      "family": "Verdana",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Verdana-BoldItalic",
+      "family": "Verdana",
+      "style": "BoldItalic"
+    },
+    {
+      "postScriptName": "Webdings",
+      "family": "Webdings",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Westsac",
+      "family": "Westsac",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Wingdings-Regular",
+      "family": "Wingdings",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Wingdings2",
+      "family": "Wingdings2",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Wingdings3",
+      "family": "Wingdings3",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ZapfDingbatsITC",
+      "family": "Zapf Dingbats ITC",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Zapfino",
+      "family": "Zapfino",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "HiraMaruProN-W4",
+      "family": "Hira Maru Pro N",
+      "style": "W4"
+    },
+    {
+      "postScriptName": "HiraMinProN-W3",
+      "family": "Hira Min Pro N",
+      "style": "W3"
+    },
+    {
+      "postScriptName": "HiraMinProN-W6",
+      "family": "Hira Min Pro N",
+      "style": "W6"
+    },
+    {
+      "postScriptName": "HiraginoSans-W0",
+      "family": "Hiragino Sans",
+      "style": "W0"
+    },
+    {
+      "postScriptName": "HiraginoSans-W1",
+      "family": "Hiragino Sans",
+      "style": "W1"
+    },
+    {
+      "postScriptName": "HiraginoSans-W2",
+      "family": "Hiragino Sans",
+      "style": "W2"
+    },
+    {
+      "postScriptName": "HiraginoSans-W3",
+      "family": "Hiragino Sans",
+      "style": "W3"
+    },
+    {
+      "postScriptName": "HiraginoSans-W4",
+      "family": "Hiragino Sans",
+      "style": "W4"
+    },
+    {
+      "postScriptName": "HiraginoSans-W5",
+      "family": "Hiragino Sans",
+      "style": "W5"
+    },
+    {
+      "postScriptName": "HiraginoSans-W6",
+      "family": "Hiragino Sans",
+      "style": "W6"
+    },
+    {
+      "postScriptName": "HiraginoSans-W7",
+      "family": "Hiragino Sans",
+      "style": "W7"
+    },
+    {
+      "postScriptName": "HiraginoSans-W8",
+      "family": "Hiragino Sans",
+      "style": "W8"
+    },
+    {
+      "postScriptName": "HiraginoSans-W9",
+      "family": "Hiragino Sans",
+      "style": "W9"
+    },
+    {
+      "postScriptName": "KozGoPr6N-Regular",
+      "family": "Koz Go Pr6N",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STHeitiTC-Light",
+      "family": "STHeiti TC",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "STHeitiTC-Medium",
+      "family": "STHeiti TC",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "PingFangHK-Ultralight",
+      "family": "Ping Fang HK",
+      "style": "Ultralight"
+    },
+    {
+      "postScriptName": "PingFangHK-Thin",
+      "family": "Ping Fang HK",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "PingFangHK-Light",
+      "family": "Ping Fang HK",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "PingFangHK-Regular",
+      "family": "Ping Fang HK",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PingFangHK-Semibold",
+      "family": "Ping Fang HK",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "PingFangMO-Ultralight",
+      "family": "Ping Fang MO",
+      "style": "Ultralight"
+    },
+    {
+      "postScriptName": "PingFangMO-Thin",
+      "family": "Ping Fang MO",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "PingFangMO-Light",
+      "family": "Ping Fang MO",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "PingFangMO-Regular",
+      "family": "Ping Fang MO",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PingFangMO-Semibold",
+      "family": "Ping Fang MO",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "PingFangTC-Ultralight",
+      "family": "Ping Fang TC",
+      "style": "Ultralight"
+    },
+    {
+      "postScriptName": "PingFangTC-Thin",
+      "family": "Ping Fang TC",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "PingFangTC-Light",
+      "family": "Ping Fang TC",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "PingFangTC-Regular",
+      "family": "Ping Fang TC",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PingFangTC-Semibold",
+      "family": "Ping Fang TC",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-Thin",
+      "family": "Apple SDGothic Neo",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-UltraLight",
+      "family": "Apple SDGothic Neo",
+      "style": "UltraLight"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-Light",
+      "family": "Apple SDGothic Neo",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-Regular",
+      "family": "Apple SDGothic Neo",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-Medium",
+      "family": "Apple SDGothic Neo",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-SemiBold",
+      "family": "Apple SDGothic Neo",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-Bold",
+      "family": "Apple SDGothic Neo",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-ExtraBold",
+      "family": "Apple SDGothic Neo",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "AppleSDGothicNeo-Heavy",
+      "family": "Apple SDGothic Neo",
+      "style": "Heavy"
+    },
+    {
+      "postScriptName": "AppleGothic",
+      "family": "Apple Gothic",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AppleMyungjo",
+      "family": "Apple Myungjo",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ArialUnicodeMS",
+      "family": "Arial Unicode MS",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AdobeArabic-Bold",
+      "family": "Adobe Arabic",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AlBayan",
+      "family": "Al Bayan",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AlBayan-Bold",
+      "family": "Al Bayan",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AlNile",
+      "family": "Al Nile",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AlNile-Bold",
+      "family": "Al Nile",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "AlTarikh",
+      "family": "Al Tarikh",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Baghdad",
+      "family": "Baghdad",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Beirut",
+      "family": "Beirut",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Damascus",
+      "family": "Damascus",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DamascusLight",
+      "family": "Damascus Light",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DamascusMedium",
+      "family": "Damascus Medium",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DamascusSemiBold",
+      "family": "Damascus Semi Bold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DamascusBold",
+      "family": "Damascus Bold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DecoTypeNaskh",
+      "family": "Deco Type Naskh",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DiwanKufi",
+      "family": "Diwan Kufi",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DiwanThuluth",
+      "family": "Diwan Thuluth",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Farah",
+      "family": "Farah",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Farisi",
+      "family": "Farisi",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GeezaPro",
+      "family": "Geeza Pro",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GeezaPro-Bold",
+      "family": "Geeza Pro",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KufiStandardGK",
+      "family": "Kufi Standard GK",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DiwanMishafi",
+      "family": "Diwan Mishafi",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DiwanMishafiGold",
+      "family": "Diwan Mishafi Gold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Muna",
+      "family": "Muna",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MunaBold",
+      "family": "Muna Bold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MunaBlack",
+      "family": "Muna Black",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Nadeem",
+      "family": "Nadeem",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoNastaliqUrdu",
+      "family": "Noto Nastaliq Urdu",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoNastaliqUrdu-Bold",
+      "family": "Noto Nastaliq Urdu",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "Sana",
+      "family": "Sana",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "WaseemLight",
+      "family": "Waseem Light",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Waseem",
+      "family": "Waseem",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ArialHebrew-Light",
+      "family": "Arial Hebrew",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "ArialHebrew",
+      "family": "Arial Hebrew",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ArialHebrew-Bold",
+      "family": "Arial Hebrew",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "ArialHebrewScholar-Light",
+      "family": "Arial Hebrew Scholar",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "ArialHebrewScholar",
+      "family": "Arial Hebrew Scholar",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "ArialHebrewScholar-Bold",
+      "family": "Arial Hebrew Scholar",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "CorsivaHebrew-Bold",
+      "family": "Corsiva Hebrew",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "CorsivaHebrew",
+      "family": "Corsiva Hebrew",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NewPeninimMT-Bold",
+      "family": "New Peninim",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NewPeninimMT",
+      "family": "New Peninim",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NewPeninimMT-BoldInclined",
+      "family": "New Peninim",
+      "style": "BoldInclined"
+    },
+    {
+      "postScriptName": "NewPeninimMT-Inclined",
+      "family": "New Peninim",
+      "style": "Inclined"
+    },
+    {
+      "postScriptName": "RaananaBold",
+      "family": "Raanana Bold",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "Raanana",
+      "family": "Raanana",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DevanagariMT",
+      "family": "Devanagari",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DevanagariMT-Bold",
+      "family": "Devanagari",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "DevanagariSangamMN",
+      "family": "Devanagari Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "DevanagariSangamMN-Bold",
+      "family": "Devanagari Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "ITFDevanagari-Light",
+      "family": "ITFDevanagari",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "ITFDevanagari-Book",
+      "family": "ITFDevanagari",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "ITFDevanagari-Medium",
+      "family": "ITFDevanagari",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "ITFDevanagari-Demi",
+      "family": "ITFDevanagari",
+      "style": "Demi"
+    },
+    {
+      "postScriptName": "ITFDevanagari-Bold",
+      "family": "ITFDevanagari",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "ITFDevanagariMarathi-Light",
+      "family": "ITFDevanagari Marathi",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "ITFDevanagariMarathi-Book",
+      "family": "ITFDevanagari Marathi",
+      "style": "Book"
+    },
+    {
+      "postScriptName": "ITFDevanagariMarathi-Medium",
+      "family": "ITFDevanagari Marathi",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "ITFDevanagariMarathi-Demi",
+      "family": "ITFDevanagari Marathi",
+      "style": "Demi"
+    },
+    {
+      "postScriptName": "ITFDevanagariMarathi-Bold",
+      "family": "ITFDevanagari Marathi",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "GurmukhiMN",
+      "family": "Gurmukhi MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GurmukhiMN-Bold",
+      "family": "Gurmukhi MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "MonotypeGurmukhi",
+      "family": "Monotype Gurmukhi",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GurmukhiSangamMN",
+      "family": "Gurmukhi Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GurmukhiSangamMN-Bold",
+      "family": "Gurmukhi Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "GujaratiMT",
+      "family": "Gujarati",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GujaratiMT-Bold",
+      "family": "Gujarati",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "GujaratiSangamMN",
+      "family": "Gujarati Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "GujaratiSangamMN-Bold",
+      "family": "Gujarati Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KohinoorGujarati-Light",
+      "family": "Kohinoor Gujarati",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "KohinoorGujarati-Regular",
+      "family": "Kohinoor Gujarati",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KohinoorGujarati-Medium",
+      "family": "Kohinoor Gujarati",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "KohinoorGujarati-Semibold",
+      "family": "Kohinoor Gujarati",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "KohinoorGujarati-Bold",
+      "family": "Kohinoor Gujarati",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NotoSansOriya",
+      "family": "Noto Sans Oriya",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansOriya-Bold",
+      "family": "Noto Sans Oriya",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "OriyaMN-Bold",
+      "family": "Oriya MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "OriyaMN",
+      "family": "Oriya MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "OriyaSangamMN-Bold",
+      "family": "Oriya Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "OriyaSangamMN",
+      "family": "Oriya Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "BanglaMN-Bold",
+      "family": "Bangla MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "BanglaMN",
+      "family": "Bangla MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "BanglaSangamMN",
+      "family": "Bangla Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "BanglaSangamMN-Bold",
+      "family": "Bangla Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "InaiMathi",
+      "family": "Inai Mathi",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "InaiMathi-Bold",
+      "family": "Inai Mathi",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TamilMN",
+      "family": "Tamil MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "TamilMN-Bold",
+      "family": "Tamil MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TeluguMN-Bold",
+      "family": "Telugu MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TeluguMN",
+      "family": "Telugu MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "TeluguSangamMN-Bold",
+      "family": "Telugu Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "TeluguSangamMN",
+      "family": "Telugu Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KannadaMN",
+      "family": "Kannada MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KannadaMN-Bold",
+      "family": "Kannada MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KannadaSangamMN-Bold",
+      "family": "Kannada Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KannadaSangamMN",
+      "family": "Kannada Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansKannada-Thin",
+      "family": "Noto Sans Kannada",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "NotoSansKannada-ExtraLight",
+      "family": "Noto Sans Kannada",
+      "style": "ExtraLight"
+    },
+    {
+      "postScriptName": "NotoSansKannada-Light",
+      "family": "Noto Sans Kannada",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "NotoSansKannada-Regular",
+      "family": "Noto Sans Kannada",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansKannada-Medium",
+      "family": "Noto Sans Kannada",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "NotoSansKannada-SemiBold",
+      "family": "Noto Sans Kannada",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "NotoSansKannada-Bold",
+      "family": "Noto Sans Kannada",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NotoSansKannada-ExtraBold",
+      "family": "Noto Sans Kannada",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "NotoSansKannada-Black",
+      "family": "Noto Sans Kannada",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "MalayalamMN-Bold",
+      "family": "Malayalam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "MalayalamMN",
+      "family": "Malayalam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MalayalamSangamMN",
+      "family": "Malayalam Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MalayalamSangamMN-Bold",
+      "family": "Malayalam Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "SinhalaMN-Bold",
+      "family": "Sinhala MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "SinhalaMN",
+      "family": "Sinhala MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "SinhalaSangamMN-Bold",
+      "family": "Sinhala Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "SinhalaSangamMN",
+      "family": "Sinhala Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MyanmarMN-Bold",
+      "family": "Myanmar MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "MyanmarMN",
+      "family": "Myanmar MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "MyanmarSangamMN-Bold",
+      "family": "Myanmar Sangam MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "MyanmarSangamMN",
+      "family": "Myanmar Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-Thin",
+      "family": "Noto Sans Myanmar",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-ExtraLight",
+      "family": "Noto Sans Myanmar",
+      "style": "ExtraLight"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-Light",
+      "family": "Noto Sans Myanmar",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-Regular",
+      "family": "Noto Sans Myanmar",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-Medium",
+      "family": "Noto Sans Myanmar",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-SemiBold",
+      "family": "Noto Sans Myanmar",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-Bold",
+      "family": "Noto Sans Myanmar",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-ExtraBold",
+      "family": "Noto Sans Myanmar",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "NotoSansMyanmar-Black",
+      "family": "Noto Sans Myanmar",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-Thin",
+      "family": "Noto Serif Myanmar",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-ExtraLight",
+      "family": "Noto Serif Myanmar",
+      "style": "ExtraLight"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-Light",
+      "family": "Noto Serif Myanmar",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-Regular",
+      "family": "Noto Serif Myanmar",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-Medium",
+      "family": "Noto Serif Myanmar",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-SemiBold",
+      "family": "Noto Serif Myanmar",
+      "style": "SemiBold"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-Bold",
+      "family": "Noto Serif Myanmar",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-ExtraBold",
+      "family": "Noto Serif Myanmar",
+      "style": "ExtraBold"
+    },
+    {
+      "postScriptName": "NotoSerifMyanmar-Black",
+      "family": "Noto Serif Myanmar",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "KhmerMN-Bold",
+      "family": "Khmer MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "KhmerMN",
+      "family": "Khmer MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "KhmerSangamMN",
+      "family": "Khmer Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "LaoMN-Bold",
+      "family": "Lao MN",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "LaoMN",
+      "family": "Lao MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "LaoSangamMN",
+      "family": "Lao Sangam MN",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AdobeCleanHanSC-Regular",
+      "family": "Adobe Clean Han SC",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AdobeCleanHanSC-Bold",
+      "family": "Adobe Clean Han SC",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "GB18030Bitmap",
+      "family": "GB18030Bitmap",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STHeitiSC-Light",
+      "family": "STHeiti SC",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "STHeitiSC-Medium",
+      "family": "STHeiti SC",
+      "style": "Medium"
+    },
+    {
+      "postScriptName": "HiraginoSansGB-W3",
+      "family": "Hiragino Sans GB",
+      "style": "W3"
+    },
+    {
+      "postScriptName": "HiraginoSansGB-W6",
+      "family": "Hiragino Sans GB",
+      "style": "W6"
+    },
+    {
+      "postScriptName": "PingFangSC-Ultralight",
+      "family": "Ping Fang SC",
+      "style": "Ultralight"
+    },
+    {
+      "postScriptName": "PingFangSC-Thin",
+      "family": "Ping Fang SC",
+      "style": "Thin"
+    },
+    {
+      "postScriptName": "PingFangSC-Light",
+      "family": "Ping Fang SC",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "PingFangSC-Regular",
+      "family": "Ping Fang SC",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "PingFangSC-Semibold",
+      "family": "Ping Fang SC",
+      "style": "Semibold"
+    },
+    {
+      "postScriptName": "STSongti-SC-Light",
+      "family": "STSongti-SC",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "STSongti-SC-Regular",
+      "family": "STSongti-SC",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STSongti-SC-Bold",
+      "family": "STSongti-SC",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "STSongti-SC-Black",
+      "family": "STSongti-SC",
+      "style": "Black"
+    },
+    {
+      "postScriptName": "STSongti-TC-Light",
+      "family": "STSongti-TC",
+      "style": "Light"
+    },
+    {
+      "postScriptName": "STSongti-TC-Regular",
+      "family": "STSongti-TC",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "STSongti-TC-Bold",
+      "family": "STSongti-TC",
+      "style": "Bold"
+    },
+    {
+      "postScriptName": "STSong",
+      "family": "STSong",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "AppleColorEmoji",
+      "family": "Apple Color Emoji",
+      "style": "Regular"
+    },
+    {
+      "postScriptName": "EmojiOneColor",
+      "family": "Emoji One Color",
+      "style": "Regular"
+    }
+  ],
+  "note": "postScriptName is authoritative; family/style are derived (AE's Font object does not expose them via scripting)."
+}

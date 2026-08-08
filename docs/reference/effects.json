@@ -1,0 +1,619 @@
+{
+  "generatedAt": "2026-08-08T20:12:32.684Z",
+  "ae": {
+    "aeVersion": "26.3x87",
+    "buildName": "26.3x87",
+    "extendScript": "4.5.6",
+    "os": "Macintosh OS 26.6.1/64",
+    "locale": "en_US",
+    "language": "en_US",
+    "fontCount": 217,
+    "projectPath": null,
+    "numItems": 3,
+    "memoryInUseMB": 180,
+    "availableGPUAccelTypes": "1814,1816"
+  },
+  "count": 149,
+  "probed": 157,
+  "effects": [
+    {
+      "name": "Tint",
+      "matchName": "ADBE Tint"
+    },
+    {
+      "name": "Tritone",
+      "matchName": "ADBE Tritone"
+    },
+    {
+      "name": "Fill",
+      "matchName": "ADBE Fill"
+    },
+    {
+      "name": "Colorama",
+      "matchName": "APC Colorama"
+    },
+    {
+      "name": "Hue/Saturation",
+      "matchName": "ADBE HUE SATURATION"
+    },
+    {
+      "name": "Curves",
+      "matchName": "ADBE CurvesCustom"
+    },
+    {
+      "name": "Levels",
+      "matchName": "ADBE Easy Levels"
+    },
+    {
+      "name": "Brightness & Contrast",
+      "matchName": "ADBE Brightness & Contrast"
+    },
+    {
+      "name": "Exposure",
+      "matchName": "ADBE Exposure2"
+    },
+    {
+      "name": "Color Balance",
+      "matchName": "ADBE Color Balance"
+    },
+    {
+      "name": "Channel Mixer",
+      "matchName": "ADBE CHANNEL MIXER"
+    },
+    {
+      "name": "Black & White",
+      "matchName": "ADBE Black&White"
+    },
+    {
+      "name": "Photo Filter",
+      "matchName": "ADBE PhotoFilterPS"
+    },
+    {
+      "name": "Lumetri Color",
+      "matchName": "ADBE Lumetri"
+    },
+    {
+      "name": "Gaussian Blur",
+      "matchName": "ADBE Gaussian Blur 2"
+    },
+    {
+      "name": "Fast Box Blur",
+      "matchName": "ADBE Box Blur2"
+    },
+    {
+      "name": "Camera Lens Blur",
+      "matchName": "ADBE Camera Lens Blur"
+    },
+    {
+      "name": "Directional Blur",
+      "matchName": "ADBE Motion Blur"
+    },
+    {
+      "name": "Radial Blur",
+      "matchName": "ADBE Radial Blur"
+    },
+    {
+      "name": "Channel Blur",
+      "matchName": "ADBE Channel Blur"
+    },
+    {
+      "name": "Compound Blur",
+      "matchName": "ADBE Compound Blur"
+    },
+    {
+      "name": "Bilateral Blur",
+      "matchName": "ADBE Bilateral"
+    },
+    {
+      "name": "Sharpen",
+      "matchName": "ADBE Sharpen"
+    },
+    {
+      "name": "Unsharp Mask",
+      "matchName": "ADBE Unsharp Mask2"
+    },
+    {
+      "name": "Glow",
+      "matchName": "ADBE Glo2"
+    },
+    {
+      "name": "Drop Shadow",
+      "matchName": "ADBE Drop Shadow"
+    },
+    {
+      "name": "Bevel Alpha",
+      "matchName": "ADBE Bevel Alpha"
+    },
+    {
+      "name": "Bevel Edges",
+      "matchName": "ADBE Bevel Edges"
+    },
+    {
+      "name": "Roughen Edges",
+      "matchName": "ADBE Roughen Edges"
+    },
+    {
+      "name": "Find Edges",
+      "matchName": "ADBE Find Edges"
+    },
+    {
+      "name": "Mosaic",
+      "matchName": "ADBE Mosaic"
+    },
+    {
+      "name": "Posterize",
+      "matchName": "ADBE Posterize"
+    },
+    {
+      "name": "Wave Warp",
+      "matchName": "ADBE Wave Warp"
+    },
+    {
+      "name": "Turbulent Displace",
+      "matchName": "ADBE Turbulent Displace"
+    },
+    {
+      "name": "Displacement Map",
+      "matchName": "ADBE Displacement Map"
+    },
+    {
+      "name": "Bulge",
+      "matchName": "ADBE Bulge"
+    },
+    {
+      "name": "Twirl",
+      "matchName": "ADBE Twirl"
+    },
+    {
+      "name": "Ripple",
+      "matchName": "ADBE Ripple"
+    },
+    {
+      "name": "Corner Pin",
+      "matchName": "ADBE Corner Pin"
+    },
+    {
+      "name": "Mesh Warp",
+      "matchName": "ADBE MESH WARP"
+    },
+    {
+      "name": "Liquify",
+      "matchName": "ADBE LIQUIFY"
+    },
+    {
+      "name": "Optics Compensation",
+      "matchName": "ADBE Optics Compensation"
+    },
+    {
+      "name": "Fractal Noise",
+      "matchName": "ADBE Fractal Noise"
+    },
+    {
+      "name": "Turbulent Noise",
+      "matchName": "ADBE AIF Perlin Noise 3D"
+    },
+    {
+      "name": "Cell Pattern",
+      "matchName": "ADBE Cell Pattern"
+    },
+    {
+      "name": "Checkerboard",
+      "matchName": "ADBE Checkerboard"
+    },
+    {
+      "name": "Grid",
+      "matchName": "ADBE Grid"
+    },
+    {
+      "name": "4-Color Gradient",
+      "matchName": "ADBE 4ColorGradient"
+    },
+    {
+      "name": "Gradient Ramp",
+      "matchName": "ADBE Ramp"
+    },
+    {
+      "name": "Circle",
+      "matchName": "ADBE Circle"
+    },
+    {
+      "name": "Ellipse",
+      "matchName": "ADBE ELLIPSE"
+    },
+    {
+      "name": "Lens Flare",
+      "matchName": "ADBE Lens Flare"
+    },
+    {
+      "name": "Beam",
+      "matchName": "ADBE Laser"
+    },
+    {
+      "name": "Lightning",
+      "matchName": "ADBE Lightning"
+    },
+    {
+      "name": "Advanced Lightning",
+      "matchName": "ADBE Lightning 2"
+    },
+    {
+      "name": "Audio Spectrum",
+      "matchName": "ADBE AudSpect"
+    },
+    {
+      "name": "Audio Waveform",
+      "matchName": "ADBE AudWave"
+    },
+    {
+      "name": "Stroke",
+      "matchName": "ADBE Stroke"
+    },
+    {
+      "name": "Vegas",
+      "matchName": "APC Vegas"
+    },
+    {
+      "name": "Write-on",
+      "matchName": "ADBE Write-on"
+    },
+    {
+      "name": "Scribble",
+      "matchName": "ADBE Scribble Fill"
+    },
+    {
+      "name": "Radio Waves",
+      "matchName": "APC Radio Waves"
+    },
+    {
+      "name": "Median",
+      "matchName": "ADBE PS Median"
+    },
+    {
+      "name": "Remove Grain",
+      "matchName": "VISINF Grain Removal"
+    },
+    {
+      "name": "Cartoon",
+      "matchName": "ADBE Cartoonify"
+    },
+    {
+      "name": "Texturize",
+      "matchName": "ADBE Texturize"
+    },
+    {
+      "name": "Shatter",
+      "matchName": "APC Shatter"
+    },
+    {
+      "name": "Card Dance",
+      "matchName": "APC CardDanceCam"
+    },
+    {
+      "name": "Caustics",
+      "matchName": "APC Caustics"
+    },
+    {
+      "name": "Foam",
+      "matchName": "APC Foam"
+    },
+    {
+      "name": "Wave World",
+      "matchName": "APC Wave World"
+    },
+    {
+      "name": "Echo",
+      "matchName": "ADBE Echo"
+    },
+    {
+      "name": "Time Displacement",
+      "matchName": "ADBE Time Displacement"
+    },
+    {
+      "name": "Posterize Time",
+      "matchName": "ADBE Posterize Time"
+    },
+    {
+      "name": "CC Toner",
+      "matchName": "CC Toner"
+    },
+    {
+      "name": "CC Light Rays",
+      "matchName": "CC Light Rays"
+    },
+    {
+      "name": "CC Light Sweep",
+      "matchName": "CC Light Sweep"
+    },
+    {
+      "name": "CC Light Burst 2.5",
+      "matchName": "CC Light Burst 2.5"
+    },
+    {
+      "name": "CC Radial Fast Blur",
+      "matchName": "CC Radial Fast Blur"
+    },
+    {
+      "name": "CC Vector Blur",
+      "matchName": "CC Vector Blur"
+    },
+    {
+      "name": "CC Particle World",
+      "matchName": "CC Particle World"
+    },
+    {
+      "name": "CC Particle Systems II",
+      "matchName": "CC Particle Systems II"
+    },
+    {
+      "name": "CC Rainfall",
+      "matchName": "CSRainfall"
+    },
+    {
+      "name": "CC Snowfall",
+      "matchName": "CSSnowfall"
+    },
+    {
+      "name": "CC Star Burst",
+      "matchName": "CC Star Burst"
+    },
+    {
+      "name": "CC Mr. Mercury",
+      "matchName": "CC Mr. Mercury"
+    },
+    {
+      "name": "CC Pixel Polly",
+      "matchName": "CC Pixel Polly"
+    },
+    {
+      "name": "CC Ball Action",
+      "matchName": "CC Ball Action"
+    },
+    {
+      "name": "CC Bubbles",
+      "matchName": "CC Bubbles"
+    },
+    {
+      "name": "CC Drizzle",
+      "matchName": "CC Drizzle"
+    },
+    {
+      "name": "CC Hair",
+      "matchName": "CC Hair"
+    },
+    {
+      "name": "CC Mr. Smoothie",
+      "matchName": "CC Mr. Smoothie"
+    },
+    {
+      "name": "CC Scatterize",
+      "matchName": "CC Scatterize"
+    },
+    {
+      "name": "CC Threshold",
+      "matchName": "CC Threshold"
+    },
+    {
+      "name": "CC Threshold RGB",
+      "matchName": "CC Threshold RGB"
+    },
+    {
+      "name": "CC Burn Film",
+      "matchName": "CC Burn Film"
+    },
+    {
+      "name": "CC Glass",
+      "matchName": "CC Glass"
+    },
+    {
+      "name": "CC Glass Wipe",
+      "matchName": "CC Glass Wipe"
+    },
+    {
+      "name": "CC Grid Wipe",
+      "matchName": "CC Grid Wipe"
+    },
+    {
+      "name": "CC Image Wipe",
+      "matchName": "CC Image Wipe"
+    },
+    {
+      "name": "CC Jaws",
+      "matchName": "CC Jaws"
+    },
+    {
+      "name": "CC Light Wipe",
+      "matchName": "CC Light Wipe"
+    },
+    {
+      "name": "CC Line Sweep",
+      "matchName": "CS LineSweep"
+    },
+    {
+      "name": "CC Radial ScaleWipe",
+      "matchName": "CC Radial ScaleWipe"
+    },
+    {
+      "name": "CC Scale Wipe",
+      "matchName": "CC Scale Wipe"
+    },
+    {
+      "name": "CC Twister",
+      "matchName": "CC Twister"
+    },
+    {
+      "name": "CC WarpoMatic",
+      "matchName": "CC WarpoMatic"
+    },
+    {
+      "name": "CC Bend It",
+      "matchName": "CC Bend It"
+    },
+    {
+      "name": "CC Bender",
+      "matchName": "CC Bender"
+    },
+    {
+      "name": "CC Blobbylize",
+      "matchName": "CC Blobbylize"
+    },
+    {
+      "name": "CC Flo Motion",
+      "matchName": "CC Flo Motion"
+    },
+    {
+      "name": "CC Griddler",
+      "matchName": "CC Griddler"
+    },
+    {
+      "name": "CC Lens",
+      "matchName": "CC Lens"
+    },
+    {
+      "name": "CC Page Turn",
+      "matchName": "CC Page Turn"
+    },
+    {
+      "name": "CC Power Pin",
+      "matchName": "CC Power Pin"
+    },
+    {
+      "name": "CC Ripple Pulse",
+      "matchName": "CC Ripple Pulse"
+    },
+    {
+      "name": "CC Slant",
+      "matchName": "CC Slant"
+    },
+    {
+      "name": "CC Smear",
+      "matchName": "CC Smear"
+    },
+    {
+      "name": "CC Sphere",
+      "matchName": "CC Sphere"
+    },
+    {
+      "name": "CC Split",
+      "matchName": "CC Split"
+    },
+    {
+      "name": "CC Split 2",
+      "matchName": "CC Split 2"
+    },
+    {
+      "name": "CC Tiler",
+      "matchName": "CC Tiler"
+    },
+    {
+      "name": "CC Kaleida",
+      "matchName": "CC Kaleida"
+    },
+    {
+      "name": "CC Mr. Smoothie",
+      "matchName": "CC Mr. Smoothie"
+    },
+    {
+      "name": "CC RepeTile",
+      "matchName": "CC RepeTile"
+    },
+    {
+      "name": "CC Block Load",
+      "matchName": "CS BlockLoad"
+    },
+    {
+      "name": "CC Force Motion Blur",
+      "matchName": "CC Force Motion Blur"
+    },
+    {
+      "name": "CC Wide Time",
+      "matchName": "CC Wide Time"
+    },
+    {
+      "name": "Linear Wipe",
+      "matchName": "ADBE Linear Wipe"
+    },
+    {
+      "name": "Radial Wipe",
+      "matchName": "ADBE Radial Wipe"
+    },
+    {
+      "name": "Venetian Blinds",
+      "matchName": "ADBE Venetian Blinds"
+    },
+    {
+      "name": "Iris Wipe",
+      "matchName": "ADBE IRIS_WIPE"
+    },
+    {
+      "name": "Block Dissolve",
+      "matchName": "ADBE Block Dissolve"
+    },
+    {
+      "name": "Gradient Wipe",
+      "matchName": "ADBE Gradient Wipe"
+    },
+    {
+      "name": "Card Wipe",
+      "matchName": "APC CardWipeCam"
+    },
+    {
+      "name": "Magnify",
+      "matchName": "ADBE Magnify"
+    },
+    {
+      "name": "Mirror",
+      "matchName": "ADBE Mirror"
+    },
+    {
+      "name": "Offset",
+      "matchName": "ADBE Offset"
+    },
+    {
+      "name": "Transform",
+      "matchName": "ADBE Geometry"
+    },
+    {
+      "name": "Motion Tile",
+      "matchName": "ADBE Tile"
+    },
+    {
+      "name": "Polar Coordinates",
+      "matchName": "ADBE Polar Coordinates"
+    },
+    {
+      "name": "Spherize",
+      "matchName": "ADBE Spherize"
+    },
+    {
+      "name": "Invert",
+      "matchName": "ADBE Invert"
+    },
+    {
+      "name": "Minimax",
+      "matchName": "ADBE Minimax"
+    },
+    {
+      "name": "Set Matte",
+      "matchName": "ADBE Set Matte3"
+    },
+    {
+      "name": "Set Channels",
+      "matchName": "ADBE Set Channels"
+    },
+    {
+      "name": "Shift Channels",
+      "matchName": "ADBE Shift Channels"
+    },
+    {
+      "name": "Solid Composite",
+      "matchName": "ADBE Solid Composite"
+    },
+    {
+      "name": "Compound Arithmetic",
+      "matchName": "ADBE Compound Arithmetic"
+    }
+  ],
+  "bestEffort": true,
+  "cached": true,
+  "note": "Best-effort: probes a known set of effect display names (AE has no global effects API). matchName is what addEffect uses. Pass params.names to probe more, refresh:true to rebuild the cache."
+}

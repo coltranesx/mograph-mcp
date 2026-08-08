@@ -29,5 +29,6 @@ rendersave/
 .env
 controller/.env
 panel/config.local.js
+.claude/settings.local.json
 __pycache__/
 *.pyc

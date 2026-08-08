@@ -6,6 +6,7 @@
 // params object (defaults applied) on success.
 
 import { v, isPlainObject, ValidationError } from './validate.js';
+import { loadConfig } from './config.js';
 
 export const COMMANDS = {
   ping: {
@@ -30,14 +31,28 @@ export const COMMANDS = {
   },
 
   createComp: {
-    description: 'Create a composition. Returns { compId, name }.',
+    description:
+      'Create a composition. width/height/duration/frameRate fall back to config.json ' +
+      'defaults; { preset } (hd|vertical|square|portrait, see config.json) fills them in ' +
+      'first and explicit params still win. Returns { compId, name }.',
     validate(p) {
+      const { defaults, presets } = loadConfig();
+      const preset = v.optionalString(p, 'preset');
+      let base = defaults;
+      if (preset !== undefined) {
+        if (!presets[preset]) {
+          throw new ValidationError(
+            `preset must be one of: ${Object.keys(presets).join(', ')} (got "${preset}")`,
+          );
+        }
+        base = { ...defaults, ...presets[preset] };
+      }
       return {
         name: v.requiredString(p, 'name'),
-        width: v.optionalPositiveInt(p, 'width', 1920),
-        height: v.optionalPositiveInt(p, 'height', 1080),
-        duration: v.optionalPositiveNumber(p, 'duration', 10),
-        frameRate: v.optionalPositiveNumber(p, 'frameRate', 30),
+        width: v.optionalPositiveInt(p, 'width', base.width),
+        height: v.optionalPositiveInt(p, 'height', base.height),
+        duration: v.optionalPositiveNumber(p, 'duration', base.duration),
+        frameRate: v.optionalPositiveNumber(p, 'frameRate', base.frameRate),
       };
     },
   },

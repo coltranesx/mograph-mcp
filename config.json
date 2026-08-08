@@ -5,6 +5,20 @@
   "wsPath": "/bridge",
   "httpPath": "/",
   "commandTimeoutMs": 30000,
+  "//defaults": "createComp fallback when a param is omitted. 25fps because that's what Korhan actually works in — not AE's own 30fps default.",
+  "defaults": {
+    "width": 1920,
+    "height": 1080,
+    "frameRate": 25,
+    "duration": 10
+  },
+  "//presets": "Named comp shapes for createComp({ preset }). All 25fps to match defaults.",
+  "presets": {
+    "hd": { "width": 1920, "height": 1080, "frameRate": 25 },
+    "vertical": { "width": 1080, "height": 1920, "frameRate": 25 },
+    "square": { "width": 1080, "height": 1080, "frameRate": 25 },
+    "portrait": { "width": 1080, "height": 1320, "frameRate": 25 }
+  },
   "reconnect": {
     "initialDelayMs": 500,
     "maxDelayMs": 10000,

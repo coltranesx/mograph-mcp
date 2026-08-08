@@ -47,19 +47,42 @@ describe('validateCommand', () => {
     assert.equal(r.params.width, 1920);
   });
 
-  it('applies defaults to createComp', () => {
+  it('applies config.json defaults to createComp (25fps, not AE\'s 30)', () => {
     const r = validateCommand('createComp', { name: 'Test' });
     assert.equal(r.ok, true);
     assert.equal(r.params.width, 1920);
     assert.equal(r.params.height, 1080);
     assert.equal(r.params.duration, 10);
-    assert.equal(r.params.frameRate, 30);
+    assert.equal(r.params.frameRate, 25);
   });
 
   it('rejects createComp without name', () => {
     const r = validateCommand('createComp', {});
     assert.equal(r.ok, false);
     assert.match(r.error, /name/);
+  });
+
+  it('fills createComp from a named preset', () => {
+    const r = validateCommand('createComp', { name: 'Test', preset: 'vertical' });
+    assert.equal(r.ok, true);
+    assert.equal(r.params.width, 1080);
+    assert.equal(r.params.height, 1920);
+    assert.equal(r.params.frameRate, 25);
+  });
+
+  it('lets explicit params override a preset', () => {
+    const r = validateCommand('createComp', {
+      name: 'Test', preset: 'square', height: 1350,
+    });
+    assert.equal(r.ok, true);
+    assert.equal(r.params.width, 1080);
+    assert.equal(r.params.height, 1350);
+  });
+
+  it('rejects an unknown createComp preset', () => {
+    const r = validateCommand('createComp', { name: 'Test', preset: 'nope' });
+    assert.equal(r.ok, false);
+    assert.match(r.error, /preset/);
   });
 
   it('rejects addSolid without compId', () => {

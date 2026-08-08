@@ -20,11 +20,14 @@ COMMANDS.listComps = function () {
 };
 
 COMMANDS.createComp = function (p) {
+  // Fallbacks here only matter for callers that bypass shared/src/commands.js
+  // validation (e.g. raw runJSX/socket calls) — the controller normally sends
+  // fully-resolved params from config.json's defaults/presets already.
   if (!p.name) throw new Error("name is required");
   var w = p.width || 1920;
   var h = p.height || 1080;
   var dur = p.duration || 10;
-  var fps = p.frameRate || 30;
+  var fps = p.frameRate || 25;
 
   app.beginUndoGroup("mograph-mcp: createComp");
   var comp = app.project.items.addComp(p.name, w, h, 1, dur, fps);
