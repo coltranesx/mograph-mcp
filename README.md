@@ -16,6 +16,8 @@ Use After Effects with Claude Code to make production-ready videos.
 
 </div>
 
+> **mograph-mcp** is a fork of [aftr](https://github.com/Arman-Luthra/aftr) (aftr-studio) by [Arman Luthra](https://github.com/Arman-Luthra), MIT licensed. It's maintained independently from here on — see [LICENSE](LICENSE) for full attribution.
+
 A Node controller sends JSON commands over a WebSocket to a CEP panel inside AE, which runs them as ExtendScript and returns JSON. On top sits an autonomous, spec-driven pipeline that builds clips and self-corrects them by rendering, reviewing, and revising. Everything is driven programmatically over the socket, with no manual After Effects work.
 
 <div align="center">

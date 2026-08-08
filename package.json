@@ -1,13 +1,14 @@
 {
-  "name": "aftr-studio",
+  "name": "mograph-mcp",
   "version": "0.1.0",
   "private": false,
-  "description": "Puppeteer for After Effects. Use AE with Claude Code to make production-ready videos.",
+  "description": "MCP server for After Effects automation via Claude. Forked from aftr-studio by Arman Luthra.",
   "keywords": [
     "after-effects",
     "aftereffects",
     "vfx",
     "motion-graphics",
+    "mograph",
     "extendscript",
     "cep",
     "aerender",
@@ -17,13 +18,16 @@
   ],
   "license": "MIT",
   "author": "Arman Luthra",
-  "homepage": "https://github.com/Arman-Luthra/aftr#readme",
+  "contributors": [
+    "Korhan Ulusoy <korhanulusoy@gmail.com>"
+  ],
+  "homepage": "https://github.com/coltranesx/mograph-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Arman-Luthra/aftr.git"
+    "url": "git+https://github.com/coltranesx/mograph-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/Arman-Luthra/aftr/issues"
+    "url": "https://github.com/coltranesx/mograph-mcp/issues"
   },
   "type": "module",
   "bin": {
