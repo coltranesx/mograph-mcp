@@ -49,103 +49,50 @@ COMMANDS.listFonts = function (p) {
   };
 };
 
-// --- listInstalledEffects --------------------------------------------------
-// No global effects API exists. Best-effort: probe a curated set of effect
-// display names on a throwaway layer and report which add successfully + their
-// matchName (the value addEffect needs). Pass extra names via params.names.
-var _COMMON_EFFECTS = [
-  "Tint", "Tritone", "Fill", "Colorama", "Hue/Saturation", "Curves", "Levels", "Brightness & Contrast",
-  "Exposure", "Color Balance", "Channel Mixer", "Black & White", "Photo Filter", "Lumetri Color",
-  "Gaussian Blur", "Fast Box Blur", "Camera Lens Blur", "Directional Blur", "Radial Blur", "Channel Blur",
-  "Compound Blur", "Bilateral Blur", "Sharpen", "Unsharp Mask", "Glow", "Drop Shadow", "Bevel Alpha",
-  "Bevel Edges", "Roughen Edges", "Find Edges", "Mosaic", "Posterize", "Wave Warp", "Turbulent Displace",
-  "Displacement Map", "Bulge", "Twirl", "Ripple", "Corner Pin", "Mesh Warp", "Liquify", "Optics Compensation",
-  "Fractal Noise", "Turbulent Noise", "Cell Pattern", "Checkerboard", "Grid", "4-Color Gradient", "Gradient Ramp",
-  "Circle", "Ellipse", "Lens Flare", "Beam", "Lightning", "Advanced Lightning", "Audio Spectrum", "Audio Waveform",
-  "Stroke", "Vegas", "Write-on", "Scribble", "Radio Waves", "Fast Blur", "Median", "Remove Grain", "Reduce Noise",
-  "Cartoon", "Texturize", "Shatter", "Card Dance", "Caustics", "Foam", "Wave World", "Echo", "Time Displacement",
-  "Posterize Time", "CC Toner", "CC Light Rays", "CC Light Sweep", "CC Light Burst 2.5", "CC Radial Fast Blur",
-  "CC Vector Blur", "CC Particle World", "CC Particle Systems II", "CC Rainfall", "CC Snowfall", "CC Star Burst",
-  "CC Mr. Mercury", "CC Pixel Polly", "CC Ball Action", "CC Bubbles", "CC Drizzle", "CC Hair", "CC Mr. Smoothie",
-  "CC Scatterize", "CC Threshold", "CC Threshold RGB", "CC Burn Film", "CC Glass", "CC Glass Wipe", "CC Grid Wipe",
-  "CC Image Wipe", "CC Jaws", "CC Light Wipe", "CC Line Sweep", "CC Radial ScaleWipe", "CC Scale Wipe", "CC Twister",
-  "CC WarpoMatic", "CC Bend It", "CC Bender", "CC Blobbylize", "CC Flo Motion", "CC Griddler", "CC Lens", "CC Page Turn",
-  "CC Power Pin", "CC Ripple Pulse", "CC Slant", "CC Smear", "CC Sphere", "CC Split", "CC Split 2", "CC Tiler",
-  "CC Kaleida", "CC Mr. Smoothie", "CC RepeTile", "CC Block Load", "CC Force Motion Blur", "CC Wide Time",
-  "Linear Wipe", "Radial Wipe", "Venetian Blinds", "Iris Wipe", "Block Dissolve", "Gradient Wipe", "Card Wipe",
-  "Vignette", "Magnify", "Mirror", "Offset", "Transform", "Motion Tile", "Polar Coordinates", "Spherize",
-  "Invert", "Minimax", "Set Matte", "Set Channels", "Shift Channels", "Solid Composite", "Compound Arithmetic",
-  // popular third-party (Plugin Everything) — probed by display name so discovery surfaces them
-  "Deep Glow", "Deep Glow 2", "Shadow Studio", "Shadow Studio 2", "Shadow Studio 3"
-];
-
-// Session caches: building/removing a temp comp per call is wasteful when agents
-// probe repeatedly. The effect set is stable for a session — cache the default
-// probe + a name->matchName map; pass refresh:true to rebuild (e.g. after
-// installing a plugin mid-session). The cache lives as long as the bundle is
-// loaded (a hot-reload or panel reopen clears it).
-var _effectsCache = null;     // last default listInstalledEffects result
-var _effectMatchMap = null;   // { displayName: matchName } from the default probe
-
+// --- listInstalledEffects ---------------------------------------------------
+// app.effects (= app.internalEffects) is a REAL enumeration API — confirmed
+// live 2026-08-09 (AE 26.3x87): every installed effect as
+// {displayName, matchName, category, version, isDeprecated}, no probing/
+// guessing/hardcoded-list needed (previously this probed a hand-maintained
+// ~157-name list on a throwaway layer, finding 149; app.effects finds all
+// 446 and picks up any newly installed plugin automatically). See
+// docs/ROADMAP.md "listInstalledEffects → app.effects" for the history.
 COMMANDS.listInstalledEffects = function (p) {
   p = p || {};
-  var extra = (p.names && p.names.length) ? p.names : null;
-  // Serve from cache for the default probe (no extra names, no refresh).
-  if (_effectsCache && !p.refresh && !extra) {
-    var hit = {};
-    for (var ck in _effectsCache) if (_effectsCache.hasOwnProperty(ck)) hit[ck] = _effectsCache[ck];
-    hit.cached = true;
-    return hit;
+  var all = app.effects;
+  AEB.assert(all, "app.effects is not available on this After Effects version");
+  var wanted = null;
+  if (p.names && p.names.length) {
+    wanted = {};
+    for (var w = 0; w < p.names.length; w++) wanted[p.names[w]] = true;
   }
-  var names = extra ? _COMMON_EFFECTS.concat(extra) : _COMMON_EFFECTS;
-  var comp = app.project.items.addComp("__discoverFX", 16, 16, 1, 0.1, 30);
-  var found = [], probed = 0;
-  try {
-    var solid = comp.layers.addSolid([0, 0, 0], "s", 16, 16, 1);
-    var fx = solid.property("ADBE Effect Parade");
-    for (var i = 0; i < names.length; i++) {
-      probed++;
-      try {
-        if (fx && fx.canAddProperty(names[i])) {
-          var e = fx.addProperty(names[i]);
-          found.push({ name: names[i], matchName: e.matchName });
-          e.remove();
-        }
-      } catch (er) { /* not installed / not addable */ }
-    }
-  } finally {
-    comp.remove();
+  var effects = [];
+  for (var i = 0; i < all.length; i++) {
+    var e = all[i];
+    if (wanted && !wanted[e.displayName]) continue;
+    effects.push({
+      name: e.displayName, matchName: e.matchName,
+      category: e.category, version: e.version, isDeprecated: !!e.isDeprecated
+    });
   }
-  var result = {
-    count: found.length, probed: probed, effects: found, bestEffort: true, cached: false,
-    note: "Best-effort: probes a known set of effect display names (AE has no global effects API). matchName is what addEffect uses. Pass params.names to probe more, refresh:true to rebuild the cache."
+  return {
+    count: effects.length, totalInstalled: all.length, effects: effects,
+    note: "Real-time enumeration via app.effects — every installed effect, no probing. Pass params.names to filter to specific display names."
   };
-  // Only cache the default probe (extra names produce a non-canonical set).
-  if (!extra) {
-    _effectsCache = result;
-    _effectMatchMap = {};
-    for (var f = 0; f < found.length; f++) _effectMatchMap[found[f].name] = found[f].matchName;
-  }
-  return result;
 };
 
-// Resolve a single effect display name to its matchName (or null). Uses the
-// cached map from listInstalledEffects when available (no temp comp); otherwise
-// probes once and folds the answer into the cache.
+// Resolve a single effect display name to its matchName (or null) — a direct
+// app.effects lookup, no throwaway layer/comp needed.
 COMMANDS.findEffectMatchName = function (p) {
   AEB.assert(p && p.name, "name (effect display name) is required");
-  if (_effectMatchMap && !p.refresh && _effectMatchMap.hasOwnProperty(p.name)) {
-    return { name: p.name, matchName: _effectMatchMap[p.name], installed: true, cached: true };
+  var all = app.effects;
+  AEB.assert(all, "app.effects is not available on this After Effects version");
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].displayName === p.name) {
+      return { name: p.name, matchName: all[i].matchName, installed: true };
+    }
   }
-  var comp = app.project.items.addComp("__findFX", 16, 16, 1, 0.1, 30);
-  var matchName = null;
-  try {
-    var solid = comp.layers.addSolid([0, 0, 0], "s", 16, 16, 1);
-    var fx = solid.property("ADBE Effect Parade");
-    if (fx && fx.canAddProperty(p.name)) { var e = fx.addProperty(p.name); matchName = e.matchName; e.remove(); }
-  } catch (er) { /* not installed */ } finally { comp.remove(); }
-  if (matchName && _effectMatchMap) _effectMatchMap[p.name] = matchName; // fold into cache
-  return { name: p.name, matchName: matchName, installed: matchName !== null, cached: false };
+  return { name: p.name, matchName: null, installed: false };
 };
 
 // --- introspectEffect ------------------------------------------------------

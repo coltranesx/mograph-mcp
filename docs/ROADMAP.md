@@ -13,10 +13,9 @@ ya da "bitti" diye işaretlenir.
   ffmpeg `/opt/homebrew/bin/ffmpeg`.
 - Bridge'de 103 komut; MCP'ye açılan set daha dar (`AE_MCP_TOOLS=all` hepsini
   açar).
-- `listInstalledEffects` → 149 efekt (157 isimlik sabit liste probe'u ile,
-  hâlâ aktif kullanılan yol), `listFonts` → 625 font. Gerçek zamanlı
-  enumerasyon (`app.effects`, 446 efekt) doğrulandı ama henüz devreye
-  alınmadı — bkz. aşağıdaki "listInstalledEffects → app.effects".
+- `listInstalledEffects` → artık `app.effects` üzerinden gerçek zamanlı
+  enumerasyon, 446 efekt (DEVLOG 2026-08-09 (16)) — probe/sabit liste
+  kaldırıldı. `listFonts` → 625 font (bu hâlâ ayrı, `app.fonts` zaten API).
 - `docs/reference/{effects,fonts,effects-detail}.json` — discovery cache
   snapshot'ı, `npm run` yok, `node tools/discovery-cache.mjs` ile üretilir.
 
@@ -45,27 +44,13 @@ temeli düzeliyor** — kırık temelin üstüne kütüphane kurmanın anlamı y
    service:install`) — port 8787, loglar `~/Library/Logs/mograph-mcp/`.
 2. ✅ `/fewer-permission-prompts` çalıştırıldı — `.claude/settings.json`.
 3. ✅ Discovery cache (`tools/discovery-cache.mjs` → `docs/reference/*.json`).
-   **Bulgu:** `app.effects` gerçek bir enumerasyon API'si, 446 efekt
-   `{displayName, matchName, category, version, isDeprecated}` ile —
-   detay ve sıradaki iş için bkz. **"listInstalledEffects → app.effects"**
-   aşağıda.
+   **Bulgu:** `app.effects` gerçek bir enumerasyon API'si — sonradan
+   `listInstalledEffects`'e devreye alındı, bkz. DEVLOG 2026-08-09 (16).
 4. ✅ `.claude/skills/ae-up/` proje skill'i.
 5. ✅ `config.json`'a `defaults` + `presets` (25 fps).
 
 **Doğrulama:** `npm test` 111/111, `launchctl print` → running/keepalive,
 "1080p comp aç" → 25 fps.
-
----
-
-## listInstalledEffects → app.effects (Faz 0 bulgusu, henüz uygulanmadı)
-
-`app.effects` (= `app.internalEffects`) canlıda doğrulandı (AE 26.3x87):
-446 elemanlı dizi, her eleman `{displayName, matchName, category, version,
-isDeprecated}`. `listInstalledEffects`'in şu anki `_COMMON_EFFECTS` (157
-isim) probe'unu (149 bulgu, `panel/jsx/commands/discovery.jsx`) bununla
-değiştirmek mümkün — tahmine/sabit listeye gerek kalmıyor, kurulu her şey
-gerçek zamanlı geliyor. Henüz düşük öncelik (mevcut probe çalışıyor); shape
-temeli bittikten sonra ele alınabilir.
 
 ---
 

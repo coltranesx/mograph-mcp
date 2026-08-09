@@ -435,7 +435,7 @@ Object.assign(COMMANDS, {
 
   // discovery (read-only "what's installed")
   listFonts: withDesc('Enumerate installed fonts (postScriptName authoritative; family/style derived). { filter?, limit? }', []),
-  listInstalledEffects: withDesc('Best-effort list of installed effects with { name, matchName } (probes a known set). { names? }', []),
+  listInstalledEffects: withDesc('List every installed effect via app.effects (real enumeration, not a probe) — { name, matchName, category, version, isDeprecated }. { names? } filters to specific display names.', []),
   findEffectMatchName: withDesc('Resolve an effect display name to its matchName. { name }', ['name']),
   introspectEffect: withDesc('Add an effect (by display name or matchName) and dump its full parameter tree (name + matchName + valueType + default). The way to wire any third-party plugin. { name | names[], depth? }', []),
   getEnvironment: withDesc('AE version/build, OS, ExtendScript, font count, project + memory info.', []),

@@ -325,13 +325,20 @@ describe('JSX Runner + Mock AE DOM', () => {
       for (const f of r.result.fonts) assert.match(f.postScriptName.toLowerCase(), /arial/);
     });
 
-    it('listInstalledEffects probes + returns matchNames, marked best-effort', () => {
+    it('listInstalledEffects enumerates via app.effects (no probing)', () => {
       const r = runner.dispatch('listInstalledEffects');
       assert.equal(r.ok, true);
-      assert.equal(r.result.bestEffort, true);
-      assert.ok(r.result.effects.length >= 3, 'expected some probed effects');
+      assert.equal(r.result.count, r.result.totalInstalled);
       const tint = r.result.effects.find((e) => e.name === 'Tint');
       assert.ok(tint && tint.matchName === 'ADBE Tint');
+      assert.ok('category' in tint && 'version' in tint && 'isDeprecated' in tint);
+    });
+
+    it('listInstalledEffects { names } filters to just those display names', () => {
+      const r = runner.dispatch('listInstalledEffects', { names: ['Tint', 'Glow'] });
+      assert.equal(r.result.count, 2);
+      assert.equal(r.result.totalInstalled > r.result.count, true);
+      assert.deepEqual(r.result.effects.map((e) => e.name).sort(), ['Glow', 'Tint']);
     });
 
     it('findEffectMatchName resolves installed + reports missing', () => {
@@ -350,21 +357,11 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.ok(r.result.fontCount >= 1);
     });
 
-    it('listInstalledEffects caches per session; refresh rebuilds', () => {
+    it('listInstalledEffects is a live enumeration — repeat calls agree without caching', () => {
       const r1 = runner.dispatch('listInstalledEffects');
-      assert.equal(r1.result.cached, false);
       const r2 = runner.dispatch('listInstalledEffects');
-      assert.equal(r2.result.cached, true);
       assert.equal(r2.result.count, r1.result.count);
-      const r3 = runner.dispatch('listInstalledEffects', { refresh: true });
-      assert.equal(r3.result.cached, false);
-    });
-
-    it('findEffectMatchName serves from the warmed cache', () => {
-      runner.dispatch('listInstalledEffects'); // warm the map
-      const r = runner.dispatch('findEffectMatchName', { name: 'Tint' });
-      assert.equal(r.result.matchName, 'ADBE Tint');
-      assert.equal(r.result.cached, true);
+      assert.deepEqual(r2.result.effects, r1.result.effects);
     });
   });
 

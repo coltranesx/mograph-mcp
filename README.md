@@ -486,7 +486,7 @@ Grading and VFX presets:
 `applyLumetri`, `lumetriParams`, `cinematicGrade`, `fireEffect`, `smokeEffect`, `glitchEffect`, `neonGlow`.
 
 Discovery (read-only):
-`listFonts` (postScriptName authoritative, family and style derived), `listInstalledEffects` (best-effort, probes a known set, returns `{name, matchName}`), `findEffectMatchName` (resolve a display name to a matchName), `listPlugins` (best-effort, scans `.aex` and `.plugin` install dirs), `getEnvironment` (AE version, OS, ExtendScript, font count, memory, GPU). Use these to discover the matchNames that `addEffect` needs.
+`listFonts` (postScriptName authoritative, family and style derived), `listInstalledEffects` (real-time enumeration via `app.effects` — every installed effect, `{name, matchName, category, version, isDeprecated}`, optionally filtered by `{names}`), `findEffectMatchName` (resolve a display name to a matchName), `listPlugins` (best-effort, scans `.aex` and `.plugin` install dirs), `getEnvironment` (AE version, OS, ExtendScript, font count, memory, GPU). Use these to discover the matchNames that `addEffect` needs.
 
 App and orchestration:
 `executeMenuCommand` (run any AE menu item by name or id), `findMenuCommand`, `undo`, `redo`, `purge`, `getSelection`, `keystroke` (best-effort OS keys), `batch`, `applySpec`, `removeLayersByPrefix`.
@@ -548,7 +548,7 @@ A spec is a list of treatments:
 
 Supported treatment types: `fire`, `smoke`, `title` (with `animator`, `grade`, `glitch`, and `neon` modifiers), `color_grade`, `procedural_motion`, `responsive_box`, `transition`. Every segment is idempotent: re-running wipes and rebuilds its `seg{id}_*` layers, so state never drifts.
 
-Effects by display name: any treatment may carry an `effects: [{ effect, params }]` array (and `color_grade` takes a single `effect`). Write the display name you'd pick from the Effect menu, like `"Glow"` or `"Lumetri Color"`, and the executor resolves it to the matchName (`ADBE Glo2`, `ADBE Lumetri`) for you, validating that it's installed first. Authors never touch matchNames; discover what's available with [`listInstalledEffects`](#7-command-vocabulary) (which caches per session, so repeated probes are free).
+Effects by display name: any treatment may carry an `effects: [{ effect, params }]` array (and `color_grade` takes a single `effect`). Write the display name you'd pick from the Effect menu, like `"Glow"` or `"Lumetri Color"`, and the executor resolves it to the matchName (`ADBE Glo2`, `ADBE Lumetri`) for you, validating that it's installed first. Authors never touch matchNames; discover what's available with [`listInstalledEffects`](#7-command-vocabulary) (a live `app.effects` enumeration, not a probe — cheap to call repeatedly).
 
 Third-party plugins: two installed-effect wrappers ship friendly params (resolved to the plugin's stable matchNames under the hood, because plugins like these reuse internal param names):
 

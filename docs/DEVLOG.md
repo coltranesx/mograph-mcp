@@ -12,6 +12,28 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (16)
+- **`listInstalledEffects`/`findEffectMatchName` → `app.effects`, bitti.**
+  Faz 0'da tespit edilip ertelenmiş bulguyu uygulama sırası geldi
+  (kullanıcı sordu). Eski yol: `_COMMON_EFFECTS` (157 isimlik elde yazılmış
+  sabit liste) her çağrıda geçici bir comp+solid üzerinde tek tek
+  `canAddProperty`/`addProperty` ile "prob"lanıyordu (149 bulgu). Yeni yol:
+  `app.effects` (= `app.internalEffects`) gerçek bir enumerasyon API'si —
+  canlıda 446 kayıt, her biri `{displayName, matchName, category, version,
+  isDeprecated}` ile geldiği doğrulandı. Sabit liste ve probe mantığı
+  tamamen kaldırıldı; `listInstalledEffects` artık `{ names? }` ile
+  filtreleme yapıyor (isteğe bağlı), `findEffectMatchName` doğrudan
+  `app.effects` içinde arıyor — ikisi de artık geçici comp açıp kapamıyor.
+  `cached`/`bestEffort`/`probed` alanları kaldırıldı (sadece probing'in
+  kalıntısıydı, artık anlamsız); `totalInstalled` eklendi.
+  Simülatöre `app.effects` mock'ı eklendi (`_MOCK_EFFECTS` map'inden
+  türetiliyor, `addEffect`'in kullandığı map'le aynı kaynak — iki komut da
+  artık simülatörde gerçek kod yolunu koşuyor). `npm test` 194/194.
+  **Canlıda çapraz doğrulama:** `app.effects` 446/446 döndü; "Deep Glow 2"
+  ne yeni enumerasyonda ne bağımsız `introspectEffect` probe'unda çıktı —
+  yani bu makinede o plugin gerçekten kurulu değil, migration bir şey
+  kaybetmedi (iki bağımsız yöntem birbirini doğruladı).
+
 ## 2026-08-09 (15)
 - **"Yeni komut ekleme" süreci README'ye yazıldı** (§11, "Adding a new
   bridge command (checklist)"). Gerekçe (kullanıcı sordu): (14)'teki

@@ -465,12 +465,25 @@ function _mockFonts() {
   return names.map((n) => ({ toString: () => n }));
 }
 
+// Mirrors real AE's app.effects shape ({displayName, matchName, category,
+// version, isDeprecated}, docs/ROADMAP.md "listInstalledEffects →
+// app.effects") off the same _MOCK_EFFECTS map addEffect/canAddProperty use,
+// so listInstalledEffects/findEffectMatchName exercise real code headlessly.
+function _mockEffectsList() {
+  const out = [];
+  for (const name in _MOCK_EFFECTS) {
+    out.push({ displayName: name, matchName: _MOCK_EFFECTS[name], category: 'Simulated', version: '1.0', isDeprecated: false });
+  }
+  return out;
+}
+
 class MockApp {
   constructor() {
     this.version = '25.0.0'; // simulated AE version
     this.buildName = '25.0.0 (sim)';
     this.memoryInUse = 512 * 1048576;
     this.fonts = { allFonts: _mockFonts() };
+    this.effects = _mockEffectsList();
     this.project = new MockProject();
     this._undoDepth = 0;
   }
