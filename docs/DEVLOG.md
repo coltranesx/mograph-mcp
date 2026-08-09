@@ -12,6 +12,37 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (6)
+- **Numeric-string bug'ının controller-side (`shared/src/validate.js`)
+  benzeri bulundu ve düzeltildi — kapsam sanıldığından dar çıktı.**
+  Faz 2'ye geçmeden "mask path" bulgusuna bakarken `ae_addSolid` (şemasız
+  tool) `compId:16` ile `"compId must be an integer"` verdi; `ae_command`
+  aynı değerle sorunsuz çalıştı — (4) girişindeki JSX-side bug'ın aynısı, bu
+  sefer `v.requiredInt`/`optionalPositiveInt`/`requiredPositiveInt`/
+  `optionalPositiveNumber`/`optionalColor`/`optionalPoint`'in strict
+  `typeof === 'number'` kontrolünde. Sadece 5 komut bu strict validator'ları
+  kullanıyor: `addSolid`, `addTextLayer`, `createComp`, `render`,
+  `setLayerProperty` — "pratikte her komut" değil, sınırlı ve net bir liste
+  (grep ile doğrulandı).
+  - `validate.js`'e `numericLike()` eklendi (host.jsx'teki `AEB.numericLike`
+    ile aynı desen), altı validator da bunu kullanacak şekilde güncellendi.
+    16 yeni test (`shared/test/validate.test.js`, yeni dosya), 166/166 yeşil.
+  - **Controller restart edilmeden test ettim, yine unuttum, yine yanlış
+    sonuç aldım — [[controller-needs-restart]] gerçekten işe yarıyor, dikkat
+    et.** `service:restart` sonrası `compId` hatası düzeldiği canlıda
+    doğrulandı.
+  - **Kalan, düzeltilemeyen kısım:** array-tipli parametreler (`color` gibi)
+    şemasız tool'larda hâlâ bozuk — ama `compId` gibi skaler değil, bu sefer
+    **array'in kendisi array olarak gelmiyor** (`optionalColor`'daki
+    element-seviyesi `numericLike` coercion'ı hiç devreye girmiyor,
+    `Array.isArray(val)` kontrolü en baştan false dönüyor). `ae_command`'a
+    elle string-array (`["0.1","0.8","0.3"]`) verilince sorunsuz çalıştığı
+    doğrulandı — yani `validate.js` tarafı doğru, sorun harness'in şemasız
+    tool çağrısında array'i nasıl marshall ettiğinde, repo dışı ve
+    düzeltilemez. **Kalıcı workaround: array/nested parametre içeren her
+    çağrıda `ae_command` kullan**, sadece skaler sayılar artık şemasız
+    tool'larda da güvenli.
+
 ## 2026-08-09 (5)
 - **Faz 1.C — `addShape` polystar + sessiz fallback kaldırma, bitti.**
   `shape:"polystar"` eklendi (`ADBE Vector Shape - Star`); `polyType`

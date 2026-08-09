@@ -19,6 +19,22 @@ function fail(field, msg) {
   throw new ValidationError(`${field} ${msg}`);
 }
 
+// Some MCP tool invocations deliver numeric params as strings — confirmed
+// live 2026-08-09 for tool calls whose inputSchema declares no property
+// types (the auto-generated per-command ae_* tools in
+// controller/src/mcpServer.js send e.g. compId as "1" instead of 1). The
+// AE-side JSX layer got the same fix (AEB.numericLike, host.jsx) for
+// id/index comparisons; this is the controller-side counterpart so these
+// *validators* don't reject a well-formed call before it ever reaches AE.
+// Passes real numbers through unchanged; parses integer/decimal-looking
+// strings; anything else becomes NaN so the existing isInteger/isFinite
+// checks below reject it exactly as they did before (no new failure mode).
+function numericLike(val) {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)) return Number(val);
+  return NaN;
+}
+
 export const v = {
   requiredString(params, field) {
     const val = params[field];
@@ -34,31 +50,33 @@ export const v = {
     return val;
   },
   requiredInt(params, field) {
-    const val = params[field];
-    if (typeof val !== 'number' || !Number.isInteger(val)) {
+    const val = numericLike(params[field]);
+    if (!Number.isInteger(val)) {
       fail(field, 'must be an integer');
     }
     return val;
   },
   optionalPositiveInt(params, field, dflt = undefined) {
-    const val = params[field];
-    if (val === undefined || val === null) return dflt;
-    if (typeof val !== 'number' || !Number.isInteger(val) || val <= 0) {
+    const raw = params[field];
+    if (raw === undefined || raw === null) return dflt;
+    const val = numericLike(raw);
+    if (!Number.isInteger(val) || val <= 0) {
       fail(field, 'must be a positive integer');
     }
     return val;
   },
   requiredPositiveInt(params, field) {
-    const val = params[field];
-    if (typeof val !== 'number' || !Number.isInteger(val) || val <= 0) {
+    const val = numericLike(params[field]);
+    if (!Number.isInteger(val) || val <= 0) {
       fail(field, 'must be a positive integer');
     }
     return val;
   },
   optionalPositiveNumber(params, field, dflt = undefined) {
-    const val = params[field];
-    if (val === undefined || val === null) return dflt;
-    if (typeof val !== 'number' || !Number.isFinite(val) || val <= 0) {
+    const raw = params[field];
+    if (raw === undefined || raw === null) return dflt;
+    const val = numericLike(raw);
+    if (!Number.isFinite(val) || val <= 0) {
       fail(field, 'must be a positive number');
     }
     return val;
@@ -70,12 +88,13 @@ export const v = {
     if (!Array.isArray(val) || (val.length !== 3 && val.length !== 4)) {
       fail(field, 'must be an array [r,g,b] with values 0..1');
     }
-    for (const c of val) {
-      if (typeof c !== 'number' || c < 0 || c > 1) {
+    const nums = val.map(numericLike);
+    for (const c of nums) {
+      if (!Number.isFinite(c) || c < 0 || c > 1) {
         fail(field, 'channels must be numbers in 0..1');
       }
     }
-    return val.slice(0, 3);
+    return nums.slice(0, 3);
   },
   // position / point: [x,y] (or [x,y,z])
   optionalPoint(params, field, dflt = undefined) {
@@ -84,12 +103,13 @@ export const v = {
     if (!Array.isArray(val) || val.length < 2 || val.length > 3) {
       fail(field, 'must be an array [x,y] (or [x,y,z]) of numbers');
     }
-    for (const n of val) {
-      if (typeof n !== 'number' || !Number.isFinite(n)) {
+    const nums = val.map(numericLike);
+    for (const n of nums) {
+      if (!Number.isFinite(n)) {
         fail(field, 'components must be finite numbers');
       }
     }
-    return val;
+    return nums;
   },
   // value: present, any JSON type
   required(params, field) {
