@@ -12,6 +12,35 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (12)
+- **Faz 2 madde 5 — `applyLowerThird`, bitti.** Yeni soyutlama yok — sadece
+  `resolveSafePosition`/`measureText`/`addTextLayer`/`applyTextStyle`/
+  `addNull`/`setParent`'ın kompozisyonu. **Karar (kullanıcıyla, açık soruydu):
+  alt başlık var** — title + subtitle iki satır varsayılan senaryo, subtitle
+  yine de opsiyonel parametre. `wordReveal` desteklenmiyor (kendi ortalanmış
+  çoklu-kelime layout'unu kuruyor, manuel kenar-hizalı yerleşimle uyumsuz);
+  charScale/bunchRotate/blurFade'in hepsi var olan layer'a animatör ekleme
+  modunu destekliyor (`_applyPresetLines`'ın `hasLayer` dalı), bu yüzden
+  çalışıyor.
+  - **Canlıda bulunan gerçek bug: çift pozisyon telafisi.** `layer.parent = X`
+    ExtendScript'te **otomatik olarak world pozisyonunu koruyor** (Position'ı
+    kendi taşıyor) — UI'de "keep position" ile parentlamanın scripting
+    karşılığı, önceden bilmiyordum/varsaymamıştım. Kod önce null-relative
+    pozisyonu elle hesaplayıp set ediyordu, sonra `setParent` BUNU DA telafi
+    etti — sonuç layer'ların ekran dışına (~1000px kaymış) fırlaması oldu.
+    Düzeltme: child layer'lar artık MUTLAK (world) pozisyonda kuruluyor,
+    null-relative dönüşümü `setParent`'ın kendi otomatik davranışına
+    bırakılıyor.
+  - Düzeltme sonrası canlıda (AE 26.3x87) tam matematiksel doğrulama: title'ın
+    mürekkep üst kenarı `blockTopY`'de, subtitle'ın alt kenarı tam `safe.y`'de,
+    aradaki boşluk tam `gap`, iki satırın sol kenarı da tam `safe.x`'te —
+    hepsi elle hesaplanan değerlerle birebir eşleşti. Animatör keyframe'leri
+    de (giriş/çıkış) doğru zamanlamada teyit edildi.
+  - 7 yeni shared pre-socket testi, 189/189 yeşil. Simulator testi yok (aynı
+    sourceRectAtTime zinciri).
+  - Faz 2 kalan: 6 (`addResponsiveBox`, opsiyonel — aksan çizgisi isteniyor
+    mu sorusu hâlâ açık).
+
 ## 2026-08-09 (11)
 - **Faz 2 madde 4 — `alignAnchor`, bitti.** `{ compId, layer, h?, v?, time?,
   keepPosition? }` — layer'ın kendi anchor'ını kendi `sourceRectAtTime`

@@ -297,6 +297,47 @@ Object.assign(COMMANDS, {
   applyCharScale: withDesc('Deterministic letter-based char-scale reveal. Splits text into characters (kerning-correct via prefix measurement), each letter its own measured/positioned layer scaling up + rising + fading with an overlapping cascade and a cubic-bezier. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, scaleFrom?, revealFrames?, stagger?, startFrame?, bezier?, tracking?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
   applyTextStyle: withDesc('Combinatorial text preset: apply one of 4 styles x 8 eases by NAME. style: wordReveal|charScale|bunchRotate|blurFade; ease: easeInOutCubic|easeOutQuart|easeInOutQuart|easeOutQuint|easeInOutQuint|easeOutExpo|easeInOutExpo|easeInOutCirc (or pass bezier[4]). wordReveal is fully wired (deterministic); the other three are interim. { compId, style, ease|bezier, text, ...style params }', ['compId', 'style']),
   listTextStyles: withDesc('List available text styles + eases + which are ready. {}', []),
+  applyLowerThird: {
+    description:
+      'Compose a lower-third: title + optional subtitle, edge-anchored via resolveSafePosition, parented to a controller null (' +
+      '{namePrefix}_controller/_title/_subtitle), single in/out. { compId, title, subtitle?, style? (charScale|bunchRotate|blurFade, ' +
+      'default charScale — wordReveal not supported, it builds its own centered layout), ease?, position? (resolveSafePosition\'s 9-name ' +
+      'grid, default bottomLeft), font?, titleFontSize?, subtitleFontSize?, titleColor?, subtitleColor?, gap?, safeArea?, inFrame?, ' +
+      'outFrame? (default inFrame + 5s), subtitleDelay? (frames after inFrame, default 6), namePrefix? (default "LT") }. Returns ' +
+      '{ controller, layers[], inFrame, outFrame }. docs/ROADMAP.md Faz 2 madde 5.',
+    validate(p) {
+      const base = requireFields(p, ['compId', 'title']);
+      if (typeof p.title !== 'string' || p.title.length === 0) {
+        throw new ValidationError('title must be a non-empty string');
+      }
+      if (p.subtitle !== undefined && p.subtitle !== null && typeof p.subtitle !== 'string') {
+        throw new ValidationError('subtitle must be a string');
+      }
+      if (p.style !== undefined) {
+        const style = String(p.style).toLowerCase().replace(/[^a-z]/g, '');
+        if (style === 'wordreveal') {
+          throw new ValidationError(
+            'style "wordReveal" builds its own multi-word centered layout and is not compatible with applyLowerThird\'s ' +
+            'manually edge-anchored layers; use charScale, bunchRotate, or blurFade.',
+          );
+        }
+        if (!['charscale', 'bunchrotate', 'blurfade'].includes(style)) {
+          throw new ValidationError(`style must be one of: charScale, bunchRotate, blurFade (got "${p.style}")`);
+        }
+      }
+      if (p.position !== undefined) {
+        const POSITIONS = [
+          'topLeft', 'topCenter', 'topRight',
+          'middleLeft', 'center', 'middleRight',
+          'bottomLeft', 'bottomCenter', 'bottomRight',
+        ];
+        if (!POSITIONS.includes(p.position)) {
+          throw new ValidationError(`position must be one of: ${POSITIONS.join(', ')} (got "${p.position}")`);
+        }
+      }
+      return base;
+    },
+  },
   measureText: {
     description:
       'Measure real rendered text bounds via sourceRectAtTime — no scene mutation left behind. Two modes: { text, font?, fontSize?, ' +

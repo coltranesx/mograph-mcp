@@ -200,6 +200,51 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('applyLowerThird (pre-socket)', () => {
+    it('accepts a title-only call', () => {
+      const r = validateCommand('applyLowerThird', { compId: 1, title: 'Breaking News' });
+      assert.equal(r.ok, true);
+    });
+
+    it('accepts title + subtitle', () => {
+      const r = validateCommand('applyLowerThird', {
+        compId: 1, title: 'Jane Doe', subtitle: 'Senior Correspondent',
+      });
+      assert.equal(r.ok, true);
+    });
+
+    it('rejects without title', () => {
+      const r = validateCommand('applyLowerThird', { compId: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /title/);
+    });
+
+    it('rejects wordReveal with a specific, actionable message', () => {
+      const r = validateCommand('applyLowerThird', { compId: 1, title: 'X', style: 'wordReveal' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not compatible with applyLowerThird/);
+    });
+
+    it('accepts the other 3 styles', () => {
+      for (const style of ['charScale', 'bunchRotate', 'blurFade']) {
+        const r = validateCommand('applyLowerThird', { compId: 1, title: 'X', style });
+        assert.equal(r.ok, true, `${style}: ${r.error}`);
+      }
+    });
+
+    it('rejects an unknown style', () => {
+      const r = validateCommand('applyLowerThird', { compId: 1, title: 'X', style: 'zoomBlast' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /style must be one of/);
+    });
+
+    it('rejects an unknown position', () => {
+      const r = validateCommand('applyLowerThird', { compId: 1, title: 'X', position: 'dead center' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /position must be one of/);
+    });
+  });
+
   describe('alignAnchor (pre-socket)', () => {
     it('accepts h/v combinations and the defaultless call', () => {
       const r0 = validateCommand('alignAnchor', { compId: 1, layer: 1 });

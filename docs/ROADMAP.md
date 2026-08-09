@@ -212,11 +212,11 @@ da (geçici katman / var olan katman, mutasyonsuz) doğrulandı.
 hesaplanan matematikle birebir doğrulandı, `keepPosition` (Position
 telafisi) her iki yolda da test edildi.
 
-**5. `applyLowerThird` — ince kompozisyon.**
-Başlık + opsiyonel alt başlık + opsiyonel aksan çizgisi, denetleyici null'a
-parentlanmış, tutarlı isim öneki (`LT_*`), tek in/out. Yeni bir soyutlamaya
-gerek yok. Döndürsün: `{ controller, layers[], inFrame, outFrame }`.
-**Açık soru:** alt başlık var mı, tek satır başlık mı?
+**5. `applyLowerThird` ✅ bitti (DEVLOG 2026-08-09 (12))**
+Başlık + alt başlık (karar: iki satır varsayılan, subtitle opsiyonel param),
+denetleyici null'a parentlanmış (`LT_controller`/`LT_title`/`LT_subtitle`),
+tek in/out. Canlıda tam matematiksel doğrulama yapıldı. `wordReveal`
+desteklenmiyor (bilinçli, kendi layout'unu kuruyor).
 
 **6. `addResponsiveBox` — sadece aksan çizgisi istenirse.**
 `executor.jsx:184-198`'deki `responsive_box` (rect size'ı
