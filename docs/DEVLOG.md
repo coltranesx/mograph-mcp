@@ -12,6 +12,53 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (19)
+- **`tools/jsx-es3-check.mjs` eklendi — `panel/jsx/**` (ExtendScript/ES3) için
+  ilk statik denetim, `npm run lint` (dolayısıyla CI) zincirine bağlandı.**
+  (18)'de ESLint kurulurken `panel/jsx/**` bilinçli dışlanmıştı çünkü modern
+  JS kuralları ES3 için anlamsız — ama bu, o klasörün hiçbir statik denetimden
+  geçmediği anlamına geliyordu. Asıl motivasyon [[es3-chained-ternary-trap]]:
+  gerçek bir bug canlı AE'de bulunmuştu, simulator (Node/V8) onu hiç
+  yakalamamıştı. Script comment/string-farkında bir tarayıcıdan geçirip
+  host.jsx'in kendi dialekt sözleşmesini (`let/const/arrow/template-literal
+  yok`) + chained-ternary tuzağını + birkaç ucuz ES6 kalıntısını
+  (`class`, spread/rest `...`, `for...of`) denetliyor; parantezli ternary
+  zincirleri ve yorum/string içindeki eşleşen kelimeler bilerek yakalanmıyor
+  (false-positive kaynağı olurlardı). Gerçek AE motorunun tam ES3 gramerini
+  modellemiyor — bilinen, tam da bu projeyi bir kez ısıran hata sınıflarına
+  karşı ucuz bir ağ. `panel/jsx/**` şu an 24 dosyada temiz.
+
+## 2026-08-10 (18)
+- **ESLint eklendi (flat config, `eslint.config.js`) + CI'a `npm run lint`
+  adımı.** Kullanıcı kod kalitesi/modülerlik denetiminin nasıl yapıldığını
+  sordu — testler vardı (`npm test`, CI'da), ama stil/hata-sınıfı denetimi
+  hiç yoktu. Yeni bir "uzman ajan" icat etmek yerine mevcut `/code-review`
+  skill'i + `test-runner` agent'ı zaten yeterli; eksik olan sürekli/otomatik
+  bir katmandı, onu ESLint + CI ile kapattık.
+  - Kapsam üç ayrı ortam grubuna bölündü çünkü kod tabanı gerçekten üç farklı
+    JS ortamı barındırıyor: Node ESM (`controller/src`, `shared`,
+    `simulator`, `bin`, `tools`, `panel/build`), düz tarayıcı
+    (`controller/ui` — controller'ın kendi WS/HTTP debug sayfası, CEP değil),
+    ve CEP paneli (`panel/src` — AE'nin gömülü, yaşı belirsiz Chromium'unda
+    çalışıyor; `require`/`process`/`bridge` gibi cross-file globaller orada
+    gerçek, hata değil). `panel/jsx/**` (ExtendScript/ES3) kasıtlı olarak
+    dışlandı — modern JS kuralları ES3 için anlamsız
+    ([[es3-chained-ternary-trap]] zaten bu ayrımı doğruluyor).
+  - Audit'te bulunan gerçek sorunlar düzeltildi (config değil, kod): iki
+    yerde yakalanan hata `cause` zinciri olmadan yeniden fırlatılıyordu
+    (`shared/src/config.js`, `simulator/src/jsxRunner.js`); iki yerde
+    `hasOwnProperty` doğrudan nesne üzerinden çağrılıyordu
+    (`controller/ui/ui.js`); `panel/src/bridge.js`'te hiç çağrılmayan ölü bir
+    `nodeRequire` fonksiyonu ve kullanılmayan bir ilk atama; ölü bir `pass()`
+    helper'ı (`shared/src/commands.js`) ve ölü bir `step` değişkeni
+    (`tools/cdp_reload.mjs`); iki gereksiz regex escape'i; iki boş `catch`
+    bloğu (yorumla niyet belirtildi). Node/düz-tarayıcı tarafındaki anlamsız
+    `catch (e)`'ler `catch {}`'e çevrildi (optional catch binding, Node
+    18+/modern tarayıcı güvenli); CEP tarafında motor belirsizliği yüzünden
+    bu yapılmadı, onun yerine `_e` + `caughtErrorsIgnorePattern` kullanıldı.
+  - 194/194 test hâlâ geçiyor; davranış değişikliği yok, sadece ölü kod
+    temizliği + hata zinciri iyileştirmesi.
+
 ## 2026-08-09 (17)
 - **Array-parametre MCP bug'ının kök nedeni bulundu ve düzeltildi — (6)'daki
   "repo dışı, düzeltilemez" sonucu YANLIŞ çıktı.** Kullanıcı "efekt/grade

@@ -16,7 +16,7 @@ class MockWS extends EventEmitter {
     this._closed = false;
   }
   send(data) { this.sent.push(JSON.parse(data)); }
-  close(code, reason) {
+  close(_code, _reason) {
     this._closed = true;
     this.readyState = 3; // CLOSED
   }

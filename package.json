@@ -60,6 +60,8 @@
     "sim": "node simulator/src/index.js",
     "sim:dev": "npm run build:jsx && node simulator/src/index.js",
     "test": "npm run build:jsx && node --test $(find controller/test shared/test simulator/test -name '*.test.js')",
+    "lint": "eslint . && npm run lint:jsx",
+    "lint:jsx": "node tools/jsx-es3-check.mjs",
     "e2e": "npm run build:jsx && node controller/test/e2e/run-e2e.js",
     "deploy:panel": "node panel/build/sign-and-deploy.mjs",
     "service:install": "node tools/service.mjs install",
@@ -76,6 +78,9 @@
     "ws": "8.21.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "globals": "^17.9.0",
     "zxp-sign-cmd": "^2.0.0"
   },
   "publishConfig": {

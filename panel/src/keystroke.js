@@ -10,7 +10,7 @@
   'use strict';
 
   function nodeRequire(mod) {
-    try { if (typeof require === 'function') return require(mod); } catch (e) {}
+    try { if (typeof require === 'function') return require(mod); } catch (_e) { /* fall through */ }
     if (typeof window !== 'undefined' && window.cep_node && window.cep_node.require) return window.cep_node.require(mod);
     return null;
   }
@@ -22,11 +22,11 @@
       var href = window.location.href;
       var d = href.substring(0, href.lastIndexOf('/')).replace(/^file:\/+/i, '');
       return decodeURIComponent(d);
-    } catch (e) { return ''; }
+    } catch (_e) { return ''; }
   }
 
   function escapeLiteral(t) {
-    return String(t).replace(/[+^%~(){}\[\]]/g, function (c) { return '{' + c + '}'; });
+    return String(t).replace(/[+^%~(){}[\]]/g, function (c) { return '{' + c + '}'; });
   }
 
   // Build a SendKeys string from { keys } | { text } | { key, ctrl, alt, shift }.

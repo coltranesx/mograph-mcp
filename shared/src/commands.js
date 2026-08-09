@@ -185,7 +185,6 @@ function requireFields(p, names) {
   }
   return { ...p };
 }
-const pass = (...required) => ({ validate: (p) => requireFields(p, required) });
 // schema (optional 3rd arg): JSON Schema `properties` map, used only for
 // commands in mcpServer.js's CORE set (see file header) — declares real
 // types (crucially `type:'array'`) so the ae_<name> MCP tool's inputSchema

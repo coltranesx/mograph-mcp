@@ -57,7 +57,7 @@ export function brightnessReviewer({ minYmax = 150 } = {}) {
 // expects a JSON verdict {pass, delta}. Enabled only if ANTHROPIC_API_KEY is set;
 // otherwise the orchestrator falls back to the brightness reviewer.
 export function claudeReviewer() {
-  return async ({ framePath, intent, spec }) => {
+  return async ({ framePath: _framePath, intent: _intent, spec: _spec }) => {
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) return { pass: true, reason: 'claude reviewer skipped (no ANTHROPIC_API_KEY)', skipped: true };
     // Structure ready for a real call: read frame as base64, POST to the

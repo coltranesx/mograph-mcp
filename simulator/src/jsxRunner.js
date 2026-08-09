@@ -46,7 +46,8 @@ export function createJsxRunner() {
   } catch (e) {
     throw new Error(
       `Failed to read JSX bundle at ${BUNDLE_PATH}. ` +
-      `Run "npm run build:jsx" first. Error: ${e.message}`
+      `Run "npm run build:jsx" first. Error: ${e.message}`,
+      { cause: e }
     );
   }
 

@@ -2,7 +2,6 @@
 import WebSocket from 'ws';
 const WS_URL = process.argv[2];
 const ws = new WebSocket(WS_URL);
-let step = 0;
 ws.on('open', () => ws.send(JSON.stringify({ id: 1, method: 'Page.enable' })));
 ws.on('message', (data) => {
   const msg = JSON.parse(data.toString());

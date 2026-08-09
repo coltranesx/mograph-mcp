@@ -19,7 +19,7 @@ export function loadConfig() {
   try {
     raw = JSON.parse(readFileSync(path, 'utf8'));
   } catch (e) {
-    throw new Error(`Failed to read config.json at ${path}: ${e.message}`);
+    throw new Error(`Failed to read config.json at ${path}: ${e.message}`, { cause: e });
   }
   const cfg = {
     host: process.env.AE_BRIDGE_HOST || raw.host || '127.0.0.1',

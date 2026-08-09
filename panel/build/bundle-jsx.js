@@ -7,7 +7,7 @@
 //
 // The bundle is what the panel loads via evalScript. It is gitignored.
 
-import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -51,6 +51,9 @@ const banner = [
 // Keep tab/LF/CR; replace any other non-printable-ASCII char with '-'.
 let bundle = banner + parts.join('\n\n');
 const before = bundle.length;
+// \x09/\x0A/\x0D are intentionally kept (tab/LF/CR); this strips everything
+// else outside printable ASCII.
+// eslint-disable-next-line no-control-regex
 bundle = bundle.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '-');
 const replaced = [...(banner + parts.join('\n\n'))].filter(
   (c) => c.charCodeAt(0) > 0x7e || (c.charCodeAt(0) < 0x20 && !'\t\n\r'.includes(c)),

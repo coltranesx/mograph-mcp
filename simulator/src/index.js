@@ -77,7 +77,7 @@ function handleMessage(raw) {
   let env;
   try {
     env = JSON.parse(raw);
-  } catch (e) {
+  } catch {
     log('warn', `Bad JSON from controller: ${raw}`);
     return;
   }

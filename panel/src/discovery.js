@@ -10,12 +10,12 @@
   var cs = new CSInterface();
 
   function nodeRequire(mod) {
-    try { if (typeof require === 'function') return require(mod); } catch (e) {}
+    try { if (typeof require === 'function') return require(mod); } catch (_e) { /* fall through */ }
     if (typeof window !== 'undefined' && window.cep_node && window.cep_node.require) return window.cep_node.require(mod);
     return null;
   }
 
-  function listPlugins(env, sendEnvelope, sendEvent, log) {
+  function listPlugins(env, sendEnvelope, _sendEvent, _log) {
     var fs = nodeRequire('fs'), path = nodeRequire('path');
     if (!fs || !path) {
       sendEnvelope({ id: env.id, type: 'result', ok: false, error: 'Node fs unavailable (--enable-nodejs?)' });
@@ -28,7 +28,7 @@
     if (p.dirs && p.dirs.length) {
       dirs = p.dirs.slice();
     } else if (isMac) {
-      var m = /(.*Adobe After Effects[^\/]*)\//.exec(hostExe);
+      var m = /(.*Adobe After Effects[^/]*)\//.exec(hostExe);
       var appRoot = m ? m[1] : path.dirname(hostExe);
       dirs.push(appRoot + '/Plug-ins');
       dirs.push('/Library/Application Support/Adobe/Common/Plug-ins');
@@ -43,7 +43,7 @@
     function walk(dir, depth) {
       if (depth > 5) return;
       var entries;
-      try { entries = fs.readdirSync(dir); } catch (e) { return; }
+      try { entries = fs.readdirSync(dir); } catch (_e) { return; }
       for (var i = 0; i < entries.length; i++) {
         var full = path.join(dir, entries[i]);
         var ext = path.extname(entries[i]).toLowerCase();
@@ -51,7 +51,7 @@
           plugins.push({ name: path.basename(entries[i], path.extname(entries[i])), path: full });
           continue; // a .plugin bundle is a dir on mac — don't descend into it
         }
-        var st; try { st = fs.statSync(full); } catch (e) { continue; }
+        var st; try { st = fs.statSync(full); } catch (_e) { continue; }
         if (st.isDirectory()) walk(full, depth + 1);
       }
     }

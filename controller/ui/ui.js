@@ -115,7 +115,7 @@
     ws.onerror = function () { /* onclose will handle retry */ };
     ws.onmessage = function (ev) {
       var env;
-      try { env = JSON.parse(ev.data); } catch (e) { return; }
+      try { env = JSON.parse(ev.data); } catch { return; }
       handle(env);
     };
   }
@@ -177,13 +177,13 @@
     }
     if (field.type === 'json') {
       try { return JSON.parse(raw); }
-      catch (e) { return raw; } // fall back to literal string for 'value'
+      catch { return raw; } // fall back to literal string for 'value'
     }
     return raw; // string
   }
 
   function buildCommandCard(cmd) {
-    var hasSpec = FIELDS.hasOwnProperty(cmd.name);
+    var hasSpec = Object.prototype.hasOwnProperty.call(FIELDS, cmd.name);
     var fields = hasSpec ? FIELDS[cmd.name] : null;
     var card = document.createElement('div');
     card.className = 'cmd' + (cmd.dev ? ' dev' : '');
@@ -218,7 +218,7 @@
   }
 
   function runCommand(cmd, card) {
-    var hasSpec = FIELDS.hasOwnProperty(cmd.name);
+    var hasSpec = Object.prototype.hasOwnProperty.call(FIELDS, cmd.name);
     var params = {};
     if (!hasSpec) {
       var ta = card.querySelector('[data-json]');

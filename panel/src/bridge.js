@@ -41,7 +41,7 @@
         // The host's dispatch() always returns JSON.stringify'd result.
         try {
           resolve(JSON.parse(raw));
-        } catch (e) {
+        } catch (_e) {
           resolve({
             ok: false,
             error: 'Bad JSON from host: ' + raw,
@@ -51,24 +51,12 @@
     });
   }
 
-  // Resolve Node's require inside CEP (mixed-context exposes a global require;
-  // otherwise it lives on window.cep_node).
-  function nodeRequire(mod) {
-    try {
-      if (typeof require === 'function') return require(mod);
-    } catch (e) { /* fall through */ }
-    if (typeof window !== 'undefined' && window.cep_node && window.cep_node.require) {
-      return window.cep_node.require(mod);
-    }
-    return null;
-  }
-
   // Resolve the extension's install directory. cs.getSystemPath('extension')
   // returns empty on some AE builds, so fall back to deriving it from this
   // panel's own URL — always an absolute file URL in CEP.
   function getExtensionDir() {
-    var dir = '';
-    try { dir = cs.getSystemPath('extension') || ''; } catch (e) { dir = ''; }
+    var dir;
+    try { dir = cs.getSystemPath('extension') || ''; } catch (_e) { dir = ''; }
     if (dir) return dir.replace(/\\/g, '/');
     try {
       var href = window.location.href; // file:///C:/.../com.ae-bridge.panel/index.html
@@ -76,7 +64,7 @@
       d = d.replace(/^file:\/+/i, '');   // strip file:// + leading slashes -> C:/...
       d = decodeURIComponent(d);
       return d;
-    } catch (e) { return ''; }
+    } catch (_e) { return ''; }
   }
 
   // Load the JSX bundle into the host scripting engine.

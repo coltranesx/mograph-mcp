@@ -292,7 +292,7 @@ class MockLayers {
 
   get length() { return this._items.length; }
 
-  addSolid(color, name, width, height, pixelAspect) {
+  addSolid(color, name, _width, _height, _pixelAspect) {
     const idx = this._items.length + 1;
     const layer = new MockLayer(this._comp, idx, {
       name: name || 'Solid',
@@ -488,7 +488,7 @@ class MockApp {
     this._undoDepth = 0;
   }
 
-  beginUndoGroup(name) {
+  beginUndoGroup(_name) {
     this._undoDepth++;
   }
 

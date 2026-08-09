@@ -39,7 +39,7 @@
           RECONNECT_FACTOR = cfg.reconnect.factor || RECONNECT_FACTOR;
         }
       }
-    } catch (e) {
+    } catch (_e) {
       // Config file not found or not parseable — use defaults.
     }
   })();
@@ -129,7 +129,7 @@
     var env;
     try {
       env = JSON.parse(raw);
-    } catch (e) {
+    } catch (_e) {
       log('err', 'Bad JSON from controller: ' + raw);
       return;
     }

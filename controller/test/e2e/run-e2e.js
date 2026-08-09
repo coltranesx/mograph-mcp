@@ -71,7 +71,7 @@ function post(path, body) {
       res.on('data', (d) => { chunks += d; });
       res.on('end', () => {
         try { resolve({ status: res.statusCode, body: JSON.parse(chunks) }); }
-        catch (e) { resolve({ status: res.statusCode, body: chunks }); }
+        catch { resolve({ status: res.statusCode, body: chunks }); }
       });
     });
     req.on('error', reject);
@@ -87,7 +87,7 @@ function get(path) {
       res.on('data', (d) => { chunks += d; });
       res.on('end', () => {
         try { resolve({ status: res.statusCode, body: JSON.parse(chunks) }); }
-        catch (e) { resolve({ status: res.statusCode, body: chunks }); }
+        catch { resolve({ status: res.statusCode, body: chunks }); }
       });
     }).on('error', reject);
   });

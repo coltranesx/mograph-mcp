@@ -29,7 +29,7 @@ export class AgentHub extends EventEmitter {
     );
   }
 
-  add(ws, meta = {}) {
+  add(ws, _meta = {}) {
     this._clients.add(ws);
     log.info(`Agent/UI client connected (${this._clients.size} total)`);
 
