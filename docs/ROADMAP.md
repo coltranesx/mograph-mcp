@@ -187,14 +187,15 @@ reveal). Eksik olan kompozisyon ve zamanlama.
 
 ### Sıra
 
-**1. Çıkış animasyonu — en büyük kalem.**
-Mevcut 4 stilin hiçbirinde out yok; `trimIn`/`trimOut` sadece katmanı sert
-kesiyor. Lower-third girer *ve çıkar*. Lower-third'e özel değil, bütün metin
-sistemini kapsıyor.
-→ `applyTextStyle`'a `outFrame` + `outStyle?` (varsayılan: girişin tersi).
-   Uygulama: aynı animator'ün selector offset'ini geri sür (100→0) ya da ikinci
-   animator; bezier tersine çevrilir. **Açık soru:** çıkış girişin tam tersi mi,
-   yoksa daha hızlı mı — pratikte çıkış genelde hızlıdır.
+**1. Çıkış animasyonu ✅ bitti (DEVLOG 2026-08-09 (8))**
+4 stilin (wordReveal/charScale/bunchRotate/blurFade) hepsinde `applyTextStyle`
+artık `outFrame`/`outStretch` alıyor. Mekanizma: aynı selector alanına ikinci
+bir keyframe çifti ekleyip değeri geri sarmak (bezier CSS ters-çevirme
+kimliğiyle ters çevriliyor) — yeni animator yok. Çok satırlı metinde satırlar
+girişteki sırayla çıkıyor (satır 0 önce), son satır tam `outFrame`'de bitiyor.
+Karar: çıkış varsayılan olarak girişin **%40 daha hızlısı** (`outStretch`
+varsayılan 0.6), tam tersi değil. `outStyle` (girişten farklı bir stil ile
+çıkma) henüz yok — deferred, gerekirse ayrıca eklenir.
 
 **2. `safeArea` config + konum çözümleyici.**
 Lower-third'ü tanımlayan şey nerede durduğu; mutlak pikselle değil comp

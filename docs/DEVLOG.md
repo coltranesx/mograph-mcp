@@ -12,6 +12,37 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (8)
+- **Faz 2 madde 1 — çıkış animasyonu, bitti (4 stilin hepsi).** ROADMAP'in
+  "en büyük kalem" dediği iş: `applyTextStyle`'a `outFrame`/`outStretch`
+  eklendi, `wordReveal`/`charScale`/`bunchRotate`/`blurFade`'in hepsi artık
+  giriş kadar temiz bir çıkışa sahip.
+  - **Karar (kullanıcıyla, açık soruydu):** çıkış girişin tam aynası değil,
+    varsayılan olarak **%40 daha hızlı** (`outStretch` varsayılan 0.6) —
+    "pratikte çıkışlar girişten hızlıdır" gerekçesiyle.
+  - **Mekanizma tek bir fikre indirgendi:** giriş zaten bir selector alanını
+    (offset/start) 0→100 sweep ediyor. Çıkış için **aynı property'e ikinci
+    bir keyframe çifti** eklenip değer geri sarılıyor (100→0), bezier standart
+    CSS "ters çevirme" kimliğiyle (`reverse(x1,y1,x2,y2) = (1-x2,1-y2,1-x1,1-y1)`)
+    ters çevriliyor — yeni animatör/selector yok, aynı per-karakter/kelime
+    cascade tersine çalışıyor. `_taBezierEase` keyframe index'lerini parametre
+    olarak almak üzere genelleştirildi (1/2 yerine keyfi çift), `_taAddExitSweep`
+    bu iki yeniliği birleştiriyor.
+  - `wordReveal`: kelime başına aynı offset property'de exit sweep (`_wrAnimator`
+    outSF/outEF parametreleri). Sıra: girişle AYNI sırada çıkıyor (kelime 0 önce
+    çıkar), süre = giriş süresinin `outStretch` katı.
+  - `charScale`/`bunchRotate`/`blurFade` (ortak `addTextAnimator`+selector
+    yolu): `_withExitSweep` (yeni) her animate alanına `outStartFrame`/
+    `outEndFrame` damgalıyor; `_applyPresetLines` çok satırlı cascade'i
+    karakter-oranlı ve METNİN SONUNDAN ölçerek ayna simetriğinde hesaplıyor —
+    satır 0 önce çıkar, son satır tam `outFrame`'de biter.
+  - **Canlıda (AE 26.3x87) tüm 4 stil + çok satırlı (2 satır, eşit olmayan
+    karakter sayılı) durum test edildi, keyframe zamanlamaları elle
+    doğrulanan matematikle birebir eşleşti** (`getProperty` ile).
+  - Simulator'da hiç test yok — bu alt sistem (text animator ağacı,
+    `sourceRectAtTime`, vb.) hiç mock'lanmamış, tüm doğrulama tarihsel olarak
+    canlı AE'de yapılıyor (bkz. mevcut kod), bu değişiklik de aynı yolu izledi.
+
 ## 2026-08-09 (7)
 - **Faz 1.A yan kazancı doğrulandı: mask path keyframe çalışıyor, mask wipe
   bedavaya geldi.** ROADMAP'te "olabilir, doğrulanmadı" diye duran bulgu

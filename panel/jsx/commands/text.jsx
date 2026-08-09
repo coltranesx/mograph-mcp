@@ -67,19 +67,40 @@ function _taShape(name) {
 
 function _clampInf(v) { if (v < 0.1) return 0.1; if (v > 100) return 100; return v; }
 
-// Apply a CSS-style cubic-bezier [x1,y1,x2,y2] as temporal ease across the two
+// Apply a CSS-style cubic-bezier [x1,y1,x2,y2] as temporal ease across two
 // keyframes of a selector field. Influence = handle x-extent; speed = avg speed
-// scaled by the bezier's endpoint tangent slope.
-function _taBezierEase(prop, from, to, t0, t1, b) {
+// scaled by the bezier's endpoint tangent slope. k1/k2 default to 1/2 (a fresh
+// 2-keyframe property) but can target any later pair — needed for the exit
+// sweep below, which adds keys 3/4 on a property that already has 1/2 from
+// the entry.
+function _taBezierEase(prop, from, to, t0, t1, b, k1, k2) {
+  if (k1 === undefined) k1 = 1;
+  if (k2 === undefined) k2 = 2;
   var x1 = b[0], y1 = b[1], x2 = b[2], y2 = b[3];
   var dt = (t1 - t0); if (dt <= 0) dt = 0.0001;
   var avg = (to - from) / dt;
   var slopeStart = (x1 > 0.0001) ? (y1 / x1) : 0;
   var slopeEnd = ((1 - x2) > 0.0001) ? ((1 - y2) / (1 - x2)) : 0;
-  prop.setInterpolationTypeAtKey(1, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
-  prop.setTemporalEaseAtKey(1, [new KeyframeEase(0, 16.667)], [new KeyframeEase(avg * slopeStart, _clampInf(x1 * 100))]);
-  prop.setInterpolationTypeAtKey(2, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
-  prop.setTemporalEaseAtKey(2, [new KeyframeEase(avg * slopeEnd, _clampInf((1 - x2) * 100))], [new KeyframeEase(0, 16.667)]);
+  prop.setInterpolationTypeAtKey(k1, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
+  prop.setTemporalEaseAtKey(k1, [new KeyframeEase(0, 16.667)], [new KeyframeEase(avg * slopeStart, _clampInf(x1 * 100))]);
+  prop.setInterpolationTypeAtKey(k2, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
+  prop.setTemporalEaseAtKey(k2, [new KeyframeEase(avg * slopeEnd, _clampInf((1 - x2) * 100))], [new KeyframeEase(0, 16.667)]);
+}
+
+// Exit animation (Faz 2 "çıkış animasyonu", docs/ROADMAP.md): adds a second,
+// mirrored sweep on an ALREADY-keyframed selector field, so the same
+// per-character/word reveal cascade runs in reverse to hide the text again.
+// Reuses the field's own value range (to -> from, i.e. revealed -> hidden)
+// instead of a second animator, so it's the exact inverse of the entry sweep
+// — no new selector/animator, no extra property tree.
+// Bezier reversal uses the standard CSS easing-reversal identity:
+// reverse(x1,y1,x2,y2) = (1-x2, 1-y2, 1-x1, 1-y1) — the curve played backward.
+function _taAddExitSweep(prop, from, to, t2, t3, bez) {
+  var revBez = [1 - bez[2], 1 - bez[3], 1 - bez[0], 1 - bez[1]];
+  var k1 = prop.numKeys + 1, k2 = prop.numKeys + 2;
+  prop.setValueAtTime(t2, to);
+  prop.setValueAtTime(t3, from);
+  _taBezierEase(prop, to, from, t2, t3, revBez, k1, k2);
 }
 
 COMMANDS.addTextAnimator = function (p) {
@@ -138,16 +159,26 @@ COMMANDS.addTextAnimator = function (p) {
         prop.setValueAtTime(t1, an.to);
         if (an.bezier && an.bezier.length === 4) {
           _taBezierEase(prop, an.from, an.to, t0, t1, an.bezier);
-          continue;
+        } else {
+          var mode = String(an.ease || "").toLowerCase();
+          if (mode === "easeout" || mode === "easyease" || an.easyEase) {
+            var inK1 = (mode === "easeout") ? 20 : 33.3333;
+            var inK2 = (mode === "easeout") ? 85 : 33.3333;
+            prop.setInterpolationTypeAtKey(1, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
+            prop.setTemporalEaseAtKey(1, [new KeyframeEase(0, 33.3333)], [new KeyframeEase(0, inK1)]);
+            prop.setInterpolationTypeAtKey(2, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
+            prop.setTemporalEaseAtKey(2, [new KeyframeEase(0, inK2)], [new KeyframeEase(0, 33.3333)]);
+          }
         }
-        var mode = String(an.ease || "").toLowerCase();
-        if (mode === "easeout" || mode === "easyease" || an.easyEase) {
-          var inK1 = (mode === "easeout") ? 20 : 33.3333;
-          var inK2 = (mode === "easeout") ? 85 : 33.3333;
-          prop.setInterpolationTypeAtKey(1, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
-          prop.setTemporalEaseAtKey(1, [new KeyframeEase(0, 33.3333)], [new KeyframeEase(0, inK1)]);
-          prop.setInterpolationTypeAtKey(2, KeyframeInterpolationType.BEZIER, KeyframeInterpolationType.BEZIER);
-          prop.setTemporalEaseAtKey(2, [new KeyframeEase(0, inK2)], [new KeyframeEase(0, 33.3333)]);
+        // Exit (Faz 2 "çıkış animasyonu"): mirrors the entry sweep back on
+        // the same field via _taAddExitSweep — see applyTextStyle/
+        // _applyPresetLines for how outStartFrame/outEndFrame get computed.
+        // Falls back to a linear bezier to mirror if the entry only used the
+        // named easyEase/easeOut path (no explicit bezier) — direct
+        // addTextAnimator/addTextPreset callers bypassing applyTextStyle.
+        if (an.outStartFrame !== undefined && an.outEndFrame !== undefined) {
+          var exitBez = (an.bezier && an.bezier.length === 4) ? an.bezier : [0, 0, 1, 1];
+          _taAddExitSweep(prop, an.from, an.to, an.outStartFrame / fps, an.outEndFrame / fps, exitBez);
         }
       }
     }
@@ -224,6 +255,27 @@ function _stretchAnimate(animate, s) {
   return res;
 }
 
+// Exit (Faz 2 "çıkış animasyonu"): stamps outStartFrame/outEndFrame onto each
+// (already stretched+shifted, so absolute-frame) animate entry, ending at
+// `outEnd` with a duration = this entry's own entry span * factor (default
+// 0.6 — exits read faster than entries, decided 2026-08-09). addTextAnimator
+// reads these two fields to add a mirrored _taAddExitSweep on the same field.
+function _withExitSweep(animate, outEnd, factor) {
+  if (factor === undefined) factor = 0.6;
+  var arr = (animate && animate.length !== undefined) ? animate : [animate];
+  var res = [];
+  for (var i = 0; i < arr.length; i++) {
+    var a = arr[i]; var n = {};
+    for (var k in a) { if (a.hasOwnProperty(k)) n[k] = a[k]; }
+    var span = (n.endFrame !== undefined ? n.endFrame : 15) - (n.startFrame || 0);
+    var outSpan = Math.round(span * factor); if (outSpan < 1) outSpan = 1;
+    n.outEndFrame = outEnd;
+    n.outStartFrame = outEnd - outSpan;
+    res.push(n);
+  }
+  return res;
+}
+
 COMMANDS.applyTextPreset = function (p) {
   var key = String(p.preset || "wordReveal").toLowerCase().replace(/[^a-z]/g, "");
   var cfg = _TEXT_PRESETS[key];
@@ -260,6 +312,7 @@ COMMANDS.applyTextPreset = function (p) {
       params.animate = aa;
     }
     if (p.startFrame) params.animate = _shiftAnimate(params.animate, p.startFrame);
+    if (p.outFrame !== undefined) params.animate = _withExitSweep(params.animate, p.outFrame, p.outStretch);
     if (!params.name) params.name = (p.name || ("Preset_" + key)) + (list.length > 1 ? ("_" + (i + 1)) : "");
     out.push(COMMANDS.addTextAnimator(params));
   }
@@ -396,10 +449,18 @@ function _applyPresetLines(params, presetName) {
   if (presetSpan < 1) presetSpan = 1;
   var totalSpan = presetSpan * (params.stretch || 1);
   var base = params.startFrame || 0;
+  // Exit (Faz 2 "çıkış animasyonu"): same character-proportional cascade as
+  // entry, mirrored — measured from the END of the text instead of the
+  // start, so lines exit in the SAME order they appeared (first line exits
+  // first), with the last line's exit finishing exactly at outFrame.
+  var outFrame = params.outFrame;
+  var outFactor = (params.outStretch !== undefined) ? params.outStretch : 0.6;
+  var outTotalSpan = totalSpan * outFactor;
   var cum = 0, out = [];
   for (var j = 0; j < names.length; j++) {
     var lineStart = base + Math.round(totalSpan * (cum / total));
     var lineEnd = base + Math.round(totalSpan * ((cum + counts[j]) / total));
+    var afterCount = total - (cum + counts[j]);   // chars in lines AFTER this one
     cum += counts[j];
     var dur = lineEnd - lineStart; if (dur < 1) dur = 1;
     var lp = {}; for (var k in params) { if (params.hasOwnProperty(k)) lp[k] = params[k]; }
@@ -408,6 +469,10 @@ function _applyPresetLines(params, presetName) {
     lp.preset = presetName;
     lp.startFrame = lineStart;
     lp.stretch = dur / presetSpan;     // scale the preset's sweep to this line's time slice
+    if (outFrame !== undefined) {
+      lp.outFrame = outFrame - Math.round(outTotalSpan * (afterCount / total));
+      lp.outStretch = outFactor;
+    }
     out.push(COMMANDS.applyTextPreset(lp));
   }
   return { lines: names.length, perLine: out };
@@ -415,7 +480,9 @@ function _applyPresetLines(params, presetName) {
 
 // Single-word reveal animator (one word unit, no selector smoothing) whose
 // offset keyframes carry the bezier, so the curve IS the word's motion.
-function _wrAnimator(layer, comp, rise, sF, eF, bez) {
+// outSF/outEF (optional): exit sweep frames — mirrors the reveal via
+// _taAddExitSweep on the same offset property (Faz 2 "çıkış animasyonu").
+function _wrAnimator(layer, comp, rise, sF, eF, bez, outSF, outEF) {
   var animators = layer.property("ADBE Text Properties").property("ADBE Text Animators");
   var anim = animators.addProperty("ADBE Text Animator");
   anim.name = "Reveal";
@@ -433,6 +500,9 @@ function _wrAnimator(layer, comp, rise, sF, eF, bez) {
   off.setValueAtTime(t0, 0);
   off.setValueAtTime(t1, 100);
   _taBezierEase(off, 0, 100, t0, t1, bez);
+  if (outSF !== undefined && outEF !== undefined) {
+    _taAddExitSweep(off, 0, 100, outSF / fps, outEF / fps, bez);
+  }
 }
 
 COMMANDS.applyWordReveal = function (p) {
@@ -452,6 +522,14 @@ COMMANDS.applyWordReveal = function (p) {
   var mb = (p.motionBlur !== undefined) ? !!p.motionBlur : true;
   var trk = (p.tracking !== undefined) ? p.tracking : 0;
   var prefix = p.namePrefix || "WR";
+  // Exit (Faz 2 "çıkış animasyonu", docs/ROADMAP.md): optional, off unless
+  // outFrame is given. Same per-word stagger ORDER as entry (word 0 exits
+  // first), timed backward from outFrame so the last word finishes exactly
+  // there. Duration defaults to 60% of the entry's (exits read faster than
+  // entries in practice — decided 2026-08-09).
+  var outF = p.outFrame;
+  var outRevF = (p.outRevealFrames !== undefined) ? p.outRevealFrames : Math.round(revF * 0.6);
+  var outStag = (p.outStagger !== undefined) ? p.outStagger : stag;
 
   return AEB.undo("mograph-mcp: applyWordReveal", function () {
     // deterministic space width for this font/size/tracking
@@ -468,6 +546,8 @@ COMMANDS.applyWordReveal = function (p) {
     }
     AEB.assert(lines.length, "text has no words");
     var nLines = lines.length;
+    var totalWords = 0;
+    for (var tw = 0; tw < nLines; tw++) totalWords += lines[tw].length;
     // ONE stable vertical reference (not per-line) so baselines are spaced by a
     // constant lineH regardless of per-line ascenders/descenders. Block centered.
     var ref = _wrMeasure(comp, "Hg", font, size, trk);
@@ -499,7 +579,12 @@ COMMANDS.applyWordReveal = function (p) {
         L.property("ADBE Transform Group").property("ADBE Position").setValue([cumX - r.left, vy]);
         L.name = prefix + "_" + k + "_" + word.replace(/[^A-Za-z0-9]/g, "");
         var sF = startF + k * stag, eF = sF + revF;
-        _wrAnimator(L, comp, rise, sF, eF, bez);
+        var outSF, outEF;
+        if (outF !== undefined) {
+          outEF = outF - (totalWords - 1 - k) * outStag;
+          outSF = outEF - outRevF;
+        }
+        _wrAnimator(L, comp, rise, sF, eF, bez, outSF, outEF);
         if (mb) L.motionBlur = true;
         if (p.trimIn !== undefined) L.inPoint = p.trimIn;
         if (p.trimOut !== undefined) L.outPoint = p.trimOut;
