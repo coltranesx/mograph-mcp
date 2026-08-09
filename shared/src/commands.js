@@ -1,9 +1,22 @@
 // commands.js — the command registry. Mirrors the JSX COMMANDS dispatch table
 // so bad calls fail fast on the controller before crossing the socket.
 //
-// Each entry: { description, dev?, validate(params) -> normalizedParams }.
+// Each entry: { description, dev?, schema?, validate(params) -> normalizedParams }.
 // validate() throws ValidationError on bad input and returns a normalized
 // params object (defaults applied) on success.
+//
+// `schema` (optional): a JSON Schema `properties` map for commands exposed as
+// individual `ae_<name>` MCP tools (controller/src/mcpServer.js CORE set).
+// Confirmed live 2026-08-09: those tools' inputSchema used to be a blanket
+// `{ type:'object', additionalProperties:true }` with no declared property
+// types — the MCP client silently mangles ARRAY-valued top-level arguments
+// under that schema (color/position/scale/etc. arrive at AE as non-arrays),
+// while scalars survive (numeric-looking strings, already tolerated by
+// validate.js's numericLike). Declaring the real type here — critically
+// `type:'array'` for anything array-shaped — fixed it (see docs/DEVLOG.md,
+// corrects the earlier "unfixable, harness-side" conclusion from the same
+// day). Only commands in CORE need this; everything else is reachable via
+// `ae_command` whose `params` field is already typed as an object.
 
 import { v, isPlainObject, ValidationError } from './validate.js';
 import { loadConfig } from './config.js';
@@ -35,6 +48,11 @@ export const COMMANDS = {
       'Create a composition. width/height/duration/frameRate fall back to config.json ' +
       'defaults; { preset } (hd|vertical|square|portrait, see config.json) fills them in ' +
       'first and explicit params still win. Returns { compId, name }.',
+    schema: {
+      name: { type: 'string' }, preset: { type: 'string' },
+      width: { type: 'integer' }, height: { type: 'integer' },
+      duration: { type: 'number' }, frameRate: { type: 'number' },
+    },
     validate(p) {
       const { defaults, presets } = loadConfig();
       const preset = v.optionalString(p, 'preset');
@@ -59,6 +77,11 @@ export const COMMANDS = {
 
   addSolid: {
     description: 'Add a solid layer to a comp. Returns { layerIndex }.',
+    schema: {
+      compId: { type: 'integer' }, name: { type: 'string' },
+      color: { type: 'array', items: { type: 'number' } },
+      width: { type: 'integer' }, height: { type: 'integer' },
+    },
     validate(p) {
       return {
         compId: v.requiredInt(p, 'compId'),
@@ -72,6 +95,11 @@ export const COMMANDS = {
 
   addTextLayer: {
     description: 'Add a text layer to a comp. Returns { layerIndex }.',
+    schema: {
+      compId: { type: 'integer' }, text: { type: 'string' },
+      fontSize: { type: 'number' },
+      position: { type: 'array', items: { type: 'number' } },
+    },
     validate(p) {
       return {
         compId: v.requiredInt(p, 'compId'),
@@ -95,6 +123,14 @@ export const COMMANDS = {
     // resolve, so validation there is sufficient (defense-in-depth intact).
     description:
       'Set a layer property. Friendly names: position|scale|rotation|opacity|anchorPoint|anchor|name|enabled|startTime|inPoint|outPoint|shy|solo|label|threeDLayer — or an array property path (e.g. ["Effects","Tint","Amount to Tint"]) for anything else. { compId, layer, property, value }. Returns { ok }.',
+    // value is genuinely polymorphic (number for opacity/rotation, [x,y]/
+    // [x,y,z] for position/scale/anchorPoint, string for name/label, bool for
+    // enabled/shy/solo/threeDLayer) — anyOf keeps the array branch typed so
+    // array-valued calls survive the MCP tool's inputSchema (see file header).
+    schema: {
+      compId: { type: 'integer' }, property: { type: 'string' },
+      value: { anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }] },
+    },
     // requireFields (defined below, but hoisted — it's a function
     // declaration) just checks presence and spreads params through
     // untouched, same as withDesc — needed here because withDesc itself is
@@ -108,6 +144,11 @@ export const COMMANDS = {
     description:
       'Render a comp to a file. Async: returns { jobId, status } immediately; ' +
       'progress arrives as `progress` events; completion as a `renderComplete` event.',
+    schema: {
+      compId: { type: 'integer' }, outputPath: { type: 'string' },
+      settingsTemplate: { type: 'string' }, outputModuleTemplate: { type: 'string' },
+      format: { type: 'string' }, startFrame: { type: 'number' }, endFrame: { type: 'number' },
+    },
     validate(p) {
       return {
         compId: v.requiredInt(p, 'compId'),
@@ -145,7 +186,11 @@ function requireFields(p, names) {
   return { ...p };
 }
 const pass = (...required) => ({ validate: (p) => requireFields(p, required) });
-const withDesc = (description, required) => ({ description, validate: (p) => requireFields(p, required) });
+// schema (optional 3rd arg): JSON Schema `properties` map, used only for
+// commands in mcpServer.js's CORE set (see file header) — declares real
+// types (crucially `type:'array'`) so the ae_<name> MCP tool's inputSchema
+// doesn't silently mangle array-valued params.
+const withDesc = (description, required, schema) => ({ description, schema, validate: (p) => requireFields(p, required) });
 
 // Shape operators (Trim Paths, Repeater, ...) live inside a shape layer's
 // vector-group tree as PropertyGroup children, added via addProperty(matchName)
@@ -174,8 +219,10 @@ const SHAPE_OPERATORS_PENDING = new Set([
 
 Object.assign(COMMANDS, {
   // layers
-  addNull: withDesc('Add a null layer. { compId, name?, duration? }', ['compId']),
-  addAdjustmentLayer: withDesc('Add an adjustment layer. { compId, name? }', ['compId']),
+  addNull: withDesc('Add a null layer. { compId, name?, duration? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' }, duration: { type: 'number' } }),
+  addAdjustmentLayer: withDesc('Add an adjustment layer. { compId, name? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' } }),
   addCamera: withDesc('Add a camera. { compId, name?, center? }', ['compId']),
   addLight: withDesc('Add a light. { compId, name?, lightType?, center? }', ['compId']),
   addShape: {
@@ -183,6 +230,15 @@ Object.assign(COMMANDS, {
       'Add a shape layer. { compId, shape? (rectangle|ellipse|polystar, default rectangle), size? ([w,h], rectangle/ellipse only), ' +
       'polyType? (star|polygon, default star, polystar only), points? (int >=3, polystar only), innerRadius?/outerRadius? (polystar only), ' +
       'fillColor?, strokeColor?, strokeWidth?, name? }',
+    schema: {
+      compId: { type: 'integer' }, shape: { type: 'string' },
+      size: { type: 'array', items: { type: 'number' } },
+      polyType: { type: 'string' }, points: { type: 'integer' },
+      innerRadius: { type: 'number' }, outerRadius: { type: 'number' },
+      fillColor: { type: 'array', items: { type: 'number' } },
+      strokeColor: { type: 'array', items: { type: 'number' } },
+      strokeWidth: { type: 'number' }, name: { type: 'string' },
+    },
     validate(p) {
       const base = requireFields(p, ['compId']);
       const SHAPES = ['rectangle', 'ellipse', 'polystar'];
@@ -231,40 +287,50 @@ Object.assign(COMMANDS, {
       return base;
     },
   },
-  addFootageLayer: withDesc('Add an existing project item into a comp. { compId, itemId|itemName }', ['compId']),
+  addFootageLayer: withDesc('Add an existing project item into a comp. { compId, itemId|itemName }', ['compId'],
+    { compId: { type: 'integer' }, itemName: { type: 'string' } }),
   setParent: withDesc('Parent one layer to another. { compId, layer, parent|parentName(null to unparent) }', ['compId']),
-  trimLayer: withDesc('Set layer in/out/start. { compId, layer, inPoint?, outPoint?, startTime? }', ['compId']),
+  trimLayer: withDesc('Set layer in/out/start. { compId, layer, inPoint?, outPoint?, startTime? }', ['compId'],
+    { compId: { type: 'integer' }, inPoint: { type: 'number' }, outPoint: { type: 'number' }, startTime: { type: 'number' } }),
   moveLayer: withDesc('Move a layer to a stack index. { compId, layer, toIndex }', ['compId', 'toIndex']),
   duplicateLayer: withDesc('Duplicate a layer. { compId, layer, name? }', ['compId']),
   deleteLayer: withDesc('Delete a layer. { compId, layer }', ['compId']),
-  getLayers: withDesc('List layers in a comp.', ['compId']),
+  getLayers: withDesc('List layers in a comp.', ['compId'], { compId: { type: 'integer' } }),
 
   // keyframes / expressions
   setKeyframe: withDesc('One keyframe. { compId, layer, property, time, value }. On a SHAPE-typed property (e.g. a path, property: ["ADBE Root Vectors Group",...,"ADBE Vector Shape"]), value is { vertices[], inTangents?, outTangents?, closed? } — every keyframe on that property must use the same vertex count or the call fails.', ['compId', 'property', 'time', 'value']),
-  setKeyframes: withDesc('Bulk keyframes. { compId, layer, property, times[], values[], easyEase? }. On a SHAPE-typed property, values[] entries are { vertices[], inTangents?, outTangents?, closed? } and must all share the same vertex count (also matching any pre-existing keyframes) — mismatches fail loudly instead of producing broken path interpolation.', ['compId', 'property', 'times', 'values']),
+  setKeyframes: withDesc('Bulk keyframes. { compId, layer, property, times[], values[], easyEase? }. On a SHAPE-typed property, values[] entries are { vertices[], inTangents?, outTangents?, closed? } and must all share the same vertex count (also matching any pre-existing keyframes) — mismatches fail loudly instead of producing broken path interpolation.', ['compId', 'property', 'times', 'values'],
+    { compId: { type: 'integer' }, times: { type: 'array', items: { type: 'number' } }, values: { type: 'array' }, easyEase: { type: 'boolean' } }),
   setEase: withDesc('Temporal ease on a key. { compId, layer, property, keyIndex, inInfluence?, outInfluence? }', ['compId', 'property', 'keyIndex']),
   setInterpolation: withDesc('Interp type on a key (linear|bezier|hold). { compId, layer, property, keyIndex, inType, outType? }', ['compId', 'property', 'keyIndex']),
   removeKeyframes: withDesc('Clear all keyframes on a property.', ['compId', 'property']),
-  setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression']),
+  setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression'],
+    { compId: { type: 'integer' }, expression: { type: 'string' } }),
   removeExpression: withDesc('Remove an expression.', ['compId', 'property']),
   enableExpression: withDesc('Enable/disable an expression. { ..., enabled }', ['compId', 'property']),
 
   // effects
-  addEffect: withDesc('Add an effect by matchName. { compId, layer, matchName, name?, params? }', ['compId']),
-  setEffectParam: withDesc('Set an effect param. { compId, layer, effect, param, value, time? }', ['compId', 'effect', 'param', 'value']),
+  addEffect: withDesc('Add an effect by matchName. { compId, layer, matchName, name?, params? }', ['compId'],
+    { compId: { type: 'integer' }, matchName: { type: 'string' }, name: { type: 'string' }, params: { type: 'object' } }),
+  setEffectParam: withDesc('Set an effect param. { compId, layer, effect, param, value, time? }', ['compId', 'effect', 'param', 'value'],
+    { compId: { type: 'integer' }, param: { type: 'string' }, time: { type: 'number' },
+      value: { anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }] } }),
   listEffects: withDesc('List a layer\'s effects.', ['compId']),
   addExpressionControl: withDesc('Add a Slider/Point/Color/Checkbox/Angle control. { compId, layer, controlType, name?, value? }', ['compId']),
 
   // footage
-  importFootage: withDesc('Import a media file. { path, name?, sequence? }', ['path']),
+  importFootage: withDesc('Import a media file. { path, name?, sequence? }', ['path'],
+    { path: { type: 'string' }, name: { type: 'string' }, sequence: { type: 'boolean' } }),
   compFromFootage: withDesc('Import a file and build a matching comp pinned to t=0. { path, name? }', ['path']),
 
   // app / menu / project
   executeMenuCommand: withDesc('Run any AE menu command. { commandId | commandName }', []),
   findMenuCommand: withDesc('Look up a menu command id by name. { commandName }', ['commandName']),
-  saveProject: withDesc('Save the project. { path? }', []),
-  openProject: withDesc('Open a project file, replacing whatever is currently open. Never triggers AE\'s save-changes dialog: the current project is saved (or discarded) BEFORE the native open call. { path, save? (default true - save current project first if it has a file; throws if it has unsaved content and no file) }', ['path']),
-  closeProject: withDesc('Close the current project (back to a blank Untitled project). Never triggers a dialog. { save? (default true - save first via its own file; throws if never saved) }', []),
+  saveProject: withDesc('Save the project. { path? }', [], { path: { type: 'string' } }),
+  openProject: withDesc('Open a project file, replacing whatever is currently open. Never triggers AE\'s save-changes dialog: the current project is saved (or discarded) BEFORE the native open call. { path, save? (default true - save current project first if it has a file; throws if it has unsaved content and no file) }', ['path'],
+    { path: { type: 'string' }, save: { type: 'boolean' } }),
+  closeProject: withDesc('Close the current project (back to a blank Untitled project). Never triggers a dialog. { save? (default true - save first via its own file; throws if never saved) }', [],
+    { save: { type: 'boolean' } }),
   quitApp: withDesc('Quit After Effects. Never triggers the save-changes dialog (saves first by default). The panel connection drops as part of quitting - the controller resolves the call as a DISCONNECTED error, which for this command means success, not failure. { save? (default true) }', []),
   undo: withDesc('Edit > Undo.', []),
   redo: withDesc('Edit > Redo.', []),
@@ -275,7 +341,8 @@ Object.assign(COMMANDS, {
   getAppInfo: withDesc('App + project facts.', []),
 
   // executor (HLD)
-  applySpec: withDesc('Idempotently realize a segment spec. { compId, segmentId|spec.segment_id, spec, segment? }', ['compId', 'spec']),
+  applySpec: withDesc('Idempotently realize a segment spec. { compId, segmentId|spec.segment_id, spec, segment? }', ['compId', 'spec'],
+    { compId: { type: 'integer' }, spec: { type: 'object' }, segment: { type: 'object' } }),
   removeLayersByPrefix: withDesc('Remove all layers whose name starts with prefix. { compId, prefix }', ['compId', 'prefix']),
 });
 
@@ -290,10 +357,14 @@ Object.assign(COMMANDS, {
   // text
   setTextDocument: withDesc('Style a text layer (text/font/size/tracking/fill/stroke/justification/...). { compId, layer, ... }', ['compId']),
   addTextAnimator: withDesc('Add a text animator (Animate panel). { compId, layer, name?, properties:{position,scale,rotation,opacity,tracking,blur}, selector:{basedOn,shape,easeHigh,easeLow,start,end,offset}, animate:{field:offset|start|end, from, to, startFrame, endFrame, ease:easeOut|easyEase}, motionBlur? }', ['compId']),
-  applyTextPreset: withDesc('Apply a named text-animation preset. { compId, layer, preset: wordReveal|charScale|bunchRotate|blurFade }', ['compId', 'preset']),
+  applyTextPreset: withDesc('Apply a named text-animation preset. { compId, layer, preset: wordReveal|charScale|bunchRotate|blurFade }', ['compId', 'preset'],
+    { compId: { type: 'integer' }, preset: { type: 'string' } }),
   applyWordReveal: withDesc('Deterministic text-driven per-word reveal. Splits text (\\n = lines) into words, measures each glyph run, centers each line on centerX and the block on centerY, animates each word as its own layer with a cubic-bezier and overlapping cascade. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, revealFrames?, stagger?, startFrame?, bezier?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
   applyCharScale: withDesc('Deterministic letter-based char-scale reveal. Splits text into characters (kerning-correct via prefix measurement), each letter its own measured/positioned layer scaling up + rising + fading with an overlapping cascade and a cubic-bezier. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, scaleFrom?, revealFrames?, stagger?, startFrame?, bezier?, tracking?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
-  applyTextStyle: withDesc('Combinatorial text preset: apply one of 4 styles x 8 eases by NAME. style: wordReveal|charScale|bunchRotate|blurFade; ease: easeInOutCubic|easeOutQuart|easeInOutQuart|easeOutQuint|easeInOutQuint|easeOutExpo|easeInOutExpo|easeInOutCirc (or pass bezier[4]). wordReveal is fully wired (deterministic); the other three are interim. { compId, style, ease|bezier, text, ...style params }', ['compId', 'style']),
+  applyTextStyle: withDesc('Combinatorial text preset: apply one of 4 styles x 8 eases by NAME. style: wordReveal|charScale|bunchRotate|blurFade; ease: easeInOutCubic|easeOutQuart|easeInOutQuart|easeOutQuint|easeInOutQuint|easeOutExpo|easeInOutExpo|easeInOutCirc (or pass bezier[4]). wordReveal is fully wired (deterministic); the other three are interim. { compId, style, ease|bezier, text, ...style params }', ['compId', 'style'],
+    { compId: { type: 'integer' }, style: { type: 'string' }, ease: { type: 'string' },
+      bezier: { type: 'array', items: { type: 'number' } }, text: { type: 'string' },
+      fillColor: { type: 'array', items: { type: 'number' } } }),
   listTextStyles: withDesc('List available text styles + eases + which are ready. {}', []),
   applyLowerThird: {
     description:
@@ -364,7 +435,8 @@ Object.assign(COMMANDS, {
 
   // introspection (read-back)
   getProperty: withDesc('Read a property value/expression/keyframes. { compId, layer, property }', ['compId', 'property']),
-  getLayerDetails: withDesc('Full layer snapshot (transform/effects/flags, deep? tree). { compId, layer, deep?, depth? }', ['compId']),
+  getLayerDetails: withDesc('Full layer snapshot (transform/effects/flags, deep? tree). { compId, layer, deep?, depth? }', ['compId'],
+    { compId: { type: 'integer' }, deep: { type: 'boolean' }, depth: { type: 'integer' } }),
   getCompDetails: withDesc('Comp settings + all layers.', ['compId']),
   getProjectItems: withDesc('List all project items.', []),
 
@@ -434,15 +506,19 @@ Object.assign(COMMANDS, {
   keystroke: withDesc('Send OS keystrokes to AE. { keys } (SendKeys, e.g. "^s") | { text } | { key, ctrl?, alt?, shift? }', []),
 
   // discovery (read-only "what's installed")
-  listFonts: withDesc('Enumerate installed fonts (postScriptName authoritative; family/style derived). { filter?, limit? }', []),
-  listInstalledEffects: withDesc('List every installed effect via app.effects (real enumeration, not a probe) — { name, matchName, category, version, isDeprecated }. { names? } filters to specific display names.', []),
-  findEffectMatchName: withDesc('Resolve an effect display name to its matchName. { name }', ['name']),
-  introspectEffect: withDesc('Add an effect (by display name or matchName) and dump its full parameter tree (name + matchName + valueType + default). The way to wire any third-party plugin. { name | names[], depth? }', []),
+  listFonts: withDesc('Enumerate installed fonts (postScriptName authoritative; family/style derived). { filter?, limit? }', [],
+    { filter: { type: 'string' }, limit: { type: 'integer' } }),
+  listInstalledEffects: withDesc('List every installed effect via app.effects (real enumeration, not a probe) — { name, matchName, category, version, isDeprecated }. { names? } filters to specific display names.', [],
+    { names: { type: 'array', items: { type: 'string' } } }),
+  findEffectMatchName: withDesc('Resolve an effect display name to its matchName. { name }', ['name'], { name: { type: 'string' } }),
+  introspectEffect: withDesc('Add an effect (by display name or matchName) and dump its full parameter tree (name + matchName + valueType + default). The way to wire any third-party plugin. { name | names[], depth? }', [],
+    { name: { type: 'string' }, names: { type: 'array', items: { type: 'string' } }, depth: { type: 'integer' } }),
   getEnvironment: withDesc('AE version/build, OS, ExtendScript, font count, project + memory info.', []),
   listPlugins: withDesc('Best-effort list of installed plugins (.aex/.plugin) by scanning install dirs. { dirs? }', []),
 
   // friendly Lumetri grading (adds Lumetri if missing; sets params by name)
-  applyLumetri: withDesc('Grade a layer with Lumetri by friendly name. { compId, layer, settings:{ saturation, temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, vibrance, sharpen, vignette, ... }, time? }', ['compId']),
+  applyLumetri: withDesc('Grade a layer with Lumetri by friendly name. { compId, layer, settings:{ saturation, temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, vibrance, sharpen, vignette, ... }, time? }. NOTE: vignette\'s native range is -5..5, not -100..100 — out-of-range values land in the response\'s `skipped` list with the AE error, not a silent no-op.', ['compId'],
+    { compId: { type: 'integer' }, settings: { type: 'object' }, time: { type: 'number' } }),
   lumetriParams: withDesc('List the friendly Lumetri param names the bridge supports.', []),
 
   // orchestration-grade tooling
@@ -479,8 +555,16 @@ Object.assign(COMMANDS, {
   neonGlow: withDesc('Apply a neon glow stack to a layer. { compId, layer, radius? }', ['compId']),
 
   // third-party plugin wrappers (Plugin Everything) — friendly params -> stable matchNames
-  deepGlow: withDesc('Apply/Update Deep Glow 2 (PEDG2) on a layer by friendly name. { compId, layer, radius?, exposure?, threshold?, glowMode?, color?, colorOuter?, tintStrength?, params? }', ['compId']),
-  shadowStudio: withDesc('Apply/Update Shadow Studio 3 (PESS3) on a layer by friendly name. { compId, layer, lightDirection?, shadowLength?, lightRadius?, softness?, color?, opacityStart?, opacityEnd?, samples?, params? }', ['compId']),
+  deepGlow: withDesc('Apply/Update Deep Glow 2 (PEDG2) on a layer by friendly name. { compId, layer, radius?, exposure?, threshold?, glowMode?, color?, colorOuter?, tintStrength?, params? }', ['compId'],
+    { compId: { type: 'integer' }, radius: { type: 'number' }, exposure: { type: 'number' }, threshold: { type: 'number' },
+      glowMode: { type: 'number' },
+      color: { type: 'array', items: { type: 'number' } }, colorOuter: { type: 'array', items: { type: 'number' } },
+      tintStrength: { type: 'number' }, params: { type: 'object' } }),
+  shadowStudio: withDesc('Apply/Update Shadow Studio 3 (PESS3) on a layer by friendly name. { compId, layer, lightDirection?, shadowLength?, lightRadius?, softness?, color?, opacityStart?, opacityEnd?, samples?, params? }', ['compId'],
+    { compId: { type: 'integer' }, lightDirection: { type: 'number' }, shadowLength: { type: 'number' },
+      lightRadius: { type: 'number' }, softness: { type: 'number' },
+      color: { type: 'array', items: { type: 'number' } },
+      opacityStart: { type: 'number' }, opacityEnd: { type: 'number' }, samples: { type: 'number' }, params: { type: 'object' } }),
 });
 
 /**
@@ -510,5 +594,5 @@ export function validateCommand(command, params, opts = {}) {
 export function commandList({ includeDev = false } = {}) {
   return Object.entries(COMMANDS)
     .filter(([, def]) => includeDev || !def.dev)
-    .map(([name, def]) => ({ name, description: def.description, dev: !!def.dev }));
+    .map(([name, def]) => ({ name, description: def.description, dev: !!def.dev, schema: def.schema || null }));
 }

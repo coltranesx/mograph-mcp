@@ -18,6 +18,11 @@ ya da "bitti" diye işaretlenir.
   kaldırıldı. `listFonts` → 625 font (bu hâlâ ayrı, `app.fonts` zaten API).
 - `docs/reference/{effects,fonts,effects-detail}.json` — discovery cache
   snapshot'ı, `npm run` yok, `node tools/discovery-cache.mjs` ile üretilir.
+- CORE'daki tekil `ae_<komut>` MCP tool'ları artık tipli `inputSchema`
+  taşıyor (`shared/src/commands.js`'te komut başına `schema`) — array
+  parametreler (`color`, `position`, `size`, ...) artık `ae_command`'a
+  sarmadan da güvenilir gidiyor (DEVLOG 2026-08-09 (17), (3)/(6)'daki
+  "düzeltilemez" sonucunu düzeltiyor).
 
 ## Öncelik sırası
 
@@ -28,10 +33,17 @@ temeli düzeliyor** — kırık temelin üstüne kütüphane kurmanın anlamı y
 1. ~~Faz 0 — altyapı borcu~~ *(bitti, bkz. DEVLOG 2026-08-08 (6))*
 2. Shape temeli *(bitti — A/B/C/D, DEVLOG 2026-08-08 (7) ve 2026-08-09 (3)/(5))*
 3. Tipografi / lower-third *(bitti — "Faz 2" 1-6, DEVLOG 2026-08-09 (8)-(13))*
-4. Logo / bumper şablonları — **ilk canlı test başarılı** (DEVLOG 2026-08-09
-   (14)), devam ediyor — bkz. "Faz 3" aşağıda
-5. Format türetme *(nadiren ihtiyaç, düşük öncelik)*
-6. Efekt / grade kombinasyonları
+4. Logo / bumper şablonları — **ilk canlı test aşaması bitti** (DEVLOG
+   2026-08-09 (14)); "tek komut mu / elle mi" soyutlama kararı **ertelendi**
+   (kullanıcı: önce yapı taşları, DEVLOG 2026-08-09 (17)) — 2./3. gerçek
+   şablonla tekrar ele alınacak, bkz. "Faz 3" aşağıda
+5. **Efekt / grade — yapı taşları audit'i bitti** (DEVLOG 2026-08-09 (17)):
+   array-parametre MCP bug'ı kök nedeninden düzeltildi, `applyLumetri`/
+   `cinematicGrade`/`smokeEffect`/`glitchEffect`/`neonGlow` canlıda
+   doğrulandı. Kalan: bunları isimli "look preset" (`applyLowerThird`
+   tarzı) altında birleştirmek mi, yoksa mevcut komutları elle bir araya
+   getirmek yeterli mi — henüz karar verilmedi (bkz. "Faz 3.5" aşağıda).
+6. Format türetme *(nadiren ihtiyaç, düşük öncelik)*
 7. Reviewer'ı gerçek yap — `claudeReviewer()` stub'ı. Bilinçli olarak geç
    sırada: toplu iş yapılmaya başlanınca (40 varyantı tek tek izleyemezsin)
    anlam kazanıyor.
@@ -250,11 +262,45 @@ patlıyordu — köprünün render özelliği muhtemelen hiç canlı test edilme
 üzerinde metin değiştirme + görsel import edip placeholder'a cover-fit ile
 oturtma, render alıp görsel doğrulama. Elle, komut komut yapıldı.
 
-**Açık soru:** Bu, tekrarlanan bir iş akışı olarak (`applyLowerThird` gibi
-tek bir komut/spec) mı soyutlanmalı, yoksa şablon başına düzen çok
-değişken olduğu için mevcut komutların elle bir araya getirilmesi mi yeterli?
-Henüz karar verilmedi — ikinci/üçüncü gerçek şablonla karşılaşınca netleşir
-(tek örnekten genelleme yapmamak için bilinçli olarak erken karar verilmedi).
+**Açık soru (ertelendi, DEVLOG 2026-08-09 (17)):** Bu, tekrarlanan bir iş
+akışı olarak (`applyLowerThird` gibi tek bir komut/spec) mı soyutlanmalı,
+yoksa şablon başına düzen çok değişken olduğu için mevcut komutların elle
+bir araya getirilmesi mi yeterli? Henüz karar verilmedi — ikinci/üçüncü
+gerçek şablonla karşılaşınca netleşir (tek örnekten genelleme yapmamak için
+bilinçli olarak erken karar verilmedi). Kullanıcı kararıyla öncelik "önce
+yapı taşları" oldu (bkz. Faz 3.5 aşağıda) — bu soru askıda, terk edilmedi.
+
+---
+
+## Faz 3.5 — Efekt/grade: yapı taşları ✅ audit bitti (DEVLOG 2026-08-09 (17))
+
+Var olan komutlar (`applyLumetri`, `cinematicGrade`, `smokeEffect`,
+`glitchEffect`, `neonGlow`, `deepGlow`, `shadowStudio`) aftr'den miras,
+hiçbiri bu projede canlı test edilmemişti — "yapı taşları sağlıklı mı"
+sorusunun cevabı bilinmiyordu. Şablon soyutlama kararını beklerken
+(yukarıdaki açık soru) kullanıcı bu denetimi öne aldı.
+
+**Bulgular:**
+- **Kritik altyapı bug'ı bulundu ve düzeltildi**, grade'e özgü değil —
+  CORE'daki tekil `ae_<komut>` MCP tool'ları array-değerli parametreleri
+  (`color`, `position`, `scale`, ...) marshalling'de bozuyordu.
+  (3)/(6)'daki "harness dışı, düzeltilemez" sonucu **yanlıştı**, hiç
+  denenmeden varılmıştı. Kök neden + düzeltme: DEVLOG (17). Artık her
+  CORE komutu (`shared/src/commands.js`'teki `schema` alanı üzerinden)
+  tipli `inputSchema` taşıyor, "array parametrede `ae_command` kullan"
+  workaround'ı artık gerekli değil.
+- `applyLumetri`, `cinematicGrade`, `smokeEffect`, `glitchEffect`,
+  `neonGlow` — beşi de canlıda `getLayerDetails` ile teyit edildi, sağlam.
+  `applyLumetri`'nin `vignette` parametresi native'de -5..5 (yüzde gibi
+  görünse de) — dokümante edildi.
+- `deepGlow`/`shadowStudio` kod yolu sağlıklı ama bu makinede Plugin
+  Everything (Deep Glow 2 / Shadow Studio 3) kurulu değil — canlı test
+  edilemedi, ortam kısıtı (başka makinede tekrar denenmeli).
+
+**Sırada:** yukarıdaki "tek komut/spec mi, elle mi" sorusu hâlâ açık —
+grade tarafında bir "look preset" ihtiyacı belirirse (örn. isimli
+"cinematic"/"vintage" gibi kombinasyonlar) o zaman ele alınır; şimdilik
+birincil hedef (yapı taşlarının sağlıklı olması) karşılandı.
 
 ---
 

@@ -13,7 +13,10 @@ var _LUMETRI = {
   // Creative
   vibrance: "ADBE Lumetri-0030", sharpen: "ADBE Lumetri-0029",
   creativesaturation: "ADBE Lumetri-0031", fadedfilm: "ADBE Lumetri-0028",
-  // Vignette
+  // Vignette. NOTE (live-confirmed 2026-08-09): Amount's native range is
+  // -5..5, not the -100..100 a percent-like name suggests — AE rejects
+  // anything outside that with "Value out of range", which lands in this
+  // command's `skipped` list (not a silent no-op, but easy to trip over).
   vignette: "ADBE Lumetri-0051", vignetteamount: "ADBE Lumetri-0051",
   vignettemidpoint: "ADBE Lumetri-0052", vignetteroundness: "ADBE Lumetri-0053",
   vignettefeather: "ADBE Lumetri-0054"

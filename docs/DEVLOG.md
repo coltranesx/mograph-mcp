@@ -12,6 +12,76 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (17)
+- **Array-parametre MCP bug'ının kök nedeni bulundu ve düzeltildi — (6)'daki
+  "repo dışı, düzeltilemez" sonucu YANLIŞ çıktı.** Kullanıcı "efekt/grade
+  kombinasyonları" işine geçmek isteyince, önce (kullanıcı isteğiyle) "yapı
+  taşları" audit'i yapıldı; `ae_addSolid({color:[...]})` ve
+  `ae_setLayerProperty({property:"scale", value:[...]})` tekrar bozuk
+  çıktı. (6)'da bu "harness'in şemasız tool çağrısında array marshalling
+  sorunu, mograph-mcp reposu dışında, düzeltilemez" diye kapatılmıştı — ama
+  o sonuç hiç test edilmeden varsayılmıştı (`mcpServer.js`'teki her
+  `ae_<komut>` tool'u upstream'den beri `{type:'object',
+  additionalProperties:true}` ile tanımlı, hiçbir property tipi hiç
+  denenmemiş). Deney: `ae_addSolid`'e sadece `color` alanı için gerçek
+  `{type:'array', items:{type:'number'}}` içeren bir `inputSchema` verilip
+  controller restart + **bu oturumun MCP bağlantısı `/mcp` ile tazelenip**
+  (kritik adım — controller'ı restart etmek yetmiyor, Claude Code'un tool
+  şemasını önbellekten attırmak da gerekiyor, ilk denemede bu atlanınca
+  yanlış-negatif sonuç alındı) tekrar çağrıldı: **array artık doğru
+  geliyor.** Hipotez doğrulandı.
+  - Kalıcı çözüm: `shared/src/commands.js`'e komut başına opsiyonel
+    `schema` alanı eklendi (JSON Schema `properties` map), `withDesc`
+    üçüncü parametre olarak kabul ediyor. `mcpServer.js`'teki `buildTools`
+    artık `def.schema` varsa onu kullanıyor, yoksa eski permissive
+    fallback'e düşüyor. CORE setindeki (`controller/src/mcpServer.js`)
+    ~30 komutun tamamına (array/object alanı olanlara özellikle: color,
+    position, size, times/values, settings, params, vignette dahil) tipli
+    schema yazıldı. Genuinely polymorphic alanlar (`setLayerProperty`/
+    `setEffectParam`'ın `value`'su — sayı/string/bool/array olabilir)
+    `anyOf` ile array dalı korunarak tiplendirildi.
+  - **Canlıda (AE 26.3x87) doğrulandı:** `addSolid` (color), `addTextLayer`
+    (position), `addShape` (size), `setLayerProperty` (scale — union-type
+    `value` alanı dahil, `getLayerDetails` ile piksel piksel teyit),
+    `setKeyframes` (times + values dizi-içinde-dizi) — hepsi artık tekil
+    `ae_*` tool'ları üzerinden array parametreyle sorunsuz. `npm test`
+    194/194.
+  - **Etki:** Bu, "array parametre geçen her çağrıda `ae_command`
+    kullan" workaround'ını (bkz. (3), (6)) gereksiz kılıyor — CORE'daki
+    tekil tool'lar artık güvenilir. `ae_command` yine de geçerli bir yol,
+    ama artık zorunlu değil.
+  - Ders: "düzeltilemez" sonucuna, gerçekten denemeden varmamak gerekiyor
+    — (6)'nın hatası tam olarak buydu.
+- **Efekt/grade "yapı taşları" audit'i — hepsi ilk kez canlı doğrulandı.**
+  `applyLumetri`, `cinematicGrade`, `smokeEffect`, `glitchEffect`,
+  `neonGlow` bugüne kadar DEVLOG'da hiç geçmemişti (aftr'den miras, hiç
+  test edilmemiş). Atılabilir bir comp'ta (`mograph-mcp_grade-probe`,
+  silinmedi/kaydedilmedi — Untitled projede) hepsi çalıştırıldı,
+  `getLayerDetails` ile sonuç teyit edildi: Lumetri Color effect + doğru
+  parametre değerleri, Fractal Noise+Tint (smoke), Turbulent Displace
+  (glitch, wiggle expression'ları dahil), 2x Glow (neon, motionBlur:true).
+  Hiçbiri bug çıkarmadı (aşağıdaki vignette notu hariç — o da bug değil,
+  dokümantasyon eksiği).
+  - **`applyLumetri`'nin `vignette` parametresi native'de -5..5 aralığında**
+    (percent gibi görünen isme rağmen), -100..100 değil — aralık dışı
+    değer sessizce yok sayılmıyor, komutun `skipped[]` listesine AE
+    hatasıyla düşüyor (davranış doğru, sadece dokümante değildi).
+    `lumetri.jsx` ve `commands.js`'teki `applyLumetri` açıklamasına not
+    eklendi.
+  - **`deepGlow`/`shadowStudio` kod yolu sağlıklı ama bu makinede canlı
+    test edilemiyor** — Plugin Everything'in Deep Glow 2 (PEDG2) / Shadow
+    Studio 3 (PESS3) eklentileri kurulu değil (zaten (16)'da
+    `listInstalledEffects`'in 446 kaydında yoklukları teyit edilmişti).
+    `deepGlow` çağrıldığında artık (array param düzeltmesi sayesinde)
+    beklenen `"Deep Glow 2 is not installed"` hatasını veriyor — önceki
+    "must be an array" hatası maskeliyordu. Kod tarafına dokunulmadı
+    (başka makinede kurulu olabilir); ortam kısıtı olarak kayda geçirildi.
+- **Öncelik kararı (kullanıcıyla):** Faz 3 (logo/bumper şablon soyutlama
+  kararı) ertelendi — "önce yapı taşlarını sağlıklı hale getirelim"
+  gerekçesiyle. İlk canlı test aşaması ((14)'te) tamamlanmış kabul
+  ediliyor, ama "tek komut mu / elle mi" sorusu 2./3. gerçek şablonla
+  tekrar ele alınacak. Bu girişteki iş bu kararın bir sonucu.
+
 ## 2026-08-09 (16)
 - **`listInstalledEffects`/`findEffectMatchName` → `app.effects`, bitti.**
   Faz 0'da tespit edilip ertelenmiş bulguyu uygulama sırası geldi

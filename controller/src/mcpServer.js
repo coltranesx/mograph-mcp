@@ -39,7 +39,19 @@ export function buildTools({ mode = 'core', allowDev = false } = {}) {
   const exposed = mode === 'all' ? allCmds : allCmds.filter((c) => CORE.has(c.name));
   const tools = [
     ...META_TOOLS,
-    ...exposed.map((c) => ({ name: 'ae_' + c.name, description: c.description, inputSchema: { type: 'object', additionalProperties: true } })),
+    // inputSchema: commands with a declared `schema` (shared/src/commands.js)
+    // get real property types — required so the MCP client preserves
+    // array-valued arguments (color/position/scale/...) instead of mangling
+    // them; see the "schema (optional)" note at the top of commands.js.
+    // Commands without one (no params, or reached only via ae_command) keep
+    // the permissive fallback.
+    ...exposed.map((c) => ({
+      name: 'ae_' + c.name,
+      description: c.description,
+      inputSchema: c.schema
+        ? { type: 'object', properties: c.schema, additionalProperties: true }
+        : { type: 'object', additionalProperties: true },
+    })),
   ];
   return { tools, allCmds };
 }
