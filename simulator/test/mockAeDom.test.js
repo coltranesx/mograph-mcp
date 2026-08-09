@@ -449,6 +449,41 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.equal(r.ok, true);
     });
 
+    it('addShape builds a polystar, defaulting to Type=star', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShStar' });
+      const compId = comp.result.compId;
+      const r = runner.dispatch('addShape', { compId, shape: 'polystar', points: 6 });
+      assert.equal(r.ok, true);
+      const star = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group').property(1);
+      assert.equal(star.matchName, 'ADBE Vector Shape - Star');
+      assert.equal(star.property('ADBE Vector Star Type').value, 1);
+      assert.equal(star.property('ADBE Vector Star Points').value, 6);
+    });
+
+    it('addShape polystar honors polyType:"polygon" (Type=2)', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShPoly' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'polystar', polyType: 'polygon' });
+      const star = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group').property(1);
+      assert.equal(star.property('ADBE Vector Star Type').value, 2);
+    });
+
+    // No silent fallback: a typo'd/unknown shape used to silently build a
+    // rectangle (docs/ROADMAP.md "Faz 1.C"). shared/src/commands.js rejects
+    // this pre-socket (see shared/test/commands.test.js); this JSX-level
+    // AEB.assert is defense-in-depth for a caller that bypasses that
+    // (AE_BRIDGE_ALLOW_DEV direct runJSX), matching the addShapeOperator
+    // pattern — same reason, different message (this layer never had the
+    // enum wording, only "unknown shape").
+    it('rejects an unknown shape instead of silently building a rectangle (defense in depth)', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShBad' });
+      const r = runner.dispatch('addShape', { compId: comp.result.compId, shape: 'hexagon' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /unknown shape/i);
+    });
+
     it('addPathShape builds a custom path with fill/stroke', () => {
       const comp = runner.dispatch('createComp', { name: 'PS' });
       const r = runner.dispatch('addPathShape', {

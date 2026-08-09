@@ -27,7 +27,7 @@ testinden sonra sıra değişti: **preset/şablon/format işlerinden önce shape
 temeli düzeliyor** — kırık temelin üstüne kütüphane kurmanın anlamı yok.
 
 1. ~~Faz 0 — altyapı borcu~~ *(bitti, bkz. DEVLOG 2026-08-08 (6))*
-2. Shape temeli *(A+B bitti, DEVLOG 2026-08-08 (7) ve 2026-08-09 (3); C/D sırada, spec aşağıda)*
+2. Shape temeli *(bitti — A/B/C/D, DEVLOG 2026-08-08 (7) ve 2026-08-09 (3)/(5))*
 3. Tipografi / lower-third *(spec aşağıda, "Faz 2" — bar yok kararı alındı)*
 4. Logo / bumper şablonları — `aep/` ve `assets/` boş, şablon girdisi gerekiyor
 5. Format türetme *(nadiren ihtiyaç, düşük öncelik)*
@@ -142,21 +142,28 @@ kaldırıldı. `addProperty()` zaten her zaman sona eklediği için doğru sıra
 elde etmenin sağlam yolu **operatörleri istenen son sırayla çağırmak** —
 reorder mekanizmasına hiç ihtiyaç yok. Detay → DEVLOG 2026-08-09 (3).
 
-### C. `addShape` düzeltmesi
+### C. `addShape` düzeltmesi ✅ bitti (DEVLOG 2026-08-09 (5))
 
-- Polystar ekle (`ADBE Vector Shape - Star`); star/polygon ayrımı Type
-  parametresiyle (1 = star, 2 = polygon).
-- **Sessiz fallback'i kaldır.** Şu an `shape:"polystar"` hata vermiyor,
-  sessizce dikdörtgen üretiyor (`layer.jsx:90-91` — ellipse değilse rect).
-  Bu hata vermekten kötü.
-- Doğrulamayı `shared/src/commands.js`'te shape enum'u ile yap → bozuk çağrı
-  socket'i geçmeden yakalansın (repodaki mevcut desen bu).
+- Polystar eklendi (`ADBE Vector Shape - Star`), canlıda doğrulandı:
+  `polyType` ("star"|"polygon", varsayılan star) → `ADBE Vector Star Type`
+  (1|2), `points`/`innerRadius`/`outerRadius` → `ADBE Vector Star
+  Points`/`Inner Radius`/`Outer Radius`. Alt-property matchName'leri de dahil
+  hepsi canlıda teyitli (`ADBE Vector Star Inner/Outer Roundess` — evet, gerçek
+  AE matchName'i "Roundess" yazım hatasıyla).
+- **Sessiz fallback kaldırıldı.** `shape` artık `shared/src/commands.js`'te
+  enum'a karşı doğrulanıyor (rectangle|ellipse|polystar), bozuk çağrı socket'i
+  hiç geçmiyor; `layer.jsx`'te de aynı kontrol defense-in-depth olarak duruyor
+  (addShapeOperator'daki whitelist deseniyle tutarlı).
 
-### D. `getLayerDetails` shape içeriği
+### D. `getLayerDetails` shape içeriği ✅ zaten bitmişti
 
-Şu an shape layer'ın `contents`'ini hiç raporlamıyor — ajan ne kurduğunu
-göremiyor, kendi işini denetleyemiyor. Özyinelemeli grup / operatör / path
-dökümü ekle.
+Meğer bu zaten çözülmüştü — `getLayerDetails { deep, depth }` genel bir
+property-tree walker (`_groupSummary`, introspect.jsx) üzerinden shape
+layer'ların `ADBE Root Vectors Group` içeriğini (gruplar, operatörler, path
+vertices/tangents dahil) zaten özyinelemeli olarak dönüyor. ROADMAP'in bu
+maddesi güncel değilmiş, kod okunmadan yazılmış olmalı — canlıda path
+vertices/inTangents/outTangents doğru şekilde JSON'a çıktığı 2026-08-09'da
+teyit edildi.
 
 ---
 

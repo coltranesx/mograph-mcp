@@ -87,15 +87,29 @@ COMMANDS.addShape = function (p) {
     var grp = contents.addProperty("ADBE Vector Group");
     var shapeGroup = grp.property("ADBE Vectors Group");
     var kind = (p.shape || "rectangle").toLowerCase();
-    if (kind === "ellipse") shapeGroup.addProperty("ADBE Vector Shape - Ellipse");
-    else shapeGroup.addProperty("ADBE Vector Shape - Rect");
-    var size = p.size || [200, 200];
-    try {
-      var shp = (kind === "ellipse")
-        ? shapeGroup.property("ADBE Vector Shape - Ellipse").property("ADBE Vector Ellipse Size")
-        : shapeGroup.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size");
-      shp.setValue(size);
-    } catch (e) {}
+    // shared/src/commands.js validates kind against the same enum before this
+    // ever reaches the socket — this AEB.assert is defense-in-depth (matches
+    // the addShapeOperator pattern), not the primary guard. No silent
+    // fallback to rectangle for an unrecognized shape (docs/ROADMAP.md "Faz
+    // 1.C" — a typo'd shape used to build a rectangle with no error).
+    AEB.assert(kind === "rectangle" || kind === "ellipse" || kind === "polystar",
+      'unknown shape "' + p.shape + '" (expected rectangle|ellipse|polystar)');
+    if (kind === "ellipse") {
+      shapeGroup.addProperty("ADBE Vector Shape - Ellipse");
+      var size = p.size || [200, 200];
+      try { shapeGroup.property("ADBE Vector Shape - Ellipse").property("ADBE Vector Ellipse Size").setValue(size); } catch (e) {}
+    } else if (kind === "polystar") {
+      var star = shapeGroup.addProperty("ADBE Vector Shape - Star");
+      var isPolygon = (String(p.polyType).toLowerCase() === "polygon");
+      star.property("ADBE Vector Star Type").setValue(isPolygon ? 2 : 1);
+      if (p.points !== undefined) star.property("ADBE Vector Star Points").setValue(p.points);
+      if (p.innerRadius !== undefined) star.property("ADBE Vector Star Inner Radius").setValue(p.innerRadius);
+      if (p.outerRadius !== undefined) star.property("ADBE Vector Star Outer Radius").setValue(p.outerRadius);
+    } else {
+      shapeGroup.addProperty("ADBE Vector Shape - Rect");
+      var rectSize = p.size || [200, 200];
+      try { shapeGroup.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size").setValue(rectSize); } catch (e) {}
+    }
     if (p.fillColor) {
       var fill = shapeGroup.addProperty("ADBE Vector Graphic - Fill");
       fill.property("ADBE Vector Fill Color").setValue(AEB.normColor(p.fillColor));

@@ -122,6 +122,12 @@ const VECTOR_AUTO_CHILDREN = {
   ],
   'ADBE Vector Shape - Ellipse': [['ADBE Vector Ellipse Size', () => new MockProperty('ADBE Vector Ellipse Size', [100, 100])]],
   'ADBE Vector Shape - Rect': [['ADBE Vector Rect Size', () => new MockProperty('ADBE Vector Rect Size', [100, 100])]],
+  'ADBE Vector Shape - Star': [
+    ['ADBE Vector Star Type', () => new MockProperty('ADBE Vector Star Type', 1)],
+    ['ADBE Vector Star Points', () => new MockProperty('ADBE Vector Star Points', 5)],
+    ['ADBE Vector Star Inner Radius', () => new MockProperty('ADBE Vector Star Inner Radius', 50)],
+    ['ADBE Vector Star Outer Radius', () => new MockProperty('ADBE Vector Star Outer Radius', 100)],
+  ],
   // Trim Paths / Repeater sub-property matchNames below are the commonly
   // documented AE ones, NOT live-confirmed the way the operator matchNames
   // themselves are (docs/DEVLOG.md 2026-08-09) — they only back the mock so

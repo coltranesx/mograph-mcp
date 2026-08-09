@@ -12,6 +12,30 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (5)
+- **Faz 1.C — `addShape` polystar + sessiz fallback kaldırma, bitti.**
+  `shape:"polystar"` eklendi (`ADBE Vector Shape - Star`); `polyType`
+  ("star"|"polygon") → `ADBE Vector Star Type` (1|2), `points`/`innerRadius`/
+  `outerRadius` → ilgili alt-property'ler. Hepsi canlıda (AE 26.3x87)
+  `getLayerDetails` ile teyit edildi — `ADBE Vector Star Inner/Outer Roundess`
+  dahil (evet, gerçek matchName "Roundess" yazım hatasıyla). Tanımadığı
+  `shape` değeri artık `shared/src/commands.js`'te enum'a karşı reddediliyor
+  (önceden sessizce dikdörtgen üretiyordu) + `layer.jsx`'te defense-in-depth.
+  9 yeni test (shared + simulator), 150/150 yeşil.
+  - **Faz 1.D zaten bitmişti, kod okunmadan yazılmış eski bir ROADMAP notuymuş.**
+    `getLayerDetails { deep, depth }` (`_groupSummary`, introspect.jsx) genel
+    bir property-tree walker olarak shape içeriğini (path vertices/tangents
+    dahil) zaten dönüyordu — canlıda `addPathShape` sonrası doğrulandı.
+  - **Operasyonel bulgu: controller (`shared/src/commands.js`) değişikliği
+    `npm run service:restart` gerektiriyor, panel deploy'undan bağımsız.**
+    LaunchAgent persistent process olduğu için dosya değişikliğini kendiliğinden
+    almıyor — bugünkü `addShape` validate'i restart'tan önce sessizce devre
+    dışıydı (çağrı AE'ye kadar gidip orada JSX-level assert'e takılıyordu,
+    pre-socket reddi hiç çalışmıyordu). Restart sonrası doğru davrandığı
+    teyit edildi. Panel (`deploy:panel` + AE relaunch) ve controller
+    (`service:restart`) iki bağımsız reload yolu — biri diğerini kapsamıyor.
+  - Faz 1 (A/B/C/D) artık tamamen bitti.
+
 ## 2026-08-09 (4)
 - **Şemasız `ae_*` MCP tool bug'ının kök nedeni bulundu ve düzeltildi —
   MCP şemasında değil, bizim JSX kodumuzdaymış.** (3) girişindeki "workaround:

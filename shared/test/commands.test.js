@@ -157,6 +157,49 @@ describe('validateCommand', () => {
     assert.match(r.error, /position/);
   });
 
+  describe('addShape (pre-socket shape/polystar validation)', () => {
+    it('accepts rectangle, ellipse, polystar', () => {
+      for (const shape of ['rectangle', 'ellipse', 'polystar']) {
+        const r = validateCommand('addShape', { compId: 1, shape });
+        assert.equal(r.ok, true, `${shape}: ${r.error}`);
+      }
+    });
+
+    it('defaults are fine without a shape at all', () => {
+      const r = validateCommand('addShape', { compId: 1 });
+      assert.equal(r.ok, true);
+    });
+
+    // No silent fallback to rectangle for a typo'd/unknown shape
+    // (docs/ROADMAP.md "Faz 1.C").
+    it('rejects an unknown shape', () => {
+      const r = validateCommand('addShape', { compId: 1, shape: 'hexagon' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /shape must be one of: rectangle, ellipse, polystar/);
+    });
+
+    it('rejects an invalid polyType', () => {
+      const r = validateCommand('addShape', { compId: 1, shape: 'polystar', polyType: 'triangle' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /polyType/);
+    });
+
+    it('rejects a non-integer or too-small points value', () => {
+      for (const points of [2, 3.5, '5']) {
+        const r = validateCommand('addShape', { compId: 1, shape: 'polystar', points });
+        assert.equal(r.ok, false, `points=${JSON.stringify(points)} should be rejected`);
+        assert.match(r.error, /points/);
+      }
+    });
+
+    it('accepts a valid polystar payload end to end', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, shape: 'polystar', polyType: 'polygon', points: 6, innerRadius: 40, outerRadius: 90,
+      });
+      assert.equal(r.ok, true);
+    });
+  });
+
   describe('addShapeOperator (pre-socket matchName whitelist)', () => {
     it('accepts the live-confirmed operators (trim, repeater)', () => {
       for (const operator of ['trim', 'repeater']) {

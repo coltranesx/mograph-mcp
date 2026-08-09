@@ -184,7 +184,32 @@ Object.assign(COMMANDS, {
   addAdjustmentLayer: withDesc('Add an adjustment layer. { compId, name? }', ['compId']),
   addCamera: withDesc('Add a camera. { compId, name?, center? }', ['compId']),
   addLight: withDesc('Add a light. { compId, name?, lightType?, center? }', ['compId']),
-  addShape: withDesc('Add a shape layer (rectangle|ellipse). { compId, shape?, size?, fillColor?, strokeColor?, strokeWidth? }', ['compId']),
+  addShape: {
+    description:
+      'Add a shape layer. { compId, shape? (rectangle|ellipse|polystar, default rectangle), size? ([w,h], rectangle/ellipse only), ' +
+      'polyType? (star|polygon, default star, polystar only), points? (int >=3, polystar only), innerRadius?/outerRadius? (polystar only), ' +
+      'fillColor?, strokeColor?, strokeWidth?, name? }',
+    validate(p) {
+      const base = requireFields(p, ['compId']);
+      const SHAPES = ['rectangle', 'ellipse', 'polystar'];
+      if (p.shape !== undefined) {
+        const kind = String(p.shape).toLowerCase();
+        // No silent fallback to rectangle for an unrecognized shape (used to
+        // happen live in the JSX before this validator existed — a typo'd
+        // shape built a rectangle with no error, see docs/ROADMAP.md "Faz 1.C").
+        if (!SHAPES.includes(kind)) {
+          throw new ValidationError(`shape must be one of: ${SHAPES.join(', ')} (got "${p.shape}")`);
+        }
+      }
+      if (p.polyType !== undefined && !['star', 'polygon'].includes(String(p.polyType).toLowerCase())) {
+        throw new ValidationError('polyType must be "star" or "polygon"');
+      }
+      if (p.points !== undefined && (typeof p.points !== 'number' || !Number.isInteger(p.points) || p.points < 3)) {
+        throw new ValidationError('points must be an integer >= 3');
+      }
+      return base;
+    },
+  },
   addPathShape: withDesc('Shape layer with a custom bezier path. { compId, vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId']),
   addShapeOperator: {
     description:
