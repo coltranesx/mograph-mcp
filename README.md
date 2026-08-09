@@ -97,14 +97,15 @@ Requires After Effects 2024 to 2026, Node 18+, and `ffmpeg` on your `PATH`. Full
 
 | Capability | What it does |
 |---|---|
-| ~100 commands | Comps, layers, keyframes with easing, expressions, effects (by matchName or display name, including deeply nested params and third-party plugins), masks, layer styles, text animators, render. |
+| ~110 commands | Comps, layers, keyframes with easing, expressions, effects (by matchName or display name, including deeply nested params and third-party plugins), masks, layer styles, shape operators, text animators, render. |
 | Discovery | `listFonts`, `listInstalledEffects` (returns matchNames), `findEffectMatchName`, `listPlugins`, `getEnvironment`. Find what's installed instead of guessing. |
 | One-call VFX | `fireEffect`, `smokeEffect`, `glitchEffect`, `neonGlow`, `cinematicGrade`, and a friendly `applyLumetri` grade. |
-| Text animation | Four Animate-panel presets (`wordReveal`, `charScale`, `bunchRotate`, `blurFade`) plus a full range-selector builder. |
+| Text animation | Four Animate-panel presets (`wordReveal`, `charScale`, `bunchRotate`, `blurFade`) × 8 eases via `applyTextStyle`, a full range-selector builder, and layout helpers (`measureText`, `resolveSafePosition`, `alignAnchor`, `applyLowerThird`) for safe-area-aware placement. |
+| Shape operators | `addShapeOperator` layers trim/repeater (more pending live confirmation) onto any vector group, append-only. |
 | Autonomous pipeline | Declarative segment specs realize, render, get a visual review, take a structured delta, re-render, and concat. It self-corrects. |
 | MCP server | Drive AE from Claude Desktop, Claude Code, or any MCP client. Every command is a tool (`npm run mcp`). |
 | Fast and batched | `batch` runs N edits in one round-trip and one undo (sub-200 ms for 20 ops). Non-blocking `aerender` streams progress events, with a parallel render engine. |
-| Testable without AE | A headless simulator runs the real JSX against a mock DOM. 96 tests plus e2e, CI on Node 18, 20, and 22. |
+| Testable without AE | A headless simulator runs the real JSX against a mock DOM. 194 tests plus e2e, CI on Node 18, 20, and 22. |
 | Cross-platform | Windows and macOS, one-command sign and deploy. |
 
 ---
@@ -129,7 +130,7 @@ Requires After Effects 2024 to 2026, Node 18+, and `ffmpeg` on your `PATH`. Full
 ┌───────────────▼────────────────────────────────┐  │
 │  JSX command layer (host.jsx + commands/*.jsx)  │  │
 │   • dispatch(command, paramsJson) -> JSON       │  │
-│   • ~90 commands: layers, keyframes, effects,   │  │
+│   • ~110 commands: layers, keyframes, effects,  │  │
 │     text animators, masks, VFX presets, render  │  │
 └───────────────┬────────────────────────────────┘  ┘
                 │  AE scripting DOM (app.project, comps, layers)
@@ -170,6 +171,10 @@ Control AE from code: create comps and layers (solids, text, shapes, nulls, came
 Add any effect by matchName and drive any of its parameters, even deeply nested ones, animated via keyframes or expressions.
 
 Animate text with four ready-made Animate-panel styles (`wordReveal`, `charScale`, `bunchRotate`, `blurFade`) plus a full text-animator builder (Based On, Shape, Ease High to Low, keyframed Offset and Start).
+
+Lay out text precisely instead of eyeballing coordinates: `measureText` reads real rendered bounds, `resolveSafePosition` resolves a named anchor (e.g. `bottomLeft`) to safe-area-aware pixel coordinates, `alignAnchor` sits a layer's anchor point on its own content, and `applyLowerThird` composes a full title/subtitle lower-third from those primitives in one call.
+
+Layer shape operators (`trim`, `repeater`, more pending live confirmation) onto any vector group's path with `addShapeOperator`, appended in call order.
 
 Reach for one-call VFX presets: `fireEffect` (realistic fire), `smokeEffect`, `glitchEffect`, `neonGlow`, `cinematicGrade`, and a friendly `applyLumetri` grade.
 
@@ -459,22 +464,22 @@ Onboarding teammates? Hand them [docs/TEAM-GUIDE.md](docs/TEAM-GUIDE.md), a no-r
 
 ## 7. Command vocabulary
 
-~90 commands, grouped. List them live at `GET /api/commands`. Highlights:
+~110 commands, grouped. List them live at `GET /api/commands`. Highlights:
 
 Project and comp:
-`ping`, `getProjectInfo`, `getAppInfo`, `listComps`, `createComp`, `setCompSettings`, `addCompMarker`, `duplicateComp`, `setActiveComp`, `setCompTime`, `getCompTime`, `setWorkArea`, `clearComp`, `createFolder`, `moveToFolder`, `renameItem`, `deleteItem`, `setProxy`, `getProjectItems`, `saveProject`.
+`ping`, `getProjectInfo`, `getAppInfo`, `listComps`, `createComp`, `getCompDetails`, `setCompSettings`, `addCompMarker`, `duplicateComp`, `setActiveComp`, `setCompTime`, `getCompTime`, `setWorkArea`, `clearComp`, `createFolder`, `moveToFolder`, `renameItem`, `deleteItem`, `setProxy`, `getProjectItems`, `saveProject`, `openProject`, `closeProject`, `quitApp`.
 
 Layers:
-`addSolid`, `addTextLayer`, `addNull`, `addAdjustmentLayer`, `addCamera`, `addLight`, `addShape`, `addPathShape` (custom bezier paths), `addFootageLayer`, `setLayerProperty`, `setParent`, `trimLayer`, `moveLayer`, `duplicateLayer`, `deleteLayer`, `getLayers`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`, `addLayerMarker`, `setTimeStretch`, `enableTimeRemap`, `replaceSource`, `alignLayer`, `sequenceLayers`.
+`addSolid`, `addTextLayer`, `addNull`, `addAdjustmentLayer`, `addCamera`, `addLight`, `addShape`, `addPathShape` (custom bezier paths), `addShapeOperator` (trim/repeater onto a vector group, see [section 1](#1-what-you-can-do-with-it)), `addResponsiveBox` (rect that tracks another layer's bounds live via expression), `addFootageLayer`, `setLayerProperty`, `getLayerDetails`, `getProperty`, `setParent`, `trimLayer`, `moveLayer`, `duplicateLayer`, `deleteLayer`, `getLayers`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`, `addLayerMarker`, `setTimeStretch`, `enableTimeRemap`, `replaceSource`, `alignLayer`, `alignAnchor` (sit a layer's own anchor point on its rendered content), `sequenceLayers`.
 
 Animation:
-`setKeyframe`, `setKeyframes` (bulk + ease), `setEase`, `setInterpolation`, `removeKeyframes`, `setExpression`, `removeExpression`, `enableExpression`.
+`setKeyframe`, `setKeyframes` (bulk + ease, also SHAPE-typed path properties), `setEase`, `setInterpolation`, `removeKeyframes`, `setExpression`, `removeExpression`, `enableExpression`.
 
 Effects:
 `addEffect` (by matchName), `setEffectParam`, `listEffects`, `addExpressionControl`. Any nested effect param is reachable via a property path through `setLayerProperty` or `setExpression`, for example `["ADBE Effect Parade","FN","ADBE Fractal Noise-0012"]`.
 
 Text:
-`setTextDocument`, `addTextAnimator` (full Animate-panel range selector), `applyTextPreset`.
+`setTextDocument`, `addTextAnimator` (full Animate-panel range selector), `applyTextPreset`, `applyTextStyle` (4 styles × 8 named eases), `applyWordReveal`, `applyCharScale` (deterministic, measured layouts underneath the presets above), `listTextStyles`, `measureText` (real rendered bounds via `sourceRectAtTime`), `resolveSafePosition` (named anchor to safe-area pixel coords), `applyLowerThird` (title/subtitle composed from the two above).
 
 Masks and styles:
 `addMask`, `addRectMask`, `setMaskProperty`, `addLayerStyle`, `setLayerStyleEnabled`.

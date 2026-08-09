@@ -12,6 +12,47 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (21)
+- **README taraması: fork sonrası eklenen komutlar dokümantasyona hiç
+  yansımamıştı, düzeltildi.** `shared/src/commands.js`'i `commandList()`
+  ile sayıp (113 komut, 194 test — README hâlâ aftr'dan kalma "~90
+  commands"/"96 tests" diyordu) bölüm 7'nin (Command vocabulary) kategori
+  listeleriyle karşılaştırdım: `addShapeOperator`, `addResponsiveBox`,
+  `applyTextStyle`, `applyWordReveal`, `applyCharScale`, `listTextStyles`,
+  `applyLowerThird`, `measureText`, `resolveSafePosition`, `alignAnchor`,
+  `getCompDetails`, `getLayerDetails`, `getProperty`, `openProject`,
+  `closeProject`, `quitApp` — Faz 1/1.B/2'de eklenen hiçbiri README'de
+  geçmiyordu. Hepsini ilgili kategorilere ekledim, "What you can do with
+  it" bölümüne shape operator ve typography-helper paragrafları, Features
+  tablosuna bir "Shape operators" satırı ve Text animation satırına
+  `applyTextStyle`/layout helper'ları ekledim. Ayrı bir "aftr'dan bu yana
+  neler değişti" bölümü açmadım — bu DEVLOG zaten o işi görüyor, ikinci
+  bir changelog'u senkron tutmak drift riski yaratır. Attribution notuna
+  (satır 19) dokunmadım, o zaten karara bağlıydı.
+
+## 2026-08-10 (20)
+- **CI, (18)'den beri hiç çalışmamış — fork'ta GitHub Actions'ın
+  varsayılan-kapalı olduğu ortaya çıktı, elle onaylanıp doğrulandı.**
+  `ci.yml` 2026-08-08'de eklenmişti ama `gh api .../actions/runs` o günden
+  bu yana (bu oturumdaki commit dahil) `total_count: 0` veriyordu —
+  workflow "active" görünüyordu, `actions/permissions` "enabled: true"
+  diyordu, ama tek bir run bile tetiklenmemişti. Sebep: GitHub, bir fork'ta
+  Actions'ı güvenlik gereği varsayılan kapalı tutuyor (upstream'e açılan
+  kötü niyetli bir PR'ın fork'un Actions dakikalarını/secrets'larını
+  tetiklememesi için) — fork sahibinin repo → Actions sekmesinde bunu bir
+  kez elle onaylaması gerekiyor, bu adım `actions/permissions` API'sine
+  yansımıyor. Kullanıcı onayladı, boş bir commit (`42b319e`) ile
+  doğrulandı: ilk run tetiklendi, Node 18/20/22 + lint + e2e hepsi yeşil.
+  - Aynı run'da `actions/checkout@v4`/`actions/setup-node@v4`'ün node20
+    runtime'ının zorla node24'e taşındığına dair bir deprecation uyarısı
+    görüldü (test matrix'imizi etkilemiyor, sadece action'ın kendi çalışma
+    zamanı) — kalıcı çözüm olarak ikisi de v7'ye (`cf7bab4`, node24
+    native) çekildi, uyarı bir sonraki run'da tamamen gitti.
+  - **Ders:** Bu repo bir fork olduğu için CI'ın "kurulu = çalışıyor"
+    varsayımı yanlıştı; yeni bir fork/repo'da CI eklerken ilk push'tan
+    sonra `gh run list` ile gerçekten tetiklendiğini doğrulamak gerekiyor,
+    workflow dosyasının repoda durması yeterli değil.
+
 ## 2026-08-10 (19)
 - **`tools/jsx-es3-check.mjs` eklendi — `panel/jsx/**` (ExtendScript/ES3) için
   ilk statik denetim, `npm run lint` (dolayısıyla CI) zincirine bağlandı.**
