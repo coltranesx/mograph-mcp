@@ -615,6 +615,28 @@ Inspect the panel live: with the `.debug` file present, open the CEF DevTools at
 
 The bundled JSX must be ASCII, because `$.evalFile` mis-decodes BOM-less UTF-8. The bundler sanitizes non-ASCII, and the panel loader reads the file as explicit UTF-8 and `eval()`s it.
 
+### Adding a new bridge command (checklist)
+
+Same shape every time — writing it down once so it doesn't get re-derived from scratch each session (DEVLOG 2026-08-09 (14)/(15)).
+
+1. **Read a sibling command first.** Find the closest existing command (e.g. `saveProject` in `panel/jsx/commands/app.jsx`) and match its shape — argument names, error style, whether it needs `AEB.undo(...)`.
+2. **Write the JSX** in `panel/jsx/commands/*.jsx`. Never call anything that can pop an AE dialog (dialogs freeze the bridge) — resolve ambiguity (unsaved changes, missing args) in the script itself instead of relying on the native call to prompt.
+3. **Register it** in `shared/src/commands.js` (`description` + `validate()`). This is the controller's fail-fast gate, run *before* the call ever reaches AE — keep it as permissive as the JSX actually is; a stricter copy here just goes stale and rejects valid calls (this happened to `setLayerProperty`, see the gotchas below).
+4. **Expose it (optional):** add the name to `CORE` in `controller/src/mcpServer.js` if it deserves a dedicated `ae_<name>` tool. Skip this for anything destructive/rarely-needed — it's still reachable via the `ae_command` escape hatch either way.
+5. **`npm test`** — rebuilds the bundle and runs the unit + simulator suite. This catches structural mistakes, not real-AE behavior (see gotcha below).
+6. **`npm run deploy:panel`**, and if `controller/` or `shared/` changed, `npm run service:restart`.
+7. **Fully quit and relaunch AE.** CEP checks the extension signature at *startup*, not at panel-open — closing/reopening just the panel is not enough after a redeploy. `node tools/hot.mjs` is meant to skip this (evals the fresh bundle into the live panel over the CEF DevTools protocol, signature untouched) but needs the panel's `.debug` remote-debug port reachable; it wasn't in this session (`no debug port`) and that's still unexplained — until it's fixed, budget for the full restart every time.
+8. **Live-verify for real** — call the command through the actual MCP tools against real AE, and for anything render-affecting, render a frame and look at it. The simulator's mock AE DOM does not model real AE quirks; every bug below was invisible to `npm test` and only showed up here.
+9. **Write it down**: a dated `docs/DEVLOG.md` entry (what, why, alternatives ruled out) and a `docs/ROADMAP.md` update if it changes a phase's status.
+
+**What's actually automated vs. not:** steps 5–6 are already one command each (`npm test`, `npm run deploy:panel`) — chaining them isn't manual toil. Steps 1–2 (reading the API right, writing correct ExtendScript) and step 8 (live verification) are not mechanizable — they need a live AE and a human/agent that actually reads the result. Step 7 (the AE restart) is a hard CEP constraint, not a workflow choice — scripting around it (auto-quitting AE) has been unreliable in this project (see the OS-automation notes in `docs/DEVLOG.md`), so it's left as a manual step by design rather than a flaky automated one.
+
+**Gotchas already paid for once (don't re-discover):**
+- A text layer's `Source Text` property `.value` is a *live* `TextDocument`, not a plain object — handing it to `JSON.stringify` crashes reading `.boxTextSize` unless `.boxText === true`. Snapshot only known-safe fields (see `_textDocSnapshot`, `panel/jsx/commands/introspect.jsx`).
+- Any command taking a layer reference should accept `layer` (name or index) like every other command does — don't hand-roll a `layerIndex`-only validator in `shared/src/commands.js`, it'll silently reject the `layer:"name"` form everything else supports.
+- macOS `aerender` path resolution (`panel/src/render.js`): don't regex-match through `cs.getSystemPath('hostApplication')` — the string contains "Adobe After Effects" twice (the app folder and the `.app` bundle name inside it), and a greedy match grabs the wrong one, producing a path that doesn't exist. Split on `/` and take the first segment that isn't a `.app`.
+- A failed `cp.spawn()` in the CEP Node context can close with a bare negative `code` (e.g. `-2`) and zero stdout/stderr, instead of Node's normal `'error'` event — capture an output tail (`renderComplete`'s `tail` field, `controller/src/media.js`) or a bad exit code is undiagnosable.
+
 ---
 
 ## 12. Architecture

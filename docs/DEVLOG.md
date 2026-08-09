@@ -12,6 +12,25 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (15)
+- **"Yeni komut ekleme" süreci README'ye yazıldı** (§11, "Adding a new
+  bridge command (checklist)"). Gerekçe (kullanıcı sordu): (14)'teki
+  File-menu komutları + 3 bug fix hep aynı 9 adımlık şablonu izledi
+  (sibling komuta bak → JSX yaz → `shared/src/commands.js`'e kaydet →
+  gerekirse CORE'a ekle → test → deploy → **AE'yi tam kapat-aç** → canlı
+  doğrula → DEVLOG'a yaz) — bunu tekrar keşfetmemek için tek yerde,
+  repoda (Claude memory'de değil — memory kural olarak reponun zaten
+  kaydettiğini tekrar etmiyor) kayıt altına alındı. Dürüst not: 5-6.
+  adımlar (`npm test`, `deploy:panel`) zaten tek komut, otomasyon orada
+  zaten var; 1-2. adım (doğru JSX yazmak) ve 8. adım (canlı doğrulama)
+  mekanikleştirilemez; 7. adım (AE restart) CEP'in imza kontrolünün sert
+  bir kısıtı — otomatik AE quit denemeleri bu projede güvenilmez çıktı
+  (bkz. mevcut OS-otomasyon notları), bilinçli olarak elle bırakıldı.
+  Ayrıca (14)'te bulunan 3 bug'ın "gotcha" özeti de eklendi (TextDocument
+  canlı nesne tuzağı, layer-isim validator tutarsızlığı, macOS aerender
+  yol regex'i, CEP spawn'ın sessiz -2 kapanışı) — sıfırdan tekrar
+  keşfedilmesin diye.
+
 ## 2026-08-09 (14)
 - **File-menu komutları eklendi: `openProject`/`closeProject`/`quitApp`.**
   Kullanıcı isteği: bridge'i test etmek için önce dosya açma eksikti.
