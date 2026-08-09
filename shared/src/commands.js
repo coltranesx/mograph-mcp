@@ -153,6 +153,31 @@ function requireFields(p, names) {
 const pass = (...required) => ({ validate: (p) => requireFields(p, required) });
 const withDesc = (description, required) => ({ description, validate: (p) => requireFields(p, required) });
 
+// Shape operators (Trim Paths, Repeater, ...) live inside a shape layer's
+// vector-group tree as PropertyGroup children, added via addProperty(matchName)
+// — not addEffect(), and NOT guarded by canAddProperty() the way addEffect is
+// (canAddProperty has been observed to give misleading answers on vector
+// groups; see docs/DEVLOG.md). Calling addProperty() on a vector group with a
+// matchName AE doesn't recognize is not a catchable ExtendScript exception
+// here — it has produced a modal dialog once and crashed After Effects
+// outright once, in earlier live testing (docs/DEVLOG.md 2026-08-09). So this
+// whitelist is deliberately narrower than the full candidate list in
+// docs/ROADMAP.md "Faz 1.B": only matchNames actually confirmed live are
+// enabled. To add one: confirm it live yourself (disposable comp, expect a
+// possible crash, don't do it in a session with unsaved work), then move it
+// here — don't add from memory/guesswork.
+const SHAPE_OPERATORS = {
+  trim: 'ADBE Vector Filter - Trim',
+  repeater: 'ADBE Vector Filter - Repeater',
+};
+// Candidates from docs/ROADMAP.md "Faz 1.B" — named here only so the
+// rejection error can say "known candidate, not yet confirmed" instead of
+// just "unknown"; NOT callable.
+const SHAPE_OPERATORS_PENDING = new Set([
+  'offset', 'zigzag', 'roundCorners', 'wigglePath', 'wiggleTransform',
+  'puckerBloat', 'twist', 'mergePaths',
+]);
+
 Object.assign(COMMANDS, {
   // layers
   addNull: withDesc('Add a null layer. { compId, name?, duration? }', ['compId']),
@@ -161,6 +186,31 @@ Object.assign(COMMANDS, {
   addLight: withDesc('Add a light. { compId, name?, lightType?, center? }', ['compId']),
   addShape: withDesc('Add a shape layer (rectangle|ellipse). { compId, shape?, size?, fillColor?, strokeColor?, strokeWidth? }', ['compId']),
   addPathShape: withDesc('Shape layer with a custom bezier path. { compId, vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId']),
+  addShapeOperator: {
+    description:
+      `Add a shape operator to a shape layer's vector group. { compId, layer, operator (${Object.keys(SHAPE_OPERATORS).join('|')}), group?, params?, name? }. ` +
+      'group is a property path array from the layer (default ["ADBE Root Vectors Group"]). No insertAt/reorder — addProperty() always appends to the ' +
+      'end of the group, and the only scripting API for reordering afterward (PropertyGroup.moveTo()) throws an uncatchable native error on live AE ' +
+      '(confirmed 26.3x87, docs/DEVLOG.md 2026-08-09), sometimes after already mutating state — not safe to expose. To control final stacking order, ' +
+      'call addShapeOperator repeatedly in the order you want operators to end up in. ' +
+      'operator is restricted to a whitelist of live-confirmed matchNames, see docs/ROADMAP.md "Faz 1.B" — most documented candidates are NOT yet enabled.',
+    validate(p) {
+      const base = requireFields(p, ['compId', 'operator']);
+      const op = String(p.operator);
+      if (!SHAPE_OPERATORS[op]) {
+        const hint = SHAPE_OPERATORS_PENDING.has(op)
+          ? ` "${op}" is a documented candidate (docs/ROADMAP.md "Faz 1.B") whose matchName has not been confirmed live yet — it is not safe to guess into AE (addProperty with a bad matchName here has crashed AE before), so it is deliberately disabled until confirmed.`
+          : '';
+        throw new ValidationError(
+          `operator must be one of: ${Object.keys(SHAPE_OPERATORS).join(', ')} (got "${p.operator}").${hint}`,
+        );
+      }
+      if (p.params !== undefined && p.params !== null && !isPlainObject(p.params)) {
+        throw new ValidationError('params must be an object');
+      }
+      return base;
+    },
+  },
   addFootageLayer: withDesc('Add an existing project item into a comp. { compId, itemId|itemName }', ['compId']),
   setParent: withDesc('Parent one layer to another. { compId, layer, parent|parentName(null to unparent) }', ['compId']),
   trimLayer: withDesc('Set layer in/out/start. { compId, layer, inPoint?, outPoint?, startTime? }', ['compId']),
@@ -170,8 +220,8 @@ Object.assign(COMMANDS, {
   getLayers: withDesc('List layers in a comp.', ['compId']),
 
   // keyframes / expressions
-  setKeyframe: withDesc('One keyframe. { compId, layer, property, time, value }', ['compId', 'property', 'time', 'value']),
-  setKeyframes: withDesc('Bulk keyframes. { compId, layer, property, times[], values[], easyEase? }', ['compId', 'property', 'times', 'values']),
+  setKeyframe: withDesc('One keyframe. { compId, layer, property, time, value }. On a SHAPE-typed property (e.g. a path, property: ["ADBE Root Vectors Group",...,"ADBE Vector Shape"]), value is { vertices[], inTangents?, outTangents?, closed? } — every keyframe on that property must use the same vertex count or the call fails.', ['compId', 'property', 'time', 'value']),
+  setKeyframes: withDesc('Bulk keyframes. { compId, layer, property, times[], values[], easyEase? }. On a SHAPE-typed property, values[] entries are { vertices[], inTangents?, outTangents?, closed? } and must all share the same vertex count (also matching any pre-existing keyframes) — mismatches fail loudly instead of producing broken path interpolation.', ['compId', 'property', 'times', 'values']),
   setEase: withDesc('Temporal ease on a key. { compId, layer, property, keyIndex, inInfluence?, outInfluence? }', ['compId', 'property', 'keyIndex']),
   setInterpolation: withDesc('Interp type on a key (linear|bezier|hold). { compId, layer, property, keyIndex, inType, outType? }', ['compId', 'property', 'keyIndex']),
   removeKeyframes: withDesc('Clear all keyframes on a property.', ['compId', 'property']),

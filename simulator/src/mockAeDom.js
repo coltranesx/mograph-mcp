@@ -17,11 +17,171 @@ class MockProperty {
   }
   get value() { return this._value; }
   setValue(v) { this._value = v; }
-  setValueAtTime(_t, v) { this._value = v; this._keys = (this._keys || 0) + 1; }
+  setValueAtTime(_t, v) {
+    this._value = v;
+    this._keys = (this._keys || 0) + 1;
+    this._keyValues = this._keyValues || [];
+    this._keyValues[this._keys - 1] = v;
+  }
+  setValuesAtTimes(_times, values) {
+    this._keyValues = values.slice();
+    this._keys = values.length;
+    this._value = values[values.length - 1];
+  }
+  keyValue(index) { return (this._keyValues && this._keyValues[index - 1]) || null; }
   get numKeys() { return this._keys || 0; }
   set expression(e) { this._expr = e; }
   get expression() { return this._expr || ''; }
   get expressionEnabled() { return !!this._expr; }
+}
+
+// ---------------------------------------------------------------------------
+// Mock Shape / SHAPE-typed property — enough of AE's vector path API to
+// exercise addShape/addPathShape and SHAPE keyframing headlessly.
+// ---------------------------------------------------------------------------
+
+// Mirrors a real AE Shape: a plain data holder set via property assignment
+// (`s.vertices = [...]`), not constructor args.
+class Shape {
+  constructor() {
+    this.vertices = [];
+    this.inTangents = [];
+    this.outTangents = [];
+    this.closed = false;
+  }
+}
+globalThis.Shape = Shape;
+
+// Real AE's PropertyValueType enum (values are internal; only identity
+// matters here, nothing in this codebase compares against the raw numbers).
+const PropertyValueType = {
+  NO_VALUE: 'NO_VALUE',
+  OneD: 'OneD',
+  TwoD: 'TwoD',
+  TwoD_SPATIAL: 'TwoD_SPATIAL',
+  ThreeD: 'ThreeD',
+  ThreeD_SPATIAL: 'ThreeD_SPATIAL',
+  COLOR: 'COLOR',
+  CUSTOM_VALUE: 'CUSTOM_VALUE',
+  MARKER: 'MARKER',
+  LAYER_INDEX: 'LAYER_INDEX',
+  MASK_INDEX: 'MASK_INDEX',
+  SHAPE: 'SHAPE',
+  TEXT_DOCUMENT: 'TEXT_DOCUMENT',
+};
+globalThis.PropertyValueType = PropertyValueType;
+
+// A SHAPE-valued property (e.g. "ADBE Vector Shape", a path). Mirrors the
+// real AE constraint that setValue/setValueAtTime/setValuesAtTimes reject a
+// plain {vertices,...} object — only an actual Shape instance is accepted
+// (real AE's error: "Object/Array is not of the correct type"). This is the
+// behavior host.jsx's toShape() exists to work around; the mock enforces it
+// so a regression (passing a plain object through) fails the same way here
+// as it would live in AE.
+class MockShapeProperty {
+  constructor() {
+    this.propertyValueType = PropertyValueType.SHAPE;
+    this._value = new Shape();
+    this._keys = 0;
+    this._keyValues = [];
+  }
+  get value() { return this._value; }
+  _assertShape(v, where) {
+    if (!(v instanceof Shape)) {
+      throw new Error(`Object/Array is not of the correct type (${where} on a SHAPE property requires a Shape instance)`);
+    }
+  }
+  setValue(v) { this._assertShape(v, 'setValue'); this._value = v; }
+  setValueAtTime(_t, v) {
+    this._assertShape(v, 'setValueAtTime');
+    this._value = v;
+    this._keys += 1;
+    this._keyValues[this._keys - 1] = v;
+  }
+  setValuesAtTimes(_times, values) {
+    values.forEach((v) => this._assertShape(v, 'setValuesAtTimes'));
+    this._keyValues = values.slice();
+    this._keys = values.length;
+    this._value = values[values.length - 1];
+  }
+  keyValue(index) { return this._keyValues[index - 1] || null; }
+  get numKeys() { return this._keys || 0; }
+}
+
+// Auto-populated children per matchName, mirroring the AE structures that
+// exist without an explicit addProperty() call (a Group's Contents, a Path
+// group's Shape, a Fill/Stroke's color/width). Only what addShape() /
+// addPathShape() actually touch — not a full vector property tree.
+const VECTOR_AUTO_CHILDREN = {
+  'ADBE Vector Group': [['ADBE Vectors Group', () => new MockVectorGroup('ADBE Vectors Group')]],
+  'ADBE Vector Shape - Group': [['ADBE Vector Shape', () => new MockShapeProperty()]],
+  'ADBE Vector Graphic - Fill': [['ADBE Vector Fill Color', () => new MockProperty('ADBE Vector Fill Color', [0, 0, 0, 1])]],
+  'ADBE Vector Graphic - Stroke': [
+    ['ADBE Vector Stroke Color', () => new MockProperty('ADBE Vector Stroke Color', [0, 0, 0, 1])],
+    ['ADBE Vector Stroke Width', () => new MockProperty('ADBE Vector Stroke Width', 2)],
+  ],
+  'ADBE Vector Shape - Ellipse': [['ADBE Vector Ellipse Size', () => new MockProperty('ADBE Vector Ellipse Size', [100, 100])]],
+  'ADBE Vector Shape - Rect': [['ADBE Vector Rect Size', () => new MockProperty('ADBE Vector Rect Size', [100, 100])]],
+  // Trim Paths / Repeater sub-property matchNames below are the commonly
+  // documented AE ones, NOT live-confirmed the way the operator matchNames
+  // themselves are (docs/DEVLOG.md 2026-08-09) — they only back the mock so
+  // addShapeOperator's params handling (layer.jsx) has something real to
+  // exercise in tests. Do not treat as confirmed for a live whitelist.
+  'ADBE Vector Filter - Trim': [
+    ['ADBE Vector Trim Start', () => new MockProperty('ADBE Vector Trim Start', 0)],
+    ['ADBE Vector Trim End', () => new MockProperty('ADBE Vector Trim End', 100)],
+    ['ADBE Vector Trim Offset', () => new MockProperty('ADBE Vector Trim Offset', 0)],
+  ],
+  'ADBE Vector Filter - Repeater': [
+    ['ADBE Vector Repeater Copies', () => new MockProperty('ADBE Vector Repeater Copies', 3)],
+    ['ADBE Vector Repeater Offset', () => new MockProperty('ADBE Vector Repeater Offset', 0)],
+  ],
+};
+
+class MockVectorGroup {
+  constructor(matchName) {
+    this.matchName = matchName;
+    this.name = matchName;
+    this._items = [];
+    this._byMatchName = {};
+    this._parent = null;
+    const autos = VECTOR_AUTO_CHILDREN[matchName];
+    if (autos) for (const [childName, factory] of autos) this._addChild(childName, factory());
+  }
+  _addChild(matchName, item) {
+    this._items.push(item);
+    if (!this._byMatchName[matchName]) this._byMatchName[matchName] = item;
+    if (item && typeof item === 'object') item._parent = this;
+    return item;
+  }
+  // 1-based, mirrors real PropertyBase.propertyIndex — live-computed from the
+  // parent's item order so moveTo() below stays correct without bookkeeping.
+  get propertyIndex() {
+    return this._parent ? this._parent._items.indexOf(this) + 1 : 1;
+  }
+  // addProperty() always appends, mirroring real AE. moveTo(index) below is
+  // NOT used by any live command anymore — real AE's PropertyGroup.moveTo()
+  // throws an uncatchable native error on vector-operator groups (confirmed
+  // live, docs/DEVLOG.md 2026-08-09), so addShapeOperator dropped insertAt
+  // entirely rather than expose a mock-only feature that lies about
+  // production behavior. Kept here only as a generic simulator primitive in
+  // case something else needs a working moveTo later — do not wire it back
+  // into addShapeOperator without a live-confirmed real mechanism first.
+  moveTo(index) {
+    if (!this._parent) return;
+    const items = this._parent._items;
+    const cur = items.indexOf(this);
+    if (cur === -1) return;
+    items.splice(cur, 1);
+    const target = Math.max(0, Math.min(items.length, index - 1));
+    items.splice(target, 0, this);
+  }
+  get numProperties() { return this._items.length; }
+  addProperty(matchName) { return this._addChild(matchName, new MockVectorGroup(matchName)); }
+  property(ref) {
+    if (typeof ref === 'number') return this._items[ref - 1] || null;
+    return this._byMatchName[ref] || null;
+  }
 }
 
 // Minimal effects support so addEffect / listInstalledEffects / findEffectMatchName
@@ -83,6 +243,12 @@ class MockLayer {
         fontSize: opts.fontSize || 36,
       });
     }
+
+    // Root vector contents (for shape layers)
+    this._rootVectors = null;
+    if (this._type === 'shape') {
+      this._rootVectors = new MockVectorGroup('ADBE Root Vectors Group');
+    }
   }
 
   // Simulate AE's layer.property(name) accessor. Mirrors real AE: property()
@@ -101,6 +267,9 @@ class MockLayer {
     if (name === 'ADBE Effect Parade') {
       if (!this._effects) this._effects = new MockEffectsGroup();
       return this._effects;
+    }
+    if (name === 'ADBE Root Vectors Group' && this._rootVectors) {
+      return this._rootVectors;
     }
     return null;
   }
@@ -134,6 +303,17 @@ class MockLayers {
       name: text || 'Text',
       type: 'text',
       text: text,
+    });
+    this._items.unshift(layer);
+    this._reindex();
+    return layer;
+  }
+
+  addShape() {
+    const idx = this._items.length + 1;
+    const layer = new MockLayer(this._comp, idx, {
+      name: `Shape Layer ${idx}`,
+      type: 'shape',
     });
     this._items.unshift(layer);
     this._reindex();
@@ -314,6 +494,8 @@ export function createMockAeDom() {
     app: mockApp,
     File: MockFile,
     CompItem: MockCompItem,
+    Shape,
+    PropertyValueType,
     reset() { mockApp.reset(); },
   };
 }

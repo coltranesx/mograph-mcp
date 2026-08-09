@@ -159,6 +159,65 @@ AEB.effectsGroup = function (layer) {
   return layer.property("ADBE Effect Parade");
 };
 
+// --- shapes ------------------------------------------------------------
+// setValue/setValueAtTime/setValuesAtTimes on a SHAPE-typed property (e.g. a
+// vector path) reject plain JSON objects — AE requires a real Shape instance
+// ("Object/Array is not of the correct type" otherwise). Build one from the
+// wire format: { vertices[], inTangents?, outTangents?, closed? }.
+AEB.zeroTangents = function (n) {
+  var t = [];
+  for (var i = 0; i < n; i++) t.push([0, 0]);
+  return t;
+};
+
+AEB.toShape = function (obj) {
+  AEB.assert(obj && obj.vertices && obj.vertices.length, "Shape value requires vertices[]");
+  var n = obj.vertices.length;
+  var s = new Shape();
+  s.vertices = obj.vertices;
+  // Tangent arrays must be the same length as vertices or AE throws when the
+  // Shape is applied — fill with zero vectors (straight segments) if omitted.
+  if (obj.inTangents) {
+    AEB.assert(obj.inTangents.length === n,
+      "inTangents length (" + obj.inTangents.length + ") must match vertices length (" + n + ")");
+    s.inTangents = obj.inTangents;
+  } else {
+    s.inTangents = AEB.zeroTangents(n);
+  }
+  if (obj.outTangents) {
+    AEB.assert(obj.outTangents.length === n,
+      "outTangents length (" + obj.outTangents.length + ") must match vertices length (" + n + ")");
+    s.outTangents = obj.outTangents;
+  } else {
+    s.outTangents = AEB.zeroTangents(n);
+  }
+  s.closed = (obj.closed !== false);
+  return s;
+};
+
+// Guard against silently broken path morphs: AE interpolates SHAPE keyframes
+// vertex-by-vertex, so every keyframe on a given path property — existing
+// ones plus whatever this call is adding — must share the same vertex count,
+// or the in-between frames warp unpredictably instead of erroring. `shapes`
+// is an array of already-built Shape instances (the values this call is
+// about to write); `prop` is the property they're being written to.
+AEB.assertShapeVertexCounts = function (prop, shapes) {
+  var ref = null, refSrc = null;
+  if (prop.numKeys > 0) {
+    var existing = prop.keyValue(1);
+    if (existing && existing.vertices) { ref = existing.vertices.length; refSrc = "existing keyframe 1"; }
+  }
+  for (var i = 0; i < shapes.length; i++) {
+    var n = shapes[i].vertices.length;
+    if (ref === null) { ref = n; refSrc = "values[0]"; continue; }
+    AEB.assert(n === ref,
+      "Shape vertex count mismatch: " + refSrc + " has " + ref + " vertices, values[" + i + "] has " + n +
+      " vertices — AE cannot morph a path between keyframes with different vertex counts " +
+      "(it produces broken interpolation, not an error, so this is caught here instead). " +
+      "Make every keyframed shape on this property use the same vertex count.");
+  }
+};
+
 // Temporal ease element count: SPATIAL properties (Position, Anchor Point) take
 // exactly ONE KeyframeEase; other multidimensional props take one per dimension.
 AEB.easeDims = function (prop) {

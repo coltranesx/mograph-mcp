@@ -156,6 +156,52 @@ describe('validateCommand', () => {
     assert.equal(r.ok, false);
     assert.match(r.error, /position/);
   });
+
+  describe('addShapeOperator (pre-socket matchName whitelist)', () => {
+    it('accepts the live-confirmed operators (trim, repeater)', () => {
+      for (const operator of ['trim', 'repeater']) {
+        const r = validateCommand('addShapeOperator', { compId: 1, layer: 1, operator });
+        assert.equal(r.ok, true, `${operator}: ${r.error}`);
+        assert.equal(r.params.operator, operator);
+      }
+    });
+
+    it('rejects a documented-but-unconfirmed candidate operator', () => {
+      const r = validateCommand('addShapeOperator', { compId: 1, layer: 1, operator: 'zigzag' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not been confirmed live/);
+    });
+
+    it('rejects a made-up operator with no ROADMAP hint', () => {
+      const r = validateCommand('addShapeOperator', { compId: 1, layer: 1, operator: 'bogus' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /operator must be one of: trim, repeater/);
+      assert.doesNotMatch(r.error, /not been confirmed live/);
+    });
+
+    it('rejects without compId/operator', () => {
+      const r = validateCommand('addShapeOperator', { compId: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /operator/);
+    });
+
+    it('accepts a valid params object (no insertAt/reorder support — see docs/DEVLOG.md 2026-08-09)', () => {
+      const r = validateCommand('addShapeOperator', {
+        compId: 1, layer: 1, operator: 'repeater',
+        params: { 'ADBE Vector Repeater Copies': 5 },
+      });
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.params.params, { 'ADBE Vector Repeater Copies': 5 });
+    });
+
+    it('rejects a non-object params', () => {
+      const r = validateCommand('addShapeOperator', {
+        compId: 1, layer: 1, operator: 'trim', params: 'nope',
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /params/);
+    });
+  });
 });
 
 describe('commandList', () => {

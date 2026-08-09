@@ -109,6 +109,65 @@ COMMANDS.addShape = function (p) {
   });
 };
 
+// Shape operators (Trim Paths, Repeater, ...) live inside a shape layer's
+// vector-group tree, added via group.addProperty(matchName) — not addEffect().
+// Mirrors shared/src/commands.js SHAPE_OPERATORS; keep the two in sync. Kept
+// deliberately narrow: addProperty() on a vector group with a matchName AE
+// doesn't recognize is not a catchable ExtendScript exception, it has
+// produced a modal dialog once and crashed After Effects outright once in
+// earlier live testing (docs/DEVLOG.md 2026-08-09) — the controller already
+// rejects anything outside this list before the socket opens, this copy
+// exists so a direct runJSX call (AE_BRIDGE_ALLOW_DEV) can't bypass that.
+var SHAPE_OPERATOR_MATCHNAMES = {
+  trim: "ADBE Vector Filter - Trim",
+  repeater: "ADBE Vector Filter - Repeater"
+};
+
+COMMANDS.addShapeOperator = function (p) {
+  var comp = AEB.requireComp(p);
+  var layer = AEB.requireLayer(comp, p);
+  var matchName = SHAPE_OPERATOR_MATCHNAMES[p.operator];
+  AEB.assert(matchName, "unknown or unconfirmed operator: " + p.operator);
+  return AEB.undo("mograph-mcp: addShapeOperator", function () {
+    var group = p.group ? AEB.resolveProperty(layer, p.group) : layer.property("ADBE Root Vectors Group");
+    AEB.assert(group, "target vector group not found");
+    var added = group.addProperty(matchName);
+    if (p.name) added.name = p.name;
+    if (p.params) {
+      // Mirrors setEffectParam (effect.jsx): resolve then setValue, no
+      // try/catch. A bad param key or an out-of-range value should fail the
+      // call loudly — silently swallowing it here previously meant a typo'd
+      // key (e.g. "Sart" instead of "Start") produced a 200-OK response with
+      // the operator added but the param never set, no sign anything was wrong.
+      for (var k in p.params) {
+        if (p.params.hasOwnProperty(k)) {
+          var param = added.property(k);
+          AEB.assert(param, "params key \"" + k + "\" is not a property on " + p.operator + " (" + matchName + ")");
+          param.setValue(p.params[k]);
+        }
+      }
+    }
+    // No insertAt/reorder support: addProperty() always appends to the end
+    // of the group, and PropertyGroup.moveTo() — the only scripting API for
+    // reordering afterward — throws "ReferenceError: Object is invalid" on
+    // this AE version (26.3x87) in a way a JS try/catch cannot intercept (a
+    // native-level failure, like an invalid addProperty matchName). Live
+    // confirmed twice independently (docs/DEVLOG.md 2026-08-09): once the
+    // error simply happened, once it happened *after* the operator had
+    // already been added and named — so a caught version of this would
+    // still leave a half-applied operator behind while reporting failure.
+    // Not worth chasing further without a different reorder mechanism.
+    // Given operators always append, the workaround is complete: call
+    // addShapeOperator in the order you want the stack to end up in.
+    return {
+      operatorIndex: added.propertyIndex,
+      name: added.name,
+      matchName: added.matchName,
+      operator: p.operator
+    };
+  });
+};
+
 // Shape layer with a custom bezier path (vertices + tangents). For flames,
 // teardrops, blobs, custom logos, etc.
 COMMANDS.addPathShape = function (p) {

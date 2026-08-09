@@ -393,4 +393,261 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.ok(list.result.effects.some((e) => e.matchName === 'PESS3'));
     });
   });
+
+  describe('shape layers (addShape / addPathShape)', () => {
+    it('addShape builds a rectangle without throwing', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShR' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, shape: 'rectangle', size: [150, 80],
+        fillColor: [1, 0, 0], strokeColor: [0, 0, 0], strokeWidth: 4,
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.layerIndex, 1);
+    });
+
+    it('addShape builds an ellipse', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShE' });
+      const r = runner.dispatch('addShape', { compId: comp.result.compId, shape: 'ellipse' });
+      assert.equal(r.ok, true);
+    });
+
+    it('addPathShape builds a custom path with fill/stroke', () => {
+      const comp = runner.dispatch('createComp', { name: 'PS' });
+      const r = runner.dispatch('addPathShape', {
+        compId: comp.result.compId, name: 'Tri',
+        vertices: [[0, 0], [100, 0], [50, 100]],
+        fillColor: [0, 1, 0], strokeColor: [0, 0, 1], strokeWidth: 2,
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.name, 'Tri');
+    });
+
+    it('addPathShape fails without vertices', () => {
+      const comp = runner.dispatch('createComp', { name: 'PS2' });
+      const r = runner.dispatch('addPathShape', { compId: comp.result.compId });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /vertices/i);
+    });
+  });
+
+  describe('SHAPE keyframing (setKeyframe / setKeyframes on a path)', () => {
+    const SHAPE_PATH = [
+      'ADBE Root Vectors Group', 'ADBE Vector Group', 'ADBE Vectors Group',
+      'ADBE Vector Shape - Group', 'ADBE Vector Shape',
+    ];
+
+    function makeTriangle(runner, compName, layerName) {
+      const comp = runner.dispatch('createComp', { name: compName });
+      runner.dispatch('addPathShape', {
+        compId: comp.result.compId, name: layerName,
+        vertices: [[0, 0], [100, 0], [50, 100]],
+      });
+      return comp.result.compId;
+    }
+
+    it('setKeyframe accepts a plain {vertices} object (no tangents given)', () => {
+      const compId = makeTriangle(runner, 'KF1', 'Tri');
+      const r = runner.dispatch('setKeyframe', {
+        compId, layer: 'Tri', property: SHAPE_PATH, time: 0,
+        value: { vertices: [[0, 0], [100, 0], [50, 100]] },
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.numKeys, 1);
+    });
+
+    it('setKeyframe accepts explicit inTangents/outTangents', () => {
+      const compId = makeTriangle(runner, 'KF2', 'Tri');
+      const r = runner.dispatch('setKeyframe', {
+        compId, layer: 'Tri', property: SHAPE_PATH, time: 0,
+        value: {
+          vertices: [[0, 0], [100, 0], [50, 100]],
+          inTangents: [[1, 1], [2, 2], [3, 3]],
+          outTangents: [[-1, -1], [-2, -2], [-3, -3]],
+          closed: true,
+        },
+      });
+      assert.equal(r.ok, true);
+    });
+
+    it('setKeyframe rejects a value whose vertex count differs from an existing keyframe', () => {
+      const compId = makeTriangle(runner, 'KF3', 'Tri');
+      runner.dispatch('setKeyframe', {
+        compId, layer: 'Tri', property: SHAPE_PATH, time: 0,
+        value: { vertices: [[0, 0], [100, 0], [50, 100]] }, // 3 vertices
+      });
+      const r = runner.dispatch('setKeyframe', {
+        compId, layer: 'Tri', property: SHAPE_PATH, time: 1,
+        value: { vertices: [[0, 0], [50, 0], [100, 50], [50, 100]] }, // 4 vertices
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /vertex count mismatch/i);
+    });
+
+    it('setKeyframe rejects mismatched inTangents length', () => {
+      const compId = makeTriangle(runner, 'KF4', 'Tri');
+      const r = runner.dispatch('setKeyframe', {
+        compId, layer: 'Tri', property: SHAPE_PATH, time: 0,
+        value: { vertices: [[0, 0], [100, 0], [50, 100]], inTangents: [[0, 0]] },
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /inTangents/);
+    });
+
+    it('setKeyframes bulk-sets a series of shapes with matching vertex counts', () => {
+      const compId = makeTriangle(runner, 'KFB1', 'Tri');
+      const r = runner.dispatch('setKeyframes', {
+        compId, layer: 'Tri', property: SHAPE_PATH,
+        times: [0, 1],
+        values: [
+          { vertices: [[0, 0], [100, 0], [50, 100]] },
+          { vertices: [[10, 10], [110, 10], [60, 110]] },
+        ],
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.numKeys, 2);
+    });
+
+    it('setKeyframes rejects a batch whose values have inconsistent vertex counts', () => {
+      const compId = makeTriangle(runner, 'KFB2', 'Tri');
+      const r = runner.dispatch('setKeyframes', {
+        compId, layer: 'Tri', property: SHAPE_PATH,
+        times: [0, 1],
+        values: [
+          { vertices: [[0, 0], [100, 0], [50, 100]] }, // 3
+          { vertices: [[0, 0], [100, 0], [100, 100], [0, 100]] }, // 4
+        ],
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /vertex count mismatch/i);
+    });
+
+    it('setKeyframes rejects a batch that mismatches a pre-existing keyframe', () => {
+      const compId = makeTriangle(runner, 'KFB3', 'Tri');
+      runner.dispatch('setKeyframe', {
+        compId, layer: 'Tri', property: SHAPE_PATH, time: 0,
+        value: { vertices: [[0, 0], [100, 0], [50, 100]] }, // 3 vertices, key 1
+      });
+      const r = runner.dispatch('setKeyframes', {
+        compId, layer: 'Tri', property: SHAPE_PATH,
+        times: [1, 2],
+        values: [
+          { vertices: [[0, 0], [100, 0], [100, 100], [0, 100]] }, // 4 — mismatches key 1
+          { vertices: [[0, 0], [100, 0], [100, 100], [0, 100]] },
+        ],
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /vertex count mismatch/i);
+    });
+
+    it('a non-SHAPE property (Position) still works unaffected', () => {
+      const compId = makeTriangle(runner, 'KFPos', 'Tri');
+      const r = runner.dispatch('setKeyframes', {
+        compId, layer: 'Tri', property: 'position',
+        times: [0, 1], values: [[100, 100], [500, 500]],
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.numKeys, 2);
+    });
+  });
+
+  describe('addShapeOperator', () => {
+    const ROOT = ['ADBE Root Vectors Group'];
+
+    it('adds trim to the root vectors group', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOTrim' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addShapeOperator', { compId, layer: 1, operator: 'trim' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.matchName, 'ADBE Vector Filter - Trim');
+      assert.equal(r.result.operator, 'trim');
+      assert.equal(r.result.operatorIndex, 2); // appended after the auto-created ADBE Vector Group
+    });
+
+    it('adds repeater to the root vectors group', () => {
+      const comp = runner.dispatch('createComp', { name: 'SORep' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'ellipse' });
+      const r = runner.dispatch('addShapeOperator', { compId, layer: 1, operator: 'repeater' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.matchName, 'ADBE Vector Filter - Repeater');
+    });
+
+    it('rejects an operator outside the live-confirmed whitelist (defense in depth)', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOBad' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addShapeOperator', { compId, layer: 1, operator: 'zigzag' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /unknown or unconfirmed operator/i);
+    });
+
+    it('applies a custom name', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOName' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addShapeOperator', {
+        compId, layer: 1, operator: 'trim', name: 'My Trim',
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.name, 'My Trim');
+    });
+
+    it('targets a specific sub-group via group path instead of the root', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOGroup' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const group = ROOT.concat(['ADBE Vector Group', 'ADBE Vectors Group']);
+      const r = runner.dispatch('addShapeOperator', { compId, layer: 1, operator: 'trim', group });
+      assert.equal(r.ok, true);
+      // sits inside the Group's own Contents, not the root's — index 1 there
+      // since the shape/fill/stroke that addShape() built land alongside it.
+      assert.ok(r.result.operatorIndex >= 1);
+    });
+
+    // No insertAt/reorder: addProperty() always appends, and the only live
+    // reorder API (PropertyGroup.moveTo()) throws an uncatchable native
+    // error on vector-operator groups (confirmed live, docs/DEVLOG.md
+    // 2026-08-09) — so addShapeOperator doesn't expose it. Stacking order is
+    // controlled entirely by call order.
+    it('stacks operators in call order (append-only, no reorder)', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOOrder' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      // Root group already has 1 item (the auto-created ADBE Vector Group).
+      const rep = runner.dispatch('addShapeOperator', { compId, layer: 1, operator: 'repeater' });
+      assert.equal(rep.result.operatorIndex, 2);
+      const trim = runner.dispatch('addShapeOperator', { compId, layer: 1, operator: 'trim' });
+      assert.equal(trim.result.operatorIndex, 3);
+      const root = runner.dom.app.project.item(1).layer(1).property('ADBE Root Vectors Group');
+      assert.equal(root.property(2).matchName, 'ADBE Vector Filter - Repeater');
+      assert.equal(root.property(3).matchName, 'ADBE Vector Filter - Trim');
+    });
+
+    it('applies params by setting matching sub-properties', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOParams' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addShapeOperator', {
+        compId, layer: 1, operator: 'trim',
+        params: { 'ADBE Vector Trim Start': 25, 'ADBE Vector Trim End': 75 },
+      });
+      assert.equal(r.ok, true);
+      const trim = runner.dom.app.project.item(1).layer(1).property('ADBE Root Vectors Group').property(2);
+      assert.equal(trim.property('ADBE Vector Trim Start').value, 25);
+      assert.equal(trim.property('ADBE Vector Trim End').value, 75);
+    });
+
+    it('fails loudly (not silently) on an unknown params key, instead of swallowing it', () => {
+      const comp = runner.dispatch('createComp', { name: 'SOParamsBad' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addShapeOperator', {
+        compId, layer: 1, operator: 'trim',
+        params: { 'ADBE Vector Trim Sart': 25 }, // typo'd key
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not a property on trim/i);
+    });
+  });
 });

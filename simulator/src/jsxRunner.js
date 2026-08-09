@@ -24,6 +24,8 @@ export function createJsxRunner() {
     app: dom.app,
     File: dom.File,
     CompItem: dom.CompItem,
+    Shape: dom.Shape,
+    PropertyValueType: dom.PropertyValueType,
     // $ is the ExtendScript global object.
     $: {
       evalFile: function () { /* no-op in simulator */ },

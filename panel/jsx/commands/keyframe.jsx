@@ -12,7 +12,12 @@ COMMANDS.setKeyframe = function (p) {
   AEB.assert(p.value !== undefined, "value is required");
   return AEB.undo("mograph-mcp: setKeyframe", function () {
     var prop = AEB.resolveProperty(layer, p.property);
-    prop.setValueAtTime(p.time, p.value);
+    var value = p.value;
+    if (prop.propertyValueType === PropertyValueType.SHAPE) {
+      value = AEB.toShape(p.value);
+      AEB.assertShapeVertexCounts(prop, [value]);
+    }
+    prop.setValueAtTime(p.time, value);
     return { ok: true, numKeys: prop.numKeys };
   });
 };
@@ -25,7 +30,14 @@ COMMANDS.setKeyframes = function (p) {
   AEB.assert(p.values && p.values.length === p.times.length, "values[] must match times[]");
   return AEB.undo("mograph-mcp: setKeyframes", function () {
     var prop = AEB.resolveProperty(layer, p.property);
-    prop.setValuesAtTimes(p.times, p.values);
+    var values = p.values;
+    if (prop.propertyValueType === PropertyValueType.SHAPE) {
+      var shapes = [];
+      for (var si = 0; si < p.values.length; si++) shapes.push(AEB.toShape(p.values[si]));
+      AEB.assertShapeVertexCounts(prop, shapes);
+      values = shapes;
+    }
+    prop.setValuesAtTimes(p.times, values);
     // optional easing applied left->right after all keys exist (HLD gotcha)
     if (p.easyEase) {
       for (var k = 1; k <= prop.numKeys; k++) {

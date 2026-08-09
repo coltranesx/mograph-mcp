@@ -12,6 +12,169 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (3)
+- **Faz 1.B — `addShapeOperator` canlıda doğrulandı, tamamlandı.** Atılabilir
+  bir comp'ta (`__probe_shapeops_live`, AE 26.3x87) trim + repeater +
+  `params` uçtan uca test edildi:
+  - `params` guess'i (2026-08-09 (2)'de mock için eklenen matchName'ler)
+    **canlıda doğru çıktı**: `ADBE Vector Trim Start/End/Offset`,
+    `ADBE Vector Repeater Copies/Offset` gerçek AE'de birebir çalışıyor,
+    `getLayerDetails` ile değerler teyit edildi.
+  - **`insertAt`/`moveTo` kesin olarak kaldırıldı, canlıda ikinci kez
+    doğrulandı çalışmadığı.** `moveTo()` "ReferenceError: Object is invalid"
+    fırlattı ve bu hata **JS try/catch ile yakalanamadı** (kod içindeki
+    "TEMP DIAGNOSTIC" yakalama denemesine rağmen, hata `AEB.undo`'yu delip
+    komutu `ok:false` yaptı) — `addProperty`'nin geçersiz matchName'de
+    yaptığı gibi native seviyede bir hata. Daha kötüsü: hata patlamadan önce
+    `addProperty` + isim atama zaten gerçekleşmişti, yani çağrı "başarısız"
+    raporlanırken layer'da yarım kalmış bir operatör bırakıyordu. Karar:
+    `insertAt` tamamen kaldırıldı (`panel/jsx/commands/layer.jsx`,
+    `shared/src/commands.js`, mock/testler) — addProperty zaten hep sona
+    eklediği için doğru sırayı elde etmenin yolu operatörleri o sırayla
+    çağırmak; kırık bir native API'ye bağımlı kalmaktansa bu daha sağlam.
+    İleride farklı bir reorder mekanizması (ör. `app.executeCommand`) canlı
+    doğrulanırsa geri eklenebilir.
+  - Bu süreçte ayrı bir bulgu: **şemasız MCP tool'ları (`ae_getLayers`,
+    `ae_addShape` gibi, `additionalProperties:true` + tipsiz) sayısal
+    parametrelerde (`compId`) tutarsız/hatalı çalışıyor** ("Comp not found"),
+    `ae_command` (tipli `{command, params}` şeması) ise sorunsuz. Kök neden
+    netleşmedi (muhtemelen tool-call katmanında tipsiz parametrelerin
+    serileştirilmesiyle ilgili) — henüz düzeltilmedi, `controller/src/
+    mcpServer.js`'te `ae_*` tool'larının `inputSchema`'sı gerçek property
+    tipleri almıyor (`{ type: 'object', additionalProperties: true }`).
+    **Workaround: sayısal parametre geçen her çağrıda `ae_command` kullan.**
+  - 139/139 test yeşil, panel yeniden deploy edildi ve canlı doğrulandı.
+  - Yan bulgu: `osascript ... to quit` ile AE kapatırken çıkan "kaydet mi"
+    dialog'unu otomatik geçmenin çalışan yöntemi bulundu (kullanıcı onayı ve
+    Accessibility izniyle) — detay ve kod: memory `ae-quit-save-dialog`.
+
+## 2026-08-09 (2)
+- **`addShapeOperator` params artık sessizce yutulmuyor.** Önceki oturumda
+  `params` uygulaması `try { added.property(k).setValue(...) } catch(e){}`
+  ile hatayı yutuyordu — typo'lu bir key (`"Sart"` yerine `"Start"`) operatör
+  eklenmiş ama parametre hiç set edilmemiş halde sessizce `ok:true` dönüyordu.
+  `setEffectParam` (effect.jsx) ile aynı desene çekildi: `AEB.assert(param, ...)`
+  sonra çıplak `param.setValue(...)` — try/catch yok, gerçek bir AE hatası
+  varsa çağrının tamamı loudly fail etsin. `simulator/src/mockAeDom.js`'e
+  Trim/Repeater için gerçekçi alt-property'ler eklendi (`ADBE Vector Trim
+  Start/End/Offset`, `ADBE Vector Repeater Copies/Offset`) — **bunlar mock'u
+  test edebilmek için**, live whitelist gibi doğrulanmış değil, öyle
+  kullanılmasın. 2 yeni test (başarı + typo'lu key reddi), toplam 139/139
+  yeşil.
+  - **Hâlâ açık:** `insertAt`/`moveTo` mekanizması (canlı AE'de tutarsız
+    davranıyordu, diagnostic kod hâlâ yerinde — bkz. aşağıdaki madde), trim/
+    repeater'ın canlı uçtan uca doğrulaması, `service:status` LaunchAgent
+    ayakta ama panel bağlı değil (`connected:false`) — devam etmeden önce AE
+    açılıp panel bağlanmalı.
+
+## 2026-08-09
+- **Faz 1.B — `addShapeOperator`, ARADA KESİLDİ, commit edilmedi (working tree'de).**
+  Devam etmeden önce oku, aynı hataları tekrarlama.
+  - **AE iki kez çöktü/kilitlendi** — geçersiz bir shape-operator matchName'i
+    canlıda `group.addProperty(matchName)` ile denerken. `canAddProperty()`
+    vector group'larda güvenilmez: geçerli ve uydurma matchName'lerin
+    hepsinde `true` dönüyor. Gerçek geçersiz matchName ise `addEffect`'in
+    aksine catch edilebilir bir JS hatası değil — bir kere bloklayıcı native
+    modal açtı, bir kere AE'yi tamamen çökertti. **Sonuç: canlıda bir daha
+    geçersiz matchName ile `addProperty` denenmeyecek.** Whitelist tek güvenli
+    yol; sadece live-confirmed matchName kod tabanına giriyor.
+  - **10 aday matchName'in tamamı canlıda teyit edildi** (ROADMAP tablosu
+    doğru): trim, repeater, offset, zigzag, roundCorners→RC,
+    wigglePath→Roughen, wiggleTransform→Wiggler, puckerBloat→PB, twist,
+    mergePaths→Merge — hepsi `ADBE Root Vectors Group` üzerinde
+    `addProperty` ile başarıyla eklendi. Ama kod tabanına (`SHAPE_OPERATORS`,
+    `shared/src/commands.js` + `panel/jsx/commands/layer.jsx`) şu an sadece
+    **trim ve repeater** girildi — geri kalan 8'i eklemek gerekiyorsa aynı
+    disiplinle (atılabilir comp, üzerinde çalışılan projede değil) tek tek
+    canlı doğrulanıp elle eklenmeli, listeden kopyalanmamalı.
+  - **`insertAt` bulgusu:** `addProperty` her zaman sona ekliyor; belirli
+    index'e koymak `added.moveTo(index)` gerektiriyor. `moveTo` canlıda bir
+    kere `"ReferenceError: Object is invalid"` verdi (insertAt:2), aynı
+    senaryo başka denemede sorunsuz çalıştı — tutarsız, nedeni netleşmedi.
+    **Çözülmedi.** `panel/jsx/commands/layer.jsx`'te `addShapeOperator`
+    içinde geçici bir diagnostic var (`insertAtError` alanı dönüyor,
+    `moveTo` hatasını yutup görünür kılıyor) — kalıcı çözüm değil, `moveTo`
+    davranışı netleşince kaldırılmalı.
+  - **Servis durumu belirsiz bırakıldı:** probe sırasında LaunchAgent
+    controller'ı durdurup manuel dev instance ile çalışıldı; kesinti
+    sırasında hangisinin ayakta kaldığı teyit edilmedi. Devam etmeden önce
+    `npm run service:status` + `ae-up` skill ile doğrula, gerekirse
+    `npm run service:install`/restart ile LaunchAgent'a geri dön.
+  - **Kalan iş:** `moveTo`/`insertAt` mekanizmasını çöz, `params` uygulamasını
+    gözden geçir (şu an sessizce `catch(e){}` ile yutuyor — Faz 1 A'daki
+    "sessiz hata verme" prensibiyle çelişiyor, düzeltilmeli), simulator mock
+    + testler hiç yazılmadı, trim/repeater için canlı uçtan uca doğrulama
+    yapılmadı, ROADMAP'te B hâlâ "sırada" işaretli.
+- **Karar: lower-third'de bar yok.** Saf tipografi; en fazla ince bir aksan
+  çizgisi. Sonucu kapsam açısından büyük: bar'lı kurguda bar aynı zamanda
+  *maskedir* (yazı bar'ın arkasından kayarak çıkar), bar yoksa o mekanizma da
+  yok. Geriye animator tabanlı reveal kalıyor — o da `applyTextStyle` ile
+  zaten olgun. Yani **bar'sız lower-third'ün giriş animasyonu çoktan hazır**;
+  eksik olan kompozisyon ve zamanlama, görsel primitif değil. Faz 2 küçüldü,
+  `addResponsiveBox` zorunlu olmaktan çıktı (spec → ROADMAP "Faz 2").
+- **Faz 2 envanteri çıkarıldı** (kod okunarak, `text.jsx` 706 satır +
+  `layer/mask/style/advanced/executor.jsx` + `mcpServer.js`). Tipografi
+  gerçekten repodaki en olgun taraf: CSS cubic-bezier → AE temporal ease
+  çevirimi, gerçek glyph metriğinden ölçülen satır aralığı, variable
+  font'ların leading'i 1:1 uygulamamasının telafisi. Lower-third'ün yapı
+  taşları (`setParent`, `setTrackMatte`, mask komutları, `alignLayer`) da var.
+  **Asıl eksik: çıkış animasyonu.** Mevcut 4 stilin hiçbirinde out yok,
+  `trimIn`/`trimOut` sadece sert kesiyor — bu lower-third'e özel değil, bütün
+  metin sistemini ilgilendiriyor.
+- **Faz 1.A'nın olası yan kazancı (doğrulanmadı):** mask path da SHAPE tipli
+  ve `AEB.resolveProperty` dizi yolu destekliyor
+  (`["ADBE Mask Parade","Mask 1","ADBE Mask Shape"]`) → mask path keyframe'i
+  artık çalışıyor olabilir, yani mask wipe bedavaya gelmiş olabilir. Canlıda
+  teyit edilmedi; Faz 2'ye girerken ilk denenecek şeylerden.
+
+## 2026-08-08 (7)
+- **Faz 1.A — Path (Shape) keyframe desteği.** `setKeyframe`/`setKeyframes`
+  artık SHAPE-tipli property'lerde (path) çalışıyor; önceden `new Shape()`
+  yerine düz JSON geçtikleri için AE "Object/Array is not of the correct
+  type" ile reddediyordu (`addPathShape` çalışıyordu çünkü `new Shape()`'i
+  zaten JSX içinde kuruyordu, keyframe komutları kurmuyordu).
+  - `panel/jsx/host.jsx`: `AEB.toShape({vertices, inTangents?, outTangents?,
+    closed?})` → gerçek `Shape` nesnesi; tangent verilmezse vertices
+    uzunluğunda sıfır vektörle dolduruyor (AE, tangent dizisi vertices ile
+    aynı uzunlukta değilse reddediyor). `AEB.assertShapeVertexCounts(prop,
+    shapes)` — bir path property'sindeki tüm keyframe'lerin (var olanlar +
+    eklenecekler) aynı vertex sayısında olmasını zorunlu kılıyor; AE farklı
+    vertex sayılı path'ler arasında sessizce bozuk interpolasyon üretiyor,
+    hata vermiyor — bu yüzden kontrol JSX tarafında.
+  - `panel/jsx/commands/keyframe.jsx`: `setKeyframe`/`setKeyframes`,
+    `prop.propertyValueType === PropertyValueType.SHAPE` ise değer(ler)i
+    `toShape`'ten geçirip vertex sayısını doğruluyor.
+  - `simulator/src/mockAeDom.js`: `Shape`, `PropertyValueType`,
+    `MockShapeProperty` (gerçek AE gibi sadece `Shape` instance'ı kabul
+    ediyor, düz obje verilirse aynı "Object/Array is not of the correct
+    type" hatasını taklit ediyor), `MockVectorGroup` (Contents/Group/Path
+    ağacı — `addShape`/`addPathShape`'in gerçekte kullandığı zincir) +
+    `MockLayers.addShape()`. Bu, `addShape`/`addPathShape`'in de simülatörde
+    ilk kez test edilebilir hale gelmesi yan etkisini doğurdu (önceden hiç
+    mock desteği yoktu, testsizdi). Ayrıca fark edildi: `MockProperty`'de
+    `setValuesAtTimes` hiç yoktu — `setKeyframes` (MCP'ye `ae_setKeyframes`
+    olarak açık, "core" araç) normal (non-shape) property'lerde bile
+    simülatörde hiç test edilmemiş/edilememiş; aynı örüntüde eklendi.
+  - `shared/src/commands.js`: `setKeyframe`/`setKeyframes` açıklamalarına
+    SHAPE-tipli property davranışı eklendi (doğrulama mantığı değişmedi,
+    zaten generic required-field kontrolü).
+  - Test: `simulator/test/mockAeDom.test.js`'e shape layer oluşturma
+    (`addShape` dikdörtgen/elips, `addPathShape` + vertices eksik hatası)
+    ve SHAPE keyframe testleri (tangent'siz/tangent'li başarı, vertex sayısı
+    uyuşmazlığında hem `setKeyframe` hem `setKeyframes` için — hem yeni
+    batch içi hem var olan keyframe'e karşı — açık hata, inTangents uzunluk
+    uyuşmazlığı, non-shape property'nin etkilenmediği kontrolü) eklendi.
+    `npm test` → 123/123 (111 + 12 yeni).
+  - **Canlı AE'de doğrulandı** (AE 26.3x87): panel deploy edilip AE
+    yeniden başlatıldı (proje Untitled/boştu, veri kaybı riski yoktu; panel
+    açık kalma durumunu hatırlayıp otomatik yeniden bağlandı). Üçgen path
+    layer'da tangent'siz + tangent'li keyframe başarılı, 3→4 vertex uyuşmaz
+    tekli `setKeyframe` beklenen hatayla reddedildi (bozuk key eklenmeden);
+    kare layer'da `setKeyframes` toplu başarı + batch-içi uyuşmazlık ve
+    var-olan-key'e-karşı uyuşmazlık senaryoları da beklenen hatayla reddedildi.
+  - Kapsam dışı bırakıldı (ROADMAP'te B/C/D, sırada): `addShapeOperator`,
+    shape operatör matchName doğrulaması, format/varyant işleri.
+
 ## 2026-08-08 (6)
 - **Faz 0 altyapı paketi tamamlandı** (ROADMAP.md'deki 5 madde, Sonnet'te):
   1. **Controller artık LaunchAgent.** `tools/service.mjs` (+ `npm run
