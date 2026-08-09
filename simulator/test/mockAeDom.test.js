@@ -71,6 +71,44 @@ describe('JSX Runner + Mock AE DOM', () => {
     });
   });
 
+  // Reproduces a live bug (docs/DEVLOG.md 2026-08-09 (3)): MCP tool
+  // invocations whose inputSchema declares no property types deliver numeric
+  // params as strings ("1" instead of 1). AEB.findCompById/resolveLayer used
+  // to compare with strict `===`, so a numeric-string compId/layer silently
+  // resolved to "not found" instead of the real comp/layer.
+  describe('numeric-string compId/layer tolerance (AEB.numericLike)', () => {
+    it('resolves a comp by a numeric-string compId, not just a real number', () => {
+      const created = runner.dispatch('createComp', { name: 'StrId' });
+      const compId = created.result.compId;
+      const r = runner.dispatch('getLayers', { compId: String(compId) });
+      assert.equal(r.ok, true);
+    });
+
+    it('resolves a layer by a numeric-string layer ref, not just a real number', () => {
+      const created = runner.dispatch('createComp', { name: 'StrLayer' });
+      const compId = created.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('getLayerDetails', { compId, layer: '1' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.index, 1);
+    });
+
+    it('still resolves a layer by name when the name happens not to look numeric', () => {
+      const created = runner.dispatch('createComp', { name: 'StrLayerName' });
+      const compId = created.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle', name: 'MyShape' });
+      const r = runner.dispatch('getLayerDetails', { compId, layer: 'MyShape' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.name, 'MyShape');
+    });
+
+    it('a non-existent numeric-string compId still fails clearly (no false positive)', () => {
+      const r = runner.dispatch('getLayers', { compId: '999999' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not found/i);
+    });
+  });
+
   describe('listComps', () => {
     it('returns empty for new project', () => {
       const r = runner.dispatch('listComps');

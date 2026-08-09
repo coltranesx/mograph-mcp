@@ -12,6 +12,34 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (4)
+- **Şemasız `ae_*` MCP tool bug'ının kök nedeni bulundu ve düzeltildi —
+  MCP şemasında değil, bizim JSX kodumuzdaymış.** (3) girişindeki "workaround:
+  `ae_command` kullan" notu yanlış teşhisti; asıl sorun `AEB.findCompById`
+  (host.jsx) ve `AEB.resolveLayer`'ın id/index karşılaştırmasını strict `===`
+  ile yapması. Şemasız tool çağrılarının (`ae_getLayers`, `ae_addShape` vb. —
+  `inputSchema`'da property type'ları deklare edilmemiş) sayısal parametreleri
+  string olarak gönderdiği doğrulandı (`ae_command`'a `{compId: "1"}` string
+  geçince AYNI "Comp not found" hatası tekrar üretildi) — ama bunu MCP
+  tarafında "düzeltmek" mümkün değil (harness'in tool-call serileştirmesi bu
+  reponun dışında). Doğru çözüm JSX tarafında: id/index her zaman gerçek AE
+  numarasıyla (`item.id`, layer index) karşılaştırılıyor, JS tipini
+  garantilemek çağıranın işi olmamalı.
+  - `host.jsx`: `AEB.numericLike(v)` eklendi — number ise olduğu gibi, tamsayı
+    görünümlü string ise `Number()`'a çevirip döner, aksi halde `null`.
+    `findCompById`, `requireComp`'un `comp` fallback'i, `resolveLayer` bunu
+    kullanacak şekilde güncellendi.
+  - `effect.jsx`: `_resolveEffect` aynı deseni aldı (aynı bug class'ı, efekt
+    index'i için).
+  - `mask.jsx`/`keyframe.jsx` gibi index'i doğrudan native AE metoduna geçen
+    yerler etkilenmedi — sorun sadece JS tarafında `typeof`/`===` ile dallanan
+    kod yollarında (native AE metodları string/number ayrımını zaten kendi
+    içinde çözüyor, `effect.jsx`'teki ölü ternary de bunun kanıtı).
+  - 4 yeni simulator testi (numeric-string compId/layer, hâlâ isimle
+    çözülebilme, var olmayan id'de false-positive olmaması). 141/141 yeşil.
+  - Canlıda (AE 26.3x87) daha önce başarısız olan tam senaryo tekrarlandı:
+    `ae_addShape`/`ae_getLayers` (şemasız tool, `compId:1`) artık `ok:true`.
+
 ## 2026-08-09 (3)
 - **Faz 1.B — `addShapeOperator` canlıda doğrulandı, tamamlandı.** Atılabilir
   bir comp'ta (`__probe_shapeops_live`, AE 26.3x87) trim + repeater +

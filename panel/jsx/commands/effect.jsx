@@ -3,9 +3,12 @@
 function _resolveEffect(layer, ref) {
   var fx = AEB.effectsGroup(layer);
   AEB.assert(fx, "layer has no effects group");
-  if (typeof ref === "number") {
-    AEB.assert(ref >= 1 && ref <= fx.numProperties, "effect index out of range");
-    return fx.property(ref);
+  // Same numeric-string tolerance as AEB.resolveLayer — see host.jsx
+  // AEB.numericLike (docs/DEVLOG.md 2026-08-09 (3)).
+  var numRef = AEB.numericLike(ref);
+  if (numRef !== null) {
+    AEB.assert(numRef >= 1 && numRef <= fx.numProperties, "effect index out of range");
+    return fx.property(numRef);
   }
   // by name or matchName
   var byName = null;

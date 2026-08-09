@@ -42,12 +42,28 @@ AEB.assert = function (cond, msg) {
   if (!cond) throw new Error(msg);
 };
 
+// Some callers (confirmed: MCP tool invocations whose inputSchema has no
+// declared property types — the auto-generated per-command ae_* tools in
+// controller/src/mcpServer.js) deliver numeric params as strings over the
+// wire ("1" instead of 1). IDs/indices here are compared against real AE
+// numbers (item.id, layer index), so a strict `===` silently fails and
+// reports "not found" instead of resolving — reproduced live 2026-08-09,
+// see docs/DEVLOG.md. Coerce once at the comparison boundary rather than
+// trusting every caller to send the right JS type.
+AEB.numericLike = function (v) {
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && /^-?\d+$/.test(v)) return Number(v);
+  return null;
+};
+
 // --- comps -----------------------------------------------------------------
 AEB.findCompById = function (id) {
+  var numId = AEB.numericLike(id);
+  if (numId === null) return null;
   var p = app.project;
   for (var i = 1; i <= p.numItems; i++) {
     var item = p.item(i);
-    if (item instanceof CompItem && item.id === id) return item;
+    if (item instanceof CompItem && item.id === numId) return item;
   }
   return null;
 };
@@ -67,7 +83,7 @@ AEB.requireComp = function (p) {
   if (p.compId !== undefined && p.compId !== null) c = AEB.findCompById(p.compId);
   else if (p.compName) c = AEB.findCompByName(p.compName);
   else if (p.comp !== undefined) {
-    c = (typeof p.comp === "number") ? AEB.findCompById(p.comp) : AEB.findCompByName(p.comp);
+    c = (AEB.numericLike(p.comp) !== null) ? AEB.findCompById(p.comp) : AEB.findCompByName(p.comp);
   } else {
     AEB.assert(false, "compId or compName is required");
   }
@@ -78,10 +94,11 @@ AEB.requireComp = function (p) {
 // --- layers (address by name OR index; HLD prefers name) -------------------
 AEB.resolveLayer = function (comp, ref) {
   AEB.assert(ref !== undefined && ref !== null, "layer reference (layer/layerIndex/layerName) is required");
-  if (typeof ref === "number") {
-    AEB.assert(ref >= 1 && ref <= comp.numLayers,
-      "layerIndex " + ref + " out of range (comp has " + comp.numLayers + " layers)");
-    return comp.layer(ref);
+  var numRef = AEB.numericLike(ref);
+  if (numRef !== null) {
+    AEB.assert(numRef >= 1 && numRef <= comp.numLayers,
+      "layerIndex " + numRef + " out of range (comp has " + comp.numLayers + " layers)");
+    return comp.layer(numRef);
   }
   // by name
   for (var i = 1; i <= comp.numLayers; i++) {
