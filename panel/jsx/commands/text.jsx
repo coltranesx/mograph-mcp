@@ -340,6 +340,44 @@ function _wrMeasure(comp, str, font, size, trk) {
   return out;
 }
 
+// Expose real rendered-text measurement to the agent (Faz 2 madde 3,
+// docs/ROADMAP.md — "ajan bu yazı kaç piksel geniş diye soramıyor").
+// Two modes: { text } builds a throwaway layer via _wrMeasure (no scene
+// mutation left behind); { layer|layerIndex|layerName } reads an EXISTING
+// text layer's current source text live, inheriting its own font/fontSize/
+// tracking unless overridden. capHeight is a font-metric ("H" at this font/
+// size, content-independent — same measurement _autoLeading already uses);
+// ascent/descent are content-dependent (baseline to top/bottom of the
+// ACTUAL ink), matching the asc/desc convention _autoLeading uses per line.
+COMMANDS.measureText = function (p) {
+  var comp = AEB.requireComp(p);
+  var font, size, trk, r;
+  var hasLayer = (p.layer !== undefined || p.layerIndex !== undefined || p.layerName !== undefined);
+  if (hasLayer) {
+    var layer = AEB.requireLayer(comp, p);
+    var sp = layer.property("Source Text");
+    AEB.assert(sp, "layer is not a text layer");
+    var d = sp.value;
+    font = (p.font !== undefined) ? p.font : d.font;
+    size = (p.fontSize !== undefined) ? p.fontSize : d.fontSize;
+    trk = (p.tracking !== undefined) ? p.tracking : d.tracking;
+    r = layer.sourceRectAtTime(0, false);
+  } else {
+    AEB.assert(typeof p.text === "string" && p.text.length, "text or layer/layerIndex/layerName is required");
+    font = p.font || "Inter-Regular";
+    size = p.fontSize || 130;
+    trk = p.tracking;
+    r = _wrMeasure(comp, p.text, font, size, trk);
+  }
+  var capHeight = _wrMeasure(comp, "H", font, size, trk).height;
+  return {
+    width: r.width, height: r.height, left: r.left, top: r.top,
+    capHeight: capHeight,
+    ascent: -r.top,
+    descent: r.height + r.top
+  };
+};
+
 // Smart deterministic line height. The thing that actually defines a line's
 // "top" is its CAP height; ascenders just poke up and may ride into the leading
 // (normal in tight type). The only real collision risk is the previous line's

@@ -200,6 +200,32 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('measureText (pre-socket)', () => {
+    it('accepts a text-only call', () => {
+      const r = validateCommand('measureText', { compId: 1, text: 'Hello' });
+      assert.equal(r.ok, true);
+    });
+
+    it('accepts a layer-only call (no text)', () => {
+      const r = validateCommand('measureText', { compId: 1, layer: 1 });
+      assert.equal(r.ok, true);
+      const r2 = validateCommand('measureText', { compId: 1, layerName: 'Title' });
+      assert.equal(r2.ok, true);
+    });
+
+    it('rejects a call with neither text nor a layer reference', () => {
+      const r = validateCommand('measureText', { compId: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /text or layer/);
+    });
+
+    it('rejects an empty text string when no layer is given', () => {
+      const r = validateCommand('measureText', { compId: 1, text: '' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /text or layer/);
+    });
+  });
+
   describe('resolveSafePosition (pre-socket)', () => {
     it('accepts all 9 named positions', () => {
       const positions = [

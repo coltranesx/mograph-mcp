@@ -297,6 +297,22 @@ Object.assign(COMMANDS, {
   applyCharScale: withDesc('Deterministic letter-based char-scale reveal. Splits text into characters (kerning-correct via prefix measurement), each letter its own measured/positioned layer scaling up + rising + fading with an overlapping cascade and a cubic-bezier. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, scaleFrom?, revealFrames?, stagger?, startFrame?, bezier?, tracking?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
   applyTextStyle: withDesc('Combinatorial text preset: apply one of 4 styles x 8 eases by NAME. style: wordReveal|charScale|bunchRotate|blurFade; ease: easeInOutCubic|easeOutQuart|easeInOutQuart|easeOutQuint|easeInOutQuint|easeOutExpo|easeInOutExpo|easeInOutCirc (or pass bezier[4]). wordReveal is fully wired (deterministic); the other three are interim. { compId, style, ease|bezier, text, ...style params }', ['compId', 'style']),
   listTextStyles: withDesc('List available text styles + eases + which are ready. {}', []),
+  measureText: {
+    description:
+      'Measure real rendered text bounds via sourceRectAtTime — no scene mutation left behind. Two modes: { text, font?, fontSize?, ' +
+      'tracking? } builds a throwaway layer, measures, removes it; { layer|layerIndex|layerName, font?, fontSize?, tracking? } reads an ' +
+      'EXISTING text layer live, inheriting its own font/size/tracking unless overridden. Returns { width, height, left, top, capHeight, ' +
+      'ascent, descent } (px) — capHeight is a font metric ("H" at this font/size); ascent/descent are content-dependent (from the actual ' +
+      'text\'s ink). docs/ROADMAP.md Faz 2 madde 3.',
+    validate(p) {
+      const base = requireFields(p, ['compId']);
+      const hasLayer = (p.layer !== undefined || p.layerIndex !== undefined || p.layerName !== undefined);
+      if (!hasLayer && !(typeof p.text === 'string' && p.text.length > 0)) {
+        throw new ValidationError('text or layer/layerIndex/layerName is required');
+      }
+      return base;
+    },
+  },
 
   // styles
   addLayerStyle: withDesc('Add a layer style (dropShadow|outerGlow|stroke|...). { compId, layer, style, params? }', ['compId', 'style']),

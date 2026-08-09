@@ -12,6 +12,21 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (10)
+- **Faz 2 madde 3 — `measureText`, bitti.** `text.jsx`'in zaten kullandığı
+  `_wrMeasure`/`sourceRectAtTime` deseni dışarı bir komut olarak açıldı: iki
+  mod — `{ text, font?, fontSize?, tracking? }` geçici katman kurup ölçüp
+  siliyor (canlıda doğrulandı: sonrasında layer sayısı değişmiyor), `{
+  layer|layerIndex|layerName }` var olan bir text layer'ı MUTASYONSUZ okuyor,
+  font/fontSize/tracking verilmezse layer'ın kendi source text'inden
+  devralıyor. `capHeight` font metriği ("H" harfi, `_autoLeading`'in zaten
+  kullandığı yöntem), `ascent`/`descent` gerçek metnin mürekkebinden
+  (content-dependent, aynı yöntem `_autoLeading`'in per-line asc/desc'i).
+  Canlıda (AE 26.3x87) iki mod da makul değerler üretti (descender'sız
+  metinde descent≈0, descender'lı metinde >0 — sağlaması yapıldı).
+  4 yeni shared pre-socket testi, 179/179 yeşil. Simulator testi yok —
+  bu alt sistem hiç mock'lanmamış (bkz. (8) girişi), aynı yol izlendi.
+
 ## 2026-08-09 (9)
 - **Faz 2 madde 2 — `resolveSafePosition` + `config.json` `safeArea`, bitti.**
   `config.json`'a `safeArea: {top,right,bottom,left}` (varsayılan 0.08 her

@@ -202,12 +202,10 @@ varsayılan 0.6), tam tersi değil. `outStyle` (girişten farklı bir stil ile
 yeni komut `resolveSafePosition { compId, position (9'lu grid), safeArea? }`
 → `{ x, y, safeArea }` px. Canlıda 3 köşe + asimetrik override doğrulandı.
 
-**3. `measureText` — ölçüm dışarı açık değil.**
-`sourceRectAtTime` text.jsx içinde 6 yerde kullanılıyor ama hiçbir komut
-ölçüm döndürmüyor; ajan "bu yazı kaç piksel geniş" diye soramıyor.
-→ `measureText { compId, text|layer, font?, fontSize?, tracking? }` →
-   `{ width, height, left, top, capHeight, ascent, descent }`. Katman
-   verilmezse geçici katman kurup ölçüp silsin (`_wrMeasure` deseni).
+**3. `measureText` ✅ bitti (DEVLOG 2026-08-09 (10))**
+`measureText { compId, text|layer, font?, fontSize?, tracking? }` →
+`{ width, height, left, top, capHeight, ascent, descent }`. Canlıda iki mod
+da (geçici katman / var olan katman, mutasyonsuz) doğrulandı.
 
 **4. `alignAnchor`.**
 Yönlü wipe ve soldan büyüyen çizgi için anchor'ın kenara oturması gerekiyor;
