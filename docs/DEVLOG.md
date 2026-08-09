@@ -12,6 +12,17 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (7)
+- **Faz 1.A yan kazancı doğrulandı: mask path keyframe çalışıyor, mask wipe
+  bedavaya geldi.** ROADMAP'te "olabilir, doğrulanmadı" diye duran bulgu
+  canlıda (AE 26.3x87) test edildi: bir solid layer'a rect mask eklenip
+  `setKeyframes { property: ["ADBE Mask Parade","Mask 1","ADBE Mask Shape"],
+  times:[0,1], values:[...iki farklı vertex seti...] }` çağrıldı,
+  `getProperty` ile her iki keyframe'in de doğru vertices ile kaydedildiği
+  teyit edildi. Ekstra kod gerekmedi — `AEB.toShape`/SHAPE keyframe desteği
+  zaten genel, mask path'i de kapsıyormuş. Faz 2'de 3 (`measureText`) ve 4
+  (`alignAnchor`) önceliği arttı (ROADMAP'te not düşüldü).
+
 ## 2026-08-09 (6)
 - **Numeric-string bug'ının controller-side (`shared/src/validate.js`)
   benzeri bulundu ve düzeltildi — kapsam sanıldığından dar çıktı.**

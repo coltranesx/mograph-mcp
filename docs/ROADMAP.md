@@ -229,13 +229,15 @@ gerek yok. Döndürsün: `{ controller, layers[], inFrame, outFrame }`.
 değişince kendini günceller) applySpec içinde hapis. Bar yok kararıyla zorunlu
 olmaktan çıktı. **Açık soru:** aksan çizgisi isteniyor mu — hayırsa bu madde düşer.
 
-### Faz 1.A yan kazancı — ilk iş bunu teyit et
+### Faz 1.A yan kazancı ✅ canlıda doğrulandı (DEVLOG 2026-08-09 (7))
 
 Mask path da SHAPE tipli ve `AEB.resolveProperty` dizi yolu destekliyor
 (`["ADBE Mask Parade","Mask 1","ADBE Mask Shape"]`) → mask path keyframe'i
-artık çalışıyor **olabilir**, yani mask wipe bedavaya gelmiş olabilir.
-Canlıda doğrulanmadı. Doğruysa 3 ve 4'ün önceliği artar (wipe dikdörtgeninin
-boyutu ölçüme bağlı).
+**çalışıyor**, yani mask wipe bedavaya geldi, ekstra kod gerekmiyor.
+`setKeyframes` + `getProperty` ile aynı property path üzerinden iki farklı
+vertex konfigürasyonu keyframe'lendi ve okunarak teyit edildi (AE 26.3x87).
+**Sonuç: 3 (`measureText`) ve 4 (`alignAnchor`) önceliği arttı** — wipe
+dikdörtgeninin boyutu/konumu ölçüme bağlı, şimdi gerçekten gerekli.
 
 ### MCP maruziyeti
 
