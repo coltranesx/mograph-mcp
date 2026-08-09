@@ -207,11 +207,10 @@ yeni komut `resolveSafePosition { compId, position (9'lu grid), safeArea? }`
 `{ width, height, left, top, capHeight, ascent, descent }`. Canlıda iki mod
 da (geçici katman / var olan katman, mutasyonsuz) doğrulandı.
 
-**4. `alignAnchor`.**
-Yönlü wipe ve soldan büyüyen çizgi için anchor'ın kenara oturması gerekiyor;
-`setLayerProperty` anchorPoint yazabiliyor ama değeri ajan hesaplayamıyor (3'e
-bağımlı).
-→ `alignAnchor { compId, layer, h: left|center|right, v: top|middle|bottom }`.
+**4. `alignAnchor` ✅ bitti (DEVLOG 2026-08-09 (11))**
+`alignAnchor { compId, layer, h?, v?, time?, keepPosition? }` — canlıda elle
+hesaplanan matematikle birebir doğrulandı, `keepPosition` (Position
+telafisi) her iki yolda da test edildi.
 
 **5. `applyLowerThird` — ince kompozisyon.**
 Başlık + opsiyonel alt başlık + opsiyonel aksan çizgisi, denetleyici null'a

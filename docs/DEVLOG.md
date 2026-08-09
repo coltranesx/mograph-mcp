@@ -12,6 +12,23 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (11)
+- **Faz 2 madde 4 — `alignAnchor`, bitti.** `{ compId, layer, h?, v?, time?,
+  keepPosition? }` — layer'ın kendi anchor'ını kendi `sourceRectAtTime`
+  sınırlarının bir kenarına/köşesine/merkezine oturtuyor. `keepPosition`
+  (varsayılan true) Position'ı scale'e göre ölçeklenmiş delta kadar telafi
+  ediyor ki layer görsel olarak yerinden oynamasın (AE UI'de anchor handle'ı
+  sürüklerken olan davranışın aynısı). Rotation'ı hesaba katmıyor (bilinçli
+  sınırlama, bu komutun hedef kitlesi olan text/shape layer'larda nadiren
+  sorun).
+  - Canlıda (AE 26.3x87) elle hesaplanan matematikle **birebir** eşleşti:
+    h:left/v:top → anchor=[2.5177,-71.5027], position=[962.5177,468.4973]
+    (comp merkezinden delta kadar kaymış); ekrandaki görsel konumun
+    değişmediği koordinat cebiriyle doğrulandı. `keepPosition:false` da ayrı
+    test edildi (position sabit kalıyor, sadece anchor taşınıyor).
+  - 3 yeni shared pre-socket testi, 182/182 yeşil. Simulator testi yok (aynı
+    sourceRectAtTime bağımlılığı, bkz. (8)/(10) girişleri).
+
 ## 2026-08-09 (10)
 - **Faz 2 madde 3 — `measureText`, bitti.** `text.jsx`'in zaten kullandığı
   `_wrMeasure`/`sourceRectAtTime` deseni dışarı bir komut olarak açıldı: iki

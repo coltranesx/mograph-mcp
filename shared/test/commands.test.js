@@ -200,6 +200,31 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('alignAnchor (pre-socket)', () => {
+    it('accepts h/v combinations and the defaultless call', () => {
+      const r0 = validateCommand('alignAnchor', { compId: 1, layer: 1 });
+      assert.equal(r0.ok, true);
+      for (const h of ['left', 'center', 'right']) {
+        for (const v of ['top', 'middle', 'bottom']) {
+          const r = validateCommand('alignAnchor', { compId: 1, layer: 1, h, v });
+          assert.equal(r.ok, true, `${h}/${v}: ${r.error}`);
+        }
+      }
+    });
+
+    it('rejects an invalid h', () => {
+      const r = validateCommand('alignAnchor', { compId: 1, layer: 1, h: 'middle' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /h must be one of/);
+    });
+
+    it('rejects an invalid v', () => {
+      const r = validateCommand('alignAnchor', { compId: 1, layer: 1, v: 'left' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /v must be one of/);
+    });
+  });
+
   describe('measureText (pre-socket)', () => {
     it('accepts a text-only call', () => {
       const r = validateCommand('measureText', { compId: 1, text: 'Hello' });

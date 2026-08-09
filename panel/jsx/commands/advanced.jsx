@@ -96,6 +96,50 @@ COMMANDS.alignLayer = function (p) {
   });
 };
 
+// Sit a layer's OWN anchor point on an edge/corner/center of its OWN
+// rendered content (Faz 2 madde 4, docs/ROADMAP.md — depends on measureText's
+// sourceRectAtTime pattern). Distinct from alignLayer above: that moves the
+// layer's POSITION within the comp; this moves the ANCHOR within the layer's
+// own bounds — needed for directional wipes and a line/bar that grows from
+// one edge. Compensates Position by the same delta (scaled) so the layer
+// doesn't visibly jump — the same "keep position" behavior as dragging the
+// anchor handle in the AE UI. Does NOT account for rotation (rare for the
+// text/shape layers this targets); pass keepPosition:false to skip the
+// compensation entirely.
+COMMANDS.alignAnchor = function (p) {
+  var comp = AEB.requireComp(p);
+  var layer = AEB.requireLayer(comp, p);
+  return AEB.undo("mograph-mcp: alignAnchor", function () {
+    var t = (p.time !== undefined) ? p.time : 0;
+    var r = layer.sourceRectAtTime(t, false);
+    var hMap = { left: r.left, center: r.left + r.width / 2, right: r.left + r.width };
+    var vMap = { top: r.top, middle: r.top + r.height / 2, bottom: r.top + r.height };
+    var h = p.h || "center", v = p.v || "middle";
+    AEB.assert(hMap[h] !== undefined, 'h must be left|center|right (got "' + p.h + '")');
+    AEB.assert(vMap[v] !== undefined, 'v must be top|middle|bottom (got "' + p.v + '")');
+    var newX = hMap[h], newY = vMap[v];
+
+    var anchorProp = AEB.resolveProperty(layer, "anchor");
+    var posProp = AEB.resolveProperty(layer, "position");
+    var oldAnchor = anchorProp.value;
+    var keepPos = (p.keepPosition !== false);
+    if (keepPos) {
+      var scaleProp = AEB.resolveProperty(layer, "scale");
+      var scale = scaleProp.value;
+      var dx = (newX - oldAnchor[0]) * (scale[0] / 100);
+      var dy = (newY - oldAnchor[1]) * (scale[1] / 100);
+      var oldPos = posProp.value;
+      var newPos = [oldPos[0] + dx, oldPos[1] + dy];
+      if (oldPos.length > 2) newPos.push(oldPos[2]);
+      posProp.setValue(newPos);
+    }
+    var newAnchor = [newX, newY];
+    if (oldAnchor.length > 2) newAnchor.push(oldAnchor[2]);
+    anchorProp.setValue(newAnchor);
+    return { anchorPoint: newAnchor, position: posProp.value, h: h, v: v };
+  });
+};
+
 // Sequence selected/named layers in time (offset each by `step` seconds).
 COMMANDS.sequenceLayers = function (p) {
   var comp = AEB.requireComp(p);

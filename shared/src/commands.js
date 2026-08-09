@@ -405,6 +405,23 @@ Object.assign(COMMANDS, {
   getCompTime: withDesc('Read comp playhead/work-area/frame info. { compId }', ['compId']),
   duplicateComp: withDesc('Duplicate a comp. { compId, name? }', ['compId']),
   alignLayer: withDesc('Align a layer (center|hcenter|vcenter|left|right|top|bottom). { compId, layer, align, margin? }', ['compId']),
+  alignAnchor: {
+    description:
+      'Sit a layer\'s own anchor point on an edge/corner/center of its own rendered content (via sourceRectAtTime) — for directional ' +
+      'wipes / a bar that grows from one edge. { compId, layer, h? (left|center|right, default center), v? (top|middle|bottom, default ' +
+      'middle), time?, keepPosition? (default true — compensates Position by the scaled delta so the layer doesn\'t visibly move; does ' +
+      'NOT account for rotation) }. Returns { anchorPoint, position, h, v }. docs/ROADMAP.md Faz 2 madde 4.',
+    validate(p) {
+      const base = requireFields(p, ['compId']);
+      if (p.h !== undefined && !['left', 'center', 'right'].includes(p.h)) {
+        throw new ValidationError(`h must be one of: left, center, right (got "${p.h}")`);
+      }
+      if (p.v !== undefined && !['top', 'middle', 'bottom'].includes(p.v)) {
+        throw new ValidationError(`v must be one of: top, middle, bottom (got "${p.v}")`);
+      }
+      return base;
+    },
+  },
   sequenceLayers: withDesc('Offset layers in time. { compId, layers[], step?, start? }', ['compId', 'layers']),
   setWorkArea: withDesc('Set the comp work area. { compId, start, duration }', ['compId']),
   clearComp: withDesc('Remove all layers in a comp. { compId, keepPrefix? }', ['compId']),
