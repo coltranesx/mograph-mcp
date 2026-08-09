@@ -1,8 +1,40 @@
 // introspect.jsx — read-back (ES3). Lets an agent SEE AE state, not just write it.
 
+// A "Source Text" property's .value is a live native TextDocument, not a
+// plain value — handing it straight to JSON.stringify crashes OUTSIDE any
+// try/catch here, because AE throws reading .boxTextSize on point text
+// ("Text document not of Box document type", confirmed live 2026-08-09 on
+// aep/Ae_Template_Test.aep). Snapshot only the fields setTextDocument
+// actually uses (text.jsx), each independently guarded, and only read
+// boxTextSize when boxText is actually true.
+function _textDocSnapshot(d) {
+  var out = {};
+  try { out.text = d.text; } catch (e) {}
+  try { out.font = d.font; } catch (e) {}
+  try { out.fontSize = d.fontSize; } catch (e) {}
+  try { out.tracking = d.tracking; } catch (e) {}
+  try { out.leading = d.leading; } catch (e) {}
+  try { out.applyFill = d.applyFill; } catch (e) {}
+  try { if (d.applyFill) out.fillColor = d.fillColor; } catch (e) {}
+  try { out.applyStroke = d.applyStroke; } catch (e) {}
+  try { if (d.applyStroke) out.strokeColor = d.strokeColor; } catch (e) {}
+  try { out.strokeWidth = d.strokeWidth; } catch (e) {}
+  try { out.justification = String(d.justification); } catch (e) {}
+  try { out.boxText = d.boxText; } catch (e) {}
+  try { if (d.boxText) out.boxTextSize = d.boxTextSize; } catch (e) {}
+  return out;
+}
+
+// Read a property's value the JSON-safe way (see _textDocSnapshot above).
+function _safeValue(prop) {
+  var val = prop.value;
+  if (prop.matchName === "ADBE Text Document") return _textDocSnapshot(val);
+  return val;
+}
+
 function _propSnapshot(prop) {
   var snap = { name: prop.name, matchName: prop.matchName };
-  try { snap.value = prop.value; } catch (e) {}
+  try { snap.value = _safeValue(prop); } catch (e) {}
   try { snap.numKeys = prop.numKeys; } catch (e) {}
   try { if (prop.expressionEnabled) snap.expression = prop.expression; } catch (e) {}
   if (snap.numKeys && snap.numKeys > 0) {
@@ -31,7 +63,7 @@ function _groupSummary(group, depth) {
     if (pr.numProperties !== undefined && pr.numProperties > 0 && depth > 0) {
       node.children = _groupSummary(pr, depth - 1);
     } else {
-      try { node.value = pr.value; } catch (e) {}
+      try { node.value = _safeValue(pr); } catch (e) {}
       try { if (pr.expressionEnabled) node.expression = pr.expression; } catch (e) {}
     }
     out.push(node);

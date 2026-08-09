@@ -12,6 +12,87 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (14)
+- **File-menu komutları eklendi: `openProject`/`closeProject`/`quitApp`.**
+  Kullanıcı isteği: bridge'i test etmek için önce dosya açma eksikti.
+  Üçü de AE'nin kendi save-changes dialog'una hiç güvenmiyor (dialoglar
+  bridge'i kilitliyor, `__saveProject`'teki gerekçeyle aynı) — "unsaved
+  değişikliklerle ne yapılacağı" her zaman JS tarafında önceden çözülüp
+  (kaydet ya da `save:false` ile bilinçli olarak at), native çağrı her
+  zaman `CloseOptions.DO_NOT_SAVE_CHANGES` ile yapılıyor; native
+  davranışın dialog gösterip göstermediğini hiç bilmeye gerek kalmıyor.
+  `quitApp` sonrası panel bağlantısı AE ile birlikte düşüyor — controller
+  bunu `DISCONNECTED` hatası olarak çözüyor (`aeClient.js`
+  `_failAllPending`), bu komut için başarı sinyali, retry edilecek bir
+  hata değil. `openProject`/`closeProject` MCP CORE setine eklendi,
+  `quitApp` bilinçli olarak dışarıda bırakıldı (sadece `ae_command` ile
+  erişilir — yanlışlıkla tetiklenmesi pahalı). Canlıda open→close→reopen
+  round-trip'i dialogsuz doğrulandı.
+- **Bug: `getLayerDetails{deep:true}` text layer'da çöküyordu.**
+  `_groupSummary`, bir text property'nin `.value`'sunu (canlı `TextDocument`
+  nesnesi) olduğu gibi JSON.stringify'a veriyordu; `TextDocument.
+  boxTextSize` sadece `boxText:true` iken geçerli bir alan, point-text'te
+  (bu oturumdaki şablonun text layer'ı gibi) okunması "Text document not
+  of Box document type" native hatası fırlatıyor — bu da try/catch'in
+  DIŞINDA, stringify aşamasında patlıyordu. Kök neden düzeltmesi:
+  `_textDocSnapshot()` — `setTextDocument`'ın zaten kullandığı güvenli
+  alan listesini (text/font/fontSize/tracking/leading/fill/stroke/
+  justification) tek tek try/catch'li okuyup plain object döndürüyor,
+  `boxTextSize`'ı sadece `boxText` gerçekten true ise okuyor. Canlıda
+  (point-text layer, `aep/Ae_Template_Test.aep`) doğrulandı.
+- **Bug: `setLayerProperty` controller validator'ı JSX'in gerisinde
+  kalmıştı.** `shared/src/commands.js`'teki elle yazılmış `validate()`
+  hem sabit bir `property` enum'u (position|scale|rotation|opacity|name|
+  enabled|startTime — anchorPoint/inPoint/outPoint/shy/solo/label/
+  threeDLayer ve serbest array-path fallback'i yok sayıyordu) hem de
+  SADECE `layerIndex` kabul edip `layer`/`layerName`'i tamamen görmezden
+  geliyordu — projedeki diğer her layer-hedefli komutun kullandığı esnek
+  "layer isimle de, index'le de bulunabilir" kuralına aykırıydı. Canlıda
+  `layer:"hero_fill"` göndermek "layerIndex must be a positive integer"
+  ile patlayınca ortaya çıktı. Kök neden düzeltmesi: whitelist ve
+  `layerIndex` zorunluluğu kaldırıldı, gerçek doğrulama zaten JSX'te
+  (`AEB.requireLayer`/`AEB.resolveProperty`) var — defense-in-depth
+  bozulmadı, sadece controller'daki eskimiş/yanlış kopya silindi.
+  `shared/test/commands.test.js` güncellendi (whitelist testi → "her
+  property adı geçer" + "layer isimle hedeflenebilir" testleri).
+- **Bug: `aerender` yolu yanlış hesaplanıyordu, her render `-2` ile
+  sessizce patlıyordu.** `panel/src/render.js`'teki `getAerenderPath()`,
+  macOS'ta `cs.getSystemPath('hostApplication')` çıktısını (örn.
+  `/Applications/Adobe After Effects 2026/Adobe After Effects 2026.app/
+  Contents/MacOS/After Effects`) açgözlü bir regex'le (`.*Adobe After
+  Effects[^\/]*`) ayrıştırıyordu — yol string'inde "Adobe After Effects"
+  iki kez geçtiği için (klasör adı + `.app` bundle adı) regex son
+  eşleşmeyi tercih edip `.../Adobe After Effects 2026.app/aerender`
+  gibi VAR OLMAYAN bir yol üretiyordu (doğrusu `.../Adobe After Effects
+  2026/aerender`, `.app` bundle'ının içinde değil, yanında). Bu yolda
+  `cp.spawn()` CEP'in Node bağlamında normal Node `'error'` event'i
+  yerine sıfır stdout/stderr ile doğrudan `'close'` event'ini `code:-2`
+  ile tetikliyordu — hata tamamen teşhis edilemezdi. Manuel terminal'den
+  doğru yolla çalıştırınca render sorunsuz çalıştığı için bulundu. Kök
+  neden düzeltmesi: yolu regex yerine `/` ile bölüp ".app" İÇERMEYEN İLK
+  "Adobe After Effects" segmentini bulacak şekilde yeniden yazıldı.
+  Ayrıca yan iyileştirme: `renderComplete` artık başarısızlıkta son
+  ~4KB'lık birleşik stdout+stderr çıktısını (`tail`) taşıyor,
+  `controller/src/media.js` bunu `job.error`'a ekliyor — bundan sonra
+  "aerender exited N" gibi opak hatalar yerine gerçek sebep görünecek.
+  **Test kapsamı eksik kaldı:** `panel/src/render.js` CEP-only (CSInterface
+  bağımlı), mevcut test altyapısı (`controller/shared/simulator`) bunu
+  kapsamıyor — bu path resolution mantığı şu an sadece canlı doğrulamayla
+  korunuyor, regresyona karşı otomatik bir test yok.
+- **Faz 3 (şablon doldurma) ilk canlı testi, uçtan uca başarılı.**
+  `aep/Ae_Template_Test.aep` (Comp 1: point-text layer + tam-comp
+  boyutunda "placeholder" solid; Comp 2 alakasız, yok sayıldı) üzerinde:
+  `setTextDocument` ile metin değiştirildi, `hero.jpg` (1760×742)
+  `importFootage`+`addFootageLayer` ile içeri alındı, **cover-fit**
+  (kullanıcı kararı: kırpılsın, boşluk kalmasın — oran farkı 2.37:1 vs
+  1.78:1) elle hesaplanan anchor/position/scale ile placeholder'ın
+  boyutuna (1920×1080, merkez) oturtuldu, placeholder `enabled:false`
+  ile devre dışı bırakıldı (silinmedi — geri dönüşü kolay olsun diye).
+  Bir yerleşim hatası da (görsel layer'ı text'in üstünde kalmıştı,
+  `moveLayer` index hesabı yanlış yapılmıştı) `render` ile alınan görsel
+  kanıtla yakalanıp düzeltildi. `ae_render_and_download` ile alınan kare
+  kullanıcıya gösterildi, sonuç onaylandı.
+
 ## 2026-08-09 (13)
 - **Faz 2 madde 6 — `addResponsiveBox` + `applyLowerThird`'a `accentLine`,
   bitti. Faz 2 tamamen bitti.** **Karar (kullanıcıyla): ince aksan çizgisi

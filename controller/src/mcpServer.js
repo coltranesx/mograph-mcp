@@ -19,7 +19,7 @@ const CORE = new Set([
   'addNull', 'addShape', 'addAdjustmentLayer', 'setLayerProperty', 'trimLayer',
   'setKeyframes', 'setExpression', 'addEffect', 'setEffectParam', 'applyLumetri',
   'deepGlow', 'shadowStudio', 'applyTextStyle', 'applyTextPreset', 'applySpec',
-  'render', 'saveProject', 'getLayerDetails', 'getLayers', 'listFonts',
+  'render', 'saveProject', 'openProject', 'closeProject', 'getLayerDetails', 'getLayers', 'listFonts',
   'listInstalledEffects', 'introspectEffect', 'importFootage', 'addFootageLayer',
 ]);
 

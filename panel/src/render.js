@@ -36,9 +36,25 @@
     var hostExe = cs.getSystemPath('hostApplication');
     var isMac = (typeof process !== 'undefined' && process.platform === 'darwin');
     if (isMac) {
-      var m = /(.*Adobe After Effects[^\/]*)\//.exec(hostExe);
-      if (m) return m[1] + '/aerender';
-      return path.dirname(hostExe) + '/aerender';
+      // hostExe looks like:
+      //   /Applications/Adobe After Effects 2026/Adobe After Effects 2026.app/Contents/MacOS/After Effects
+      // aerender is a SIBLING of the top-level "Adobe After Effects <year>"
+      // folder, not inside the .app bundle. The old greedy regex
+      // (.*Adobe After Effects[^\/]*)\/ matched through to the .app folder
+      // instead (both segments contain "Adobe After Effects", greedy .*
+      // prefers the last match) — confirmed live 2026-08-09: it built
+      // ".../Adobe After Effects 2026.app/aerender" (doesn't exist), and
+      // cp.spawn() on a nonexistent path silently closed with code -2 in
+      // this CEP Node context (no stdout/stderr, no 'error' event) instead
+      // of failing loudly, which made every render fail with an opaque
+      // "aerender exited -2" no matter what the comp/project looked like.
+      var parts = hostExe.split('/');
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf('Adobe After Effects') === 0 && parts[i].indexOf('.app') === -1) {
+          return parts.slice(0, i + 1).join('/') + '/aerender';
+        }
+      }
+      return path.dirname(hostExe) + '/aerender'; // fallback if the folder naming ever changes
     }
     return path.join(path.dirname(hostExe), 'aerender.exe');
   }
@@ -118,8 +134,20 @@
       var scopeStart = (info.startFrame !== null && info.startFrame !== undefined) ? info.startFrame : 0;
       var scopeEnd = (info.endFrame !== null && info.endFrame !== undefined) ? info.endFrame : info.totalFrames;
       var lastPercent = -1;
+      // A non-zero exit code alone (e.g. "aerender exited -2") is undiagnosable
+      // — aerender's actual reason is in its stdout/stderr text, which used to
+      // be discarded (stderr went out as unattributed 'log' events nobody
+      // stored; stdout wasn't kept at all). Keep the last few KB of combined
+      // output and attach it to renderComplete on failure so the error is
+      // actionable without re-running aerender by hand to see what it said.
+      var outputTail = '';
+      function keepTail(text) {
+        outputTail += text;
+        if (outputTail.length > 4000) outputTail = outputTail.slice(-4000);
+      }
       function onChunk(buf) {
         var text = buf.toString();
+        keepTail(text);
         var lines = text.split(/\r?\n/);
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i];
@@ -133,11 +161,13 @@
       }
       if (child.stdout) child.stdout.on('data', onChunk);
       if (child.stderr) child.stderr.on('data', function (b) {
-        sendEvent('log', { level: 'warn', message: 'aerender: ' + b.toString() });
+        var text = b.toString();
+        keepTail(text);
+        sendEvent('log', { jobId: jobId, level: 'warn', message: 'aerender: ' + text });
       });
 
       child.on('error', function (e) {
-        sendEvent('renderComplete', { jobId: jobId, ok: false, error: e.message });
+        sendEvent('renderComplete', { jobId: jobId, ok: false, error: e.message, tail: outputTail });
       });
       child.on('close', function (code) {
         sendEvent('renderComplete', {
@@ -145,6 +175,7 @@
           ok: code === 0,
           code: code,
           outputPath: info.outputPath,
+          tail: (code === 0) ? undefined : outputTail,
         });
       });
     });

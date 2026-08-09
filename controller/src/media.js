@@ -93,6 +93,7 @@ export function mountMedia(app, { aeClient, cfg }) {
     if (!env.data.ok) {
       job.status = 'failed';
       job.error = env.data.error || `aerender exited ${env.data.code}`;
+      if (env.data.tail) job.error += `\n--- aerender output tail ---\n${env.data.tail}`;
       return;
     }
     const actual = resolveOutput(outputsDir, job.outName);

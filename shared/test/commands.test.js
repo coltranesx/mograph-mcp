@@ -110,12 +110,25 @@ describe('validateCommand', () => {
     assert.equal(r.ok, true);
   });
 
-  it('rejects setLayerProperty with invalid property name', () => {
+  // No controller-side property whitelist (removed 2026-08-09 — it required
+  // `layerIndex` specifically, silently ignoring `layer`/`layerName`, and its
+  // enum was stricter than what layer.jsx actually resolves: anchorPoint,
+  // inPoint/outPoint, shy/solo/label/threeDLayer, plus arbitrary array
+  // property paths). Any string is allowed through here; the JSX layer's
+  // AEB.resolveProperty is the real validator (defense-in-depth, not gone).
+  it('passes any property name through — JSX resolves/rejects, not the controller', () => {
     const r = validateCommand('setLayerProperty', {
-      compId: 1, layerIndex: 1, property: 'color', value: [1, 0, 0],
+      compId: 1, layerIndex: 1, property: 'anchorPoint', value: [10, 10],
     });
-    assert.equal(r.ok, false);
-    assert.match(r.error, /must be one of/);
+    assert.equal(r.ok, true);
+  });
+
+  it('accepts setLayerProperty targeted by layer NAME, not just layerIndex', () => {
+    const r = validateCommand('setLayerProperty', {
+      compId: 1, layer: 'hero_fill', property: 'position', value: [960, 540],
+    });
+    assert.equal(r.ok, true);
+    assert.equal(r.params.layer, 'hero_fill'); // must survive, not be dropped
   });
 
   it('rejects render without outputPath', () => {

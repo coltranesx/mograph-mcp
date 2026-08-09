@@ -29,7 +29,8 @@ temeli düzeliyor** — kırık temelin üstüne kütüphane kurmanın anlamı y
 1. ~~Faz 0 — altyapı borcu~~ *(bitti, bkz. DEVLOG 2026-08-08 (6))*
 2. Shape temeli *(bitti — A/B/C/D, DEVLOG 2026-08-08 (7) ve 2026-08-09 (3)/(5))*
 3. Tipografi / lower-third *(bitti — "Faz 2" 1-6, DEVLOG 2026-08-09 (8)-(13))*
-4. Logo / bumper şablonları — `aep/` ve `assets/` boş, şablon girdisi gerekiyor
+4. Logo / bumper şablonları — **ilk canlı test başarılı** (DEVLOG 2026-08-09
+   (14)), devam ediyor — bkz. "Faz 3" aşağıda
 5. Format türetme *(nadiren ihtiyaç, düşük öncelik)*
 6. Efekt / grade kombinasyonları
 7. Reviewer'ı gerçek yap — `claudeReviewer()` stub'ı. Bilinçli olarak geç
@@ -243,6 +244,32 @@ dikdörtgeninin boyutu/konumu ölçüme bağlı, şimdi gerçekten gerekli.
 MCP'de yok (yalnız `ae_command` ile erişiliyor). Faz 2 bitince CORE gözden
 geçirilmeli — özellikle `measureText`, `applyLowerThird`, `setParent`,
 `setTrackMatte`.
+
+---
+
+## Faz 3 — logo/bumper şablon doldurma
+
+Gerekçe: DEVLOG 2026-08-09 (14) girişinde bağlam. Var olan bir prodüksiyon
+`.aep`'ini programatik doldurmak — Faz 1/2 gibi MCP'ye yeni primitif eklemek
+değil, mevcut komutları (`setTextDocument`, `importFootage`,
+`addFootageLayer`, `setLayerProperty`, `moveLayer`) bir araya getirmek.
+
+**Yol açan altyapı, bu fazda eklendi/düzeltildi (hepsi canlıda doğrulandı):**
+`openProject`/`closeProject`/`quitApp` (File-menu, dialogsuz), `getLayerDetails`
+`deep` modunun text layer'da çökmesi (`TextDocument.boxTextSize` bug'ı),
+`setLayerProperty`'nin `layer` (isim) ile hedeflenememesi, ve `aerender`
+yolunun macOS'ta yanlış hesaplanması (her render sessizce `-2` ile
+patlıyordu — köprünün render özelliği muhtemelen hiç canlı test edilmemişti).
+
+**İlk test — bitti (DEVLOG 2026-08-09 (14)):** `aep/Ae_Template_Test.aep`
+üzerinde metin değiştirme + görsel import edip placeholder'a cover-fit ile
+oturtma, render alıp görsel doğrulama. Elle, komut komut yapıldı.
+
+**Açık soru:** Bu, tekrarlanan bir iş akışı olarak (`applyLowerThird` gibi
+tek bir komut/spec) mı soyutlanmalı, yoksa şablon başına düzen çok
+değişken olduğu için mevcut komutların elle bir araya getirilmesi mi yeterli?
+Henüz karar verilmedi — ikinci/üçüncü gerçek şablonla karşılaşınca netleşir
+(tek örnekten genelleme yapmamak için bilinçli olarak erken karar verilmedi).
 
 ---
 

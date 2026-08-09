@@ -25,6 +25,54 @@ COMMANDS.saveProject = function (p) {
   return { path: app.project.file ? app.project.file.fsName : null };
 };
 
+// closeProject/openProject/quitApp never rely on AE's own save-changes dialog
+// (dialogs freeze the bridge, same reasoning as __saveProject above). Instead
+// they resolve "what happens to unsaved changes" themselves BEFORE calling
+// the native close/open/quit, then always pass CloseOptions.DO_NOT_SAVE_CHANGES
+// (or nothing needing saving) so the native call itself can never prompt.
+function _saveOrThrow(p) {
+  var proj = app.project;
+  if (proj.file) { proj.save(); return; }
+  if (p && p.path) { proj.save(new File(p.path)); return; }
+  throw new Error("Project has unsaved content and was never saved; pass save:false to discard it, or path to save it first");
+}
+
+COMMANDS.closeProject = function (p) {
+  var proj = app.project;
+  var save = (p && p.save !== undefined) ? p.save : true;
+  if ((proj.numItems > 0 || proj.file) && save) _saveOrThrow(p);
+  proj.close(CloseOptions.DO_NOT_SAVE_CHANGES);
+  return { ok: true };
+};
+
+COMMANDS.openProject = function (p) {
+  AEB.assert(p && p.path, "path is required");
+  var f = new File(p.path);
+  AEB.assert(f.exists, "file not found: " + p.path);
+  var proj = app.project;
+  var save = (p && p.save !== undefined) ? p.save : true;
+  if (proj.numItems > 0 || proj.file) {
+    if (save) _saveOrThrow(null); // closing project needs a path of its OWN, not the target's
+    proj.close(CloseOptions.DO_NOT_SAVE_CHANGES);
+  }
+  var ok = app.open(f);
+  AEB.assert(ok, "failed to open project: " + p.path);
+  var opened = app.project;
+  return { name: opened.file ? opened.file.name : "Untitled", path: opened.file ? opened.file.fsName : null, numItems: opened.numItems };
+};
+
+// quitApp: after this call the panel/socket dies with the AE process, so the
+// controller resolves the pending request as { ok:false, code:'DISCONNECTED' }
+// (see controller/src/aeClient.js _onClose) instead of a normal ack — that
+// disconnect IS the success signal, not a failure to be retried.
+COMMANDS.quitApp = function (p) {
+  var proj = app.project;
+  var save = (p && p.save !== undefined) ? p.save : true;
+  if ((proj.numItems > 0 || proj.file) && save) _saveOrThrow(p);
+  app.quit();
+  return { ok: true };
+};
+
 COMMANDS.undo = function () { app.executeCommand(16); return { ok: true }; };   // Edit > Undo
 COMMANDS.redo = function () { app.executeCommand(17); return { ok: true }; };   // Edit > Redo
 

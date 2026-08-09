@@ -83,30 +83,24 @@ export const COMMANDS = {
   },
 
   setLayerProperty: {
+    // No property whitelist here (there used to be one restricted to
+    // position|scale|rotation|opacity|name|enabled|startTime, and this
+    // required `layerIndex` specifically, silently ignoring the `layer`
+    // field every other layer-targeting command accepts) — the JSX side
+    // (layer.jsx COMMANDS.setLayerProperty) already resolves far more:
+    // anchorPoint/anchor, inPoint, outPoint, shy, solo, label, threeDLayer,
+    // plus a generic array property-path fallback via AEB.resolveProperty.
+    // Re-deriving that whitelist here just went stale and rejected valid
+    // calls; the JSX throws its own clear error for anything it can't
+    // resolve, so validation there is sufficient (defense-in-depth intact).
     description:
-      'Set a layer property (position|scale|rotation|opacity|name|enabled|startTime). Returns { ok }.',
+      'Set a layer property. Friendly names: position|scale|rotation|opacity|anchorPoint|anchor|name|enabled|startTime|inPoint|outPoint|shy|solo|label|threeDLayer — or an array property path (e.g. ["Effects","Tint","Amount to Tint"]) for anything else. { compId, layer, property, value }. Returns { ok }.',
+    // requireFields (defined below, but hoisted — it's a function
+    // declaration) just checks presence and spreads params through
+    // untouched, same as withDesc — needed here because withDesc itself is
+    // a `const` and not yet initialized this early in the file (TDZ).
     validate(p) {
-      const property = v.requiredString(p, 'property');
-      const allowed = [
-        'position',
-        'scale',
-        'rotation',
-        'opacity',
-        'name',
-        'enabled',
-        'startTime',
-      ];
-      if (!allowed.includes(property)) {
-        throw new ValidationError(
-          `property must be one of: ${allowed.join(', ')} (got "${property}")`,
-        );
-      }
-      return {
-        compId: v.requiredInt(p, 'compId'),
-        layerIndex: v.requiredPositiveInt(p, 'layerIndex'),
-        property,
-        value: v.required(p, 'value'),
-      };
+      return requireFields(p, ['compId', 'property', 'value']);
     },
   },
 
@@ -269,6 +263,9 @@ Object.assign(COMMANDS, {
   executeMenuCommand: withDesc('Run any AE menu command. { commandId | commandName }', []),
   findMenuCommand: withDesc('Look up a menu command id by name. { commandName }', ['commandName']),
   saveProject: withDesc('Save the project. { path? }', []),
+  openProject: withDesc('Open a project file, replacing whatever is currently open. Never triggers AE\'s save-changes dialog: the current project is saved (or discarded) BEFORE the native open call. { path, save? (default true - save current project first if it has a file; throws if it has unsaved content and no file) }', ['path']),
+  closeProject: withDesc('Close the current project (back to a blank Untitled project). Never triggers a dialog. { save? (default true - save first via its own file; throws if never saved) }', []),
+  quitApp: withDesc('Quit After Effects. Never triggers the save-changes dialog (saves first by default). The panel connection drops as part of quitting - the controller resolves the call as a DISCONNECTED error, which for this command means success, not failure. { save? (default true) }', []),
   undo: withDesc('Edit > Undo.', []),
   redo: withDesc('Edit > Redo.', []),
   purge: withDesc('Purge caches. { target?: all|undo|snapshot|image }', []),
