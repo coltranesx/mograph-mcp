@@ -307,6 +307,42 @@ Object.assign(COMMANDS, {
   getCompDetails: withDesc('Comp settings + all layers.', ['compId']),
   getProjectItems: withDesc('List all project items.', []),
 
+  resolveSafePosition: {
+    description:
+      'Resolve a named position to comp-relative pixel coordinates, inset by title-safe margins — no AE mutation, pure math off ' +
+      'the comp\'s real width/height. { compId, position (topLeft|topCenter|topRight|middleLeft|center|middleRight|bottomLeft|' +
+      'bottomCenter|bottomRight), safeArea? ({top,right,bottom,left}, each a fraction of comp width [left/right] or height ' +
+      '[top/bottom]; defaults from config.json, currently 0.08 each side) }. Returns { x, y, safeArea: {left,top,right,bottom} } (px) — ' +
+      'x/y are the point for that position WITHIN the safe rect. docs/ROADMAP.md Faz 2 madde 2.',
+    validate(p) {
+      const base = requireFields(p, ['compId', 'position']);
+      const POSITIONS = [
+        'topLeft', 'topCenter', 'topRight',
+        'middleLeft', 'center', 'middleRight',
+        'bottomLeft', 'bottomCenter', 'bottomRight',
+      ];
+      if (!POSITIONS.includes(p.position)) {
+        throw new ValidationError(`position must be one of: ${POSITIONS.join(', ')} (got "${p.position}")`);
+      }
+      const { safeArea: defaultSafeArea } = loadConfig();
+      const raw = p.safeArea;
+      if (raw !== undefined && raw !== null && !isPlainObject(raw)) {
+        throw new ValidationError('safeArea must be an object { top?, right?, bottom?, left? }');
+      }
+      const safeArea = {};
+      for (const side of ['top', 'right', 'bottom', 'left']) {
+        const val = raw ? raw[side] : undefined;
+        if (val === undefined || val === null) { safeArea[side] = defaultSafeArea[side]; continue; }
+        const num = Number(val);
+        if (!Number.isFinite(num) || num < 0 || num >= 0.5) {
+          throw new ValidationError(`safeArea.${side} must be a number in [0, 0.5) (got ${JSON.stringify(val)})`);
+        }
+        safeArea[side] = num;
+      }
+      return { ...base, safeArea };
+    },
+  },
+
   // render queue
   addToRenderQueue: withDesc('Add a comp to the Render Queue. { compId, outputPath?, settingsTemplate?, outputModuleTemplate? }', ['compId']),
   listRenderQueue: withDesc('List Render Queue items + status.', []),

@@ -12,6 +12,27 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (9)
+- **Faz 2 madde 2 — `resolveSafePosition` + `config.json` `safeArea`, bitti.**
+  `config.json`'a `safeArea: {top,right,bottom,left}` (varsayılan 0.08 her
+  kenar) eklendi (`shared/src/config.js` `loadConfig()` bunu okuyor, `createComp`
+  preset deseniyle aynı). Yeni komut `resolveSafePosition { compId, position
+  (9'lu grid: topLeft..bottomRight), safeArea? }` → `{ x, y, safeArea:{...} }`
+  px cinsinden — pure math, AE mutasyonu yok. `safeArea` verilmezse
+  `shared/src/commands.js`'in validate()'i config'ten varsayılanı enjekte
+  ediyor (`createComp`'un preset mekanizmasıyla birebir aynı desen).
+  - **Canlıda bulunan gerçek bug: chained ternary (`a?b:c?d:e`) ExtendScript'te
+    yanlış dallandı** (`bottomLeft` → sağ kenarın x'ini döndürdü). Bu kod
+    tabanında ZATEN dokümante edilmiş bir tuzak (`host.jsx`
+    `AEB.requireLayer`'ın yanındaki not: "ES3 mis-parses chained ternaries,
+    use explicit if/else") — yazarken kontrol etmedim, canlıda yakalandı.
+    **Simulator bunu YAKALAYAMADI** çünkü Node/V8 chained ternary'yi doğru
+    parse ediyor; sadece gerçek ExtendScript motorunda bozuluyor. Bu sınıf
+    hata için simulator testleri güvenilir değil — JSX'te 3-yönlü seçim
+    yazarken if/else şart, ternary chain değil.
+  - 9 yeni test (5 shared pre-socket + 4 simulator, gerçek matematik — 3
+    köşe canlıda da elle doğrulandı), 175/175 yeşil.
+
 ## 2026-08-09 (8)
 - **Faz 2 madde 1 — çıkış animasyonu, bitti (4 stilin hepsi).** ROADMAP'in
   "en büyük kalem" dediği iş: `applyTextStyle`'a `outFrame`/`outStretch`

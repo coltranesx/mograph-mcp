@@ -197,13 +197,10 @@ Karar: çıkış varsayılan olarak girişin **%40 daha hızlısı** (`outStretc
 varsayılan 0.6), tam tersi değil. `outStyle` (girişten farklı bir stil ile
 çıkma) henüz yok — deferred, gerekirse ayrıca eklenir.
 
-**2. `safeArea` config + konum çözümleyici.**
-Lower-third'ü tanımlayan şey nerede durduğu; mutlak pikselle değil comp
-kenarından oransal boşlukla. `config.json`'da 4 format preset'i var ama safe
-area yok → aynı lower-third dikeyde yanlış yere düşüyor.
-→ `config.json`'a `safeArea: { top, right, bottom, left }` (oran, örn 0.08) +
-   `"bottomLeft"` gibi isimli konumları çözen yardımcı. "Format türetme"
-   işinin de yarısını bedavaya çözüyor.
+**2. `safeArea` config + konum çözümleyici ✅ bitti (DEVLOG 2026-08-09 (9))**
+`config.json`'a `safeArea: {top,right,bottom,left}` (varsayılan 0.08) eklendi;
+yeni komut `resolveSafePosition { compId, position (9'lu grid), safeArea? }`
+→ `{ x, y, safeArea }` px. Canlıda 3 köşe + asimetrik override doğrulandı.
 
 **3. `measureText` — ölçüm dışarı açık değil.**
 `sourceRectAtTime` text.jsx içinde 6 yerde kullanılıyor ama hiçbir komut

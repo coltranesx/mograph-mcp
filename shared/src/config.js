@@ -40,6 +40,14 @@ export function loadConfig() {
       duration: raw.defaults?.duration ?? 10,
     },
     presets: raw.presets || {},
+    // Title-safe margins for resolveSafePosition, as a fraction of comp
+    // width (left/right) or height (top/bottom). docs/ROADMAP.md Faz 2.
+    safeArea: {
+      top: raw.safeArea?.top ?? 0.08,
+      right: raw.safeArea?.right ?? 0.08,
+      bottom: raw.safeArea?.bottom ?? 0.08,
+      left: raw.safeArea?.left ?? 0.08,
+    },
     // Optional shared-secret for remote hosting. When set, the media + command
     // REST routes require it (Bearer header or ?token=). Leave null for local.
     token: process.env.AE_BRIDGE_TOKEN || raw.token || null,

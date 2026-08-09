@@ -109,6 +109,43 @@ describe('JSX Runner + Mock AE DOM', () => {
     });
   });
 
+  describe('resolveSafePosition', () => {
+    it('resolves all 9 named positions on a 1920x1080 comp with 0.08 safeArea', () => {
+      const comp = runner.dispatch('createComp', { name: 'SafePos', width: 1920, height: 1080 });
+      const compId = comp.result.compId;
+      const sa = { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 };
+      // px: left=153.6, right=1766.4, top=86.4, bottom=993.6, center=960, middle=540
+      const cases = [
+        ['topLeft', 153.6, 86.4], ['topCenter', 960, 86.4], ['topRight', 1766.4, 86.4],
+        ['middleLeft', 153.6, 540], ['center', 960, 540], ['middleRight', 1766.4, 540],
+        ['bottomLeft', 153.6, 993.6], ['bottomCenter', 960, 993.6], ['bottomRight', 1766.4, 993.6],
+      ];
+      for (const [position, x, y] of cases) {
+        const r = runner.dispatch('resolveSafePosition', { compId, position, safeArea: sa });
+        assert.equal(r.ok, true, `${position}: ${r.error}`);
+        assert.ok(Math.abs(r.result.x - x) < 0.01, `${position} x: expected ${x}, got ${r.result.x}`);
+        assert.ok(Math.abs(r.result.y - y) < 0.01, `${position} y: expected ${y}, got ${r.result.y}`);
+      }
+    });
+
+    it('reflects an asymmetric safeArea (e.g. more margin at the bottom for a lower-third)', () => {
+      const comp = runner.dispatch('createComp', { name: 'SafePosAsym', width: 1920, height: 1080 });
+      const compId = comp.result.compId;
+      const r = runner.dispatch('resolveSafePosition', {
+        compId, position: 'bottomLeft', safeArea: { top: 0.08, right: 0.08, bottom: 0.2, left: 0.1 },
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.x, 192);   // 1920 * 0.1
+      assert.equal(r.result.y, 864);   // 1080 * (1 - 0.2)
+    });
+
+    it('rejects an unknown comp id', () => {
+      const r = runner.dispatch('resolveSafePosition', { compId: 999999, position: 'center' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not found/i);
+    });
+  });
+
   describe('listComps', () => {
     it('returns empty for new project', () => {
       const r = runner.dispatch('listComps');

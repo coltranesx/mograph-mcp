@@ -200,6 +200,54 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('resolveSafePosition (pre-socket)', () => {
+    it('accepts all 9 named positions', () => {
+      const positions = [
+        'topLeft', 'topCenter', 'topRight',
+        'middleLeft', 'center', 'middleRight',
+        'bottomLeft', 'bottomCenter', 'bottomRight',
+      ];
+      for (const position of positions) {
+        const r = validateCommand('resolveSafePosition', { compId: 1, position });
+        assert.equal(r.ok, true, `${position}: ${r.error}`);
+      }
+    });
+
+    it('injects config.json defaults (0.08 each side) when safeArea is omitted', () => {
+      const r = validateCommand('resolveSafePosition', { compId: 1, position: 'bottomLeft' });
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.params.safeArea, { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 });
+    });
+
+    it('lets a caller override only some sides, keeping config defaults for the rest', () => {
+      const r = validateCommand('resolveSafePosition', {
+        compId: 1, position: 'bottomLeft', safeArea: { bottom: 0.15 },
+      });
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.params.safeArea, { top: 0.08, right: 0.08, bottom: 0.15, left: 0.08 });
+    });
+
+    it('rejects an unknown position', () => {
+      const r = validateCommand('resolveSafePosition', { compId: 1, position: 'dead center' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /position must be one of/);
+    });
+
+    it('rejects an out-of-range safeArea side', () => {
+      const r = validateCommand('resolveSafePosition', {
+        compId: 1, position: 'center', safeArea: { top: 0.6 },
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /safeArea\.top/);
+    });
+
+    it('rejects a non-object safeArea', () => {
+      const r = validateCommand('resolveSafePosition', { compId: 1, position: 'center', safeArea: 'big' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /safeArea/);
+    });
+  });
+
   describe('addShapeOperator (pre-socket matchName whitelist)', () => {
     it('accepts the live-confirmed operators (trim, repeater)', () => {
       for (const operator of ['trim', 'repeater']) {

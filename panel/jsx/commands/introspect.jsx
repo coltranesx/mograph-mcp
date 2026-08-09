@@ -97,3 +97,36 @@ COMMANDS.getProjectItems = function () {
   }
   return out;
 };
+
+// Named position -> comp-relative px coordinates, inset by title-safe margins
+// (Faz 2 madde 2, docs/ROADMAP.md). Pure math off comp.width/height — no
+// scene mutation, so no AEB.undo. safeArea ratios are resolved server-side
+// (shared/src/commands.js, from config.json) before this ever runs, so this
+// only has to trust the numbers it's given.
+COMMANDS.resolveSafePosition = function (p) {
+  var comp = AEB.requireComp(p);
+  var sa = p.safeArea || { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 };
+  var insetTop = comp.height * sa.top, insetBottom = comp.height * sa.bottom;
+  var insetLeft = comp.width * sa.left, insetRight = comp.width * sa.right;
+  var left = insetLeft, right = comp.width - insetRight;
+  var top = insetTop, bottom = comp.height - insetBottom;
+  var xOf = { left: left, center: comp.width / 2, right: right };
+  var yOf = { top: top, middle: comp.height / 2, bottom: bottom };
+  var pos = String(p.position);
+  // NOTE: ExtendScript (ES3) mis-parses chained ternaries (a?b:c?d:e) — use
+  // explicit if/else (see AEB.requireLayer's comment, host.jsx). A chained
+  // ternary here silently picked the wrong branch live (2026-08-09).
+  var vKey;
+  if (pos.indexOf("top") === 0) vKey = "top";
+  else if (pos.indexOf("bottom") === 0) vKey = "bottom";
+  else vKey = "middle";
+  var hKey;
+  if (pos.indexOf("Left") >= 0) hKey = "left";
+  else if (pos.indexOf("Right") >= 0) hKey = "right";
+  else hKey = "center";
+  AEB.assert(xOf[hKey] !== undefined && yOf[vKey] !== undefined, "unknown position: " + p.position);
+  return {
+    x: xOf[hKey], y: yOf[vKey],
+    safeArea: { left: left, top: top, right: right, bottom: bottom }
+  };
+};

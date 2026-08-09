@@ -19,6 +19,13 @@
     "square": { "width": 1080, "height": 1080, "frameRate": 25 },
     "portrait": { "width": 1080, "height": 1320, "frameRate": 25 }
   },
+  "//safeArea": "Default title-safe margins for resolveSafePosition, as a fraction of comp width (left/right) or height (top/bottom). docs/ROADMAP.md Faz 2 madde 2.",
+  "safeArea": {
+    "top": 0.08,
+    "right": 0.08,
+    "bottom": 0.08,
+    "left": 0.08
+  },
   "reconnect": {
     "initialDelayMs": 500,
     "maxDelayMs": 10000,
