@@ -12,6 +12,27 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-09 (13)
+- **Faz 2 madde 6 — `addResponsiveBox` + `applyLowerThird`'a `accentLine`,
+  bitti. Faz 2 tamamen bitti.** **Karar (kullanıcıyla): ince aksan çizgisi
+  isteniyor.**
+  - `addResponsiveBox { compId, fitTo, padding?, fillColor?, strokeColor?,
+    strokeWidth?, position?, name? }` — `executor.jsx`'teki `responsive_box`
+    treatment kind'ının (applySpec içine hapisti) standalone hali. `fitTo`
+    layer'ın `sourceRectAtTime` + padding'ine bağlı **canlı expression**
+    (frame frame yeniden hesaplanır — applyLowerThird'ın kendi statik
+    hesaplarından farklı olarak gerçekten dinamik). Canlıda expression'ın
+    doğru kurulduğu ve gerçek zamanlı değer ürettiği doğrulandı.
+  - `applyLowerThird`'a `accentLine?` (true veya `{width,color,gap}`) eklendi
+    — hLeft/hRight için metnin dışına, blok yüksekliğinde dikey bir çubuk;
+    center için bloğun altına yatay çubuk. **`addResponsiveBox`'ın aksine
+    statik/tek seferlik hesaplanıyor** (measureText zaten tam sayıları
+    veriyor, applyLowerThird'ın deterministik felsefesiyle tutarlı).
+    Canlıda pozisyon matematiği yine birebir doğrulandı (-12, -47.78 elle
+    hesapla eşleşti).
+  - 6 yeni shared pre-socket testi, 193/193 yeşil.
+  - **Faz 2 (madde 1-6, hepsi) artık tamamen bitti.**
+
 ## 2026-08-09 (12)
 - **Faz 2 madde 5 — `applyLowerThird`, bitti.** Yeni soyutlama yok — sadece
   `resolveSafePosition`/`measureText`/`addTextLayer`/`applyTextStyle`/

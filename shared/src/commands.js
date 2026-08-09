@@ -211,6 +211,7 @@ Object.assign(COMMANDS, {
     },
   },
   addPathShape: withDesc('Shape layer with a custom bezier path. { compId, vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId']),
+  addResponsiveBox: withDesc('A rect shape layer whose size tracks another layer\'s rendered bounds LIVE via an expression (re-evaluates every frame, e.g. if fitTo\'s text changes later) — not a one-time size like addShape. { compId, fitTo (layer|layerIndex|layerName, required), padding? ([w,h], default [60,40]), fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId', 'fitTo']),
   addShapeOperator: {
     description:
       `Add a shape operator to a shape layer's vector group. { compId, layer, operator (${Object.keys(SHAPE_OPERATORS).join('|')}), group?, params?, name? }. ` +
@@ -300,11 +301,13 @@ Object.assign(COMMANDS, {
   applyLowerThird: {
     description:
       'Compose a lower-third: title + optional subtitle, edge-anchored via resolveSafePosition, parented to a controller null (' +
-      '{namePrefix}_controller/_title/_subtitle), single in/out. { compId, title, subtitle?, style? (charScale|bunchRotate|blurFade, ' +
-      'default charScale — wordReveal not supported, it builds its own centered layout), ease?, position? (resolveSafePosition\'s 9-name ' +
-      'grid, default bottomLeft), font?, titleFontSize?, subtitleFontSize?, titleColor?, subtitleColor?, gap?, safeArea?, inFrame?, ' +
-      'outFrame? (default inFrame + 5s), subtitleDelay? (frames after inFrame, default 6), namePrefix? (default "LT") }. Returns ' +
-      '{ controller, layers[], inFrame, outFrame }. docs/ROADMAP.md Faz 2 madde 5.',
+      '{namePrefix}_controller/_title/_subtitle[/_accent]), single in/out. { compId, title, subtitle?, style? (charScale|bunchRotate|' +
+      'blurFade, default charScale — wordReveal not supported, it builds its own centered layout), ease?, position? (resolveSafePosition\'s ' +
+      '9-name grid, default bottomLeft), font?, titleFontSize?, subtitleFontSize?, titleColor?, subtitleColor?, gap?, safeArea?, inFrame?, ' +
+      'outFrame? (default inFrame + 5s), subtitleDelay? (frames after inFrame, default 6), namePrefix? (default "LT"), accentLine? (true, ' +
+      'or { width?, color?, gap? } — a thin bar spanning the block, opposite the text on the anchored side, fixed size computed once, not ' +
+      'expression-driven; for that, use addResponsiveBox directly) }. Returns { controller, layers[], inFrame, outFrame }. ' +
+      'docs/ROADMAP.md Faz 2 madde 5/6.',
     validate(p) {
       const base = requireFields(p, ['compId', 'title']);
       if (typeof p.title !== 'string' || p.title.length === 0) {
@@ -312,6 +315,10 @@ Object.assign(COMMANDS, {
       }
       if (p.subtitle !== undefined && p.subtitle !== null && typeof p.subtitle !== 'string') {
         throw new ValidationError('subtitle must be a string');
+      }
+      if (p.accentLine !== undefined && p.accentLine !== null && p.accentLine !== true && p.accentLine !== false
+        && !isPlainObject(p.accentLine)) {
+        throw new ValidationError('accentLine must be true/false or an object { width?, color?, gap? }');
       }
       if (p.style !== undefined) {
         const style = String(p.style).toLowerCase().replace(/[^a-z]/g, '');

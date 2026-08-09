@@ -28,7 +28,7 @@ temeli düzeliyor** — kırık temelin üstüne kütüphane kurmanın anlamı y
 
 1. ~~Faz 0 — altyapı borcu~~ *(bitti, bkz. DEVLOG 2026-08-08 (6))*
 2. Shape temeli *(bitti — A/B/C/D, DEVLOG 2026-08-08 (7) ve 2026-08-09 (3)/(5))*
-3. Tipografi / lower-third *(spec aşağıda, "Faz 2" — bar yok kararı alındı)*
+3. Tipografi / lower-third *(bitti — "Faz 2" 1-6, DEVLOG 2026-08-09 (8)-(13))*
 4. Logo / bumper şablonları — `aep/` ve `assets/` boş, şablon girdisi gerekiyor
 5. Format türetme *(nadiren ihtiyaç, düşük öncelik)*
 6. Efekt / grade kombinasyonları
@@ -218,11 +218,11 @@ denetleyici null'a parentlanmış (`LT_controller`/`LT_title`/`LT_subtitle`),
 tek in/out. Canlıda tam matematiksel doğrulama yapıldı. `wordReveal`
 desteklenmiyor (bilinçli, kendi layout'unu kuruyor).
 
-**6. `addResponsiveBox` — sadece aksan çizgisi istenirse.**
-`executor.jsx:184-198`'deki `responsive_box` (rect size'ı
-`thisComp.layer(X).sourceRectAtTime()` + padding expression'ına bağlı; yazı
-değişince kendini günceller) applySpec içinde hapis. Bar yok kararıyla zorunlu
-olmaktan çıktı. **Açık soru:** aksan çizgisi isteniyor mu — hayırsa bu madde düşer.
+**6. `addResponsiveBox` ✅ bitti (DEVLOG 2026-08-09 (13))**
+`executor.jsx`'teki `responsive_box`'ın standalone hali, canlı expression ile
+(applySpec'ten bağımsız). `applyLowerThird`'a da `accentLine?` eklendi (statik
+hesap, dikey/yatay çubuk). Karar: aksan çizgisi isteniyordu. **Faz 2 (1-6)
+tamamen bitti.**
 
 ### Faz 1.A yan kazancı ✅ canlıda doğrulandı (DEVLOG 2026-08-09 (7))
 

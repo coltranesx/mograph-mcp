@@ -109,12 +109,51 @@ COMMANDS.applyLowerThird = function (p) {
       });
     }
 
+    // Optional thin accent line (Faz 2 madde 6 — decided with the user
+    // 2026-08-09: wanted). A vertical bar spanning the block's height, `gap`
+    // px outside the text on the anchored side (left/right); for a center
+    // anchor there's no "outside" edge, so it falls back to a horizontal bar
+    // under the block instead. One-time computed size (measureText already
+    // gave exact numbers) — NOT addResponsiveBox's live expression, which
+    // exists as its own general-purpose primitive for cases that do need to
+    // track a layer that keeps changing after the fact.
+    if (p.accentLine) {
+      var al = (p.accentLine === true) ? {} : p.accentLine;
+      var alThick = (al.width !== undefined) ? al.width : 4;
+      var alColor = al.color || titleColor;
+      var alGap = (al.gap !== undefined) ? al.gap : 10;
+      var accentSize, accentPos;
+      if (hLeft || hRight) {
+        var barX = hLeft ? (safe.x - alGap - alThick) : (safe.x + alGap);
+        accentSize = [alThick, blockHeight];
+        accentPos = [barX + alThick / 2, blockTopY + blockHeight / 2];
+      } else {
+        var barW = Math.max(titleM.width, hasSub ? subM.width : 0);
+        accentSize = [barW, alThick];
+        accentPos = [safe.x, blockTopY + blockHeight + alGap + alThick / 2];
+      }
+      var accent = COMMANDS.addShape({
+        compId: p.compId, shape: "rectangle", size: accentSize, fillColor: alColor,
+        name: namePrefix + "_accent"
+      });
+      var accentLayer = AEB.resolveLayer(comp, accent.layerIndex);
+      accentLayer.property("Transform").property("Position").setValue(accentPos);
+      COMMANDS.setParent({ compId: p.compId, layer: accentLayer.index, parent: controllerLayer.index });
+      var accentOp = accentLayer.property("Transform").property("Opacity");
+      var fadeF = Math.min(6, outFrame - inFrame);
+      accentOp.setValueAtTime(inFrame / comp.frameRate, 0);
+      accentOp.setValueAtTime((inFrame + fadeF) / comp.frameRate, 100);
+      accentOp.setValueAtTime((outFrame - fadeF) / comp.frameRate, 100);
+      accentOp.setValueAtTime(outFrame / comp.frameRate, 0);
+    }
+
     // Re-resolve everything by NAME right before returning: comp.layers.addText()
     // always inserts at index 1, so every earlier snapshot's .layerIndex/.index
     // is stale by now (each subsequent addTextLayer call shifted it). Names are
     // stable regardless of index churn.
     var finalLayers = [AEB.layerInfo(AEB.resolveLayer(comp, namePrefix + "_title"))];
     if (hasSub) finalLayers.push(AEB.layerInfo(AEB.resolveLayer(comp, namePrefix + "_subtitle")));
+    if (p.accentLine) finalLayers.push(AEB.layerInfo(AEB.resolveLayer(comp, namePrefix + "_accent")));
     return {
       controller: AEB.layerInfo(controllerLayer),
       layers: finalLayers,

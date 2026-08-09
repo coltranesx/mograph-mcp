@@ -123,6 +123,47 @@ COMMANDS.addShape = function (p) {
   });
 };
 
+// A rect shape layer whose size tracks another layer's rendered bounds live,
+// via an expression on ADBE Vector Rect Size — not a one-time computation
+// like addShape's static `size`. Was previously only reachable inside
+// applySpec's "responsive_box" treatment kind (executor.jsx); exposed
+// standalone here (Faz 2 madde 6, docs/ROADMAP.md — decided with the user
+// 2026-08-09: the lower-third DOES want a thin accent line, this is what
+// backs it, see applyLowerThird's accentLine param). Re-evaluates on every
+// frame AE renders, so it stays correct if fitTo's text changes later —
+// deliberately dynamic, unlike applyLowerThird's own accent bar which is a
+// one-time computed size (consistent with how the rest of that composition
+// works: measured once at build time, not expression-driven).
+COMMANDS.addResponsiveBox = function (p) {
+  var comp = AEB.requireComp(p);
+  var fitLayer = AEB.resolveLayer(comp, p.fitTo);
+  AEB.assert(fitLayer, "fitTo layer not found");
+  return AEB.undo("mograph-mcp: addResponsiveBox", function () {
+    var box = comp.layers.addShape();
+    if (p.name) box.name = p.name;
+    var root = box.property("ADBE Root Vectors Group");
+    var g = root.addProperty("ADBE Vector Group").property("ADBE Vectors Group");
+    g.addProperty("ADBE Vector Shape - Rect");
+    if (p.fillColor) {
+      g.addProperty("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue(AEB.normColor(p.fillColor));
+    }
+    if (p.strokeColor) {
+      var stroke = g.addProperty("ADBE Vector Graphic - Stroke");
+      stroke.property("ADBE Vector Stroke Color").setValue(AEB.normColor(p.strokeColor));
+      if (p.strokeWidth) stroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
+    }
+    var sizeProp = g.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size");
+    var pad = p.padding || [60, 40];
+    // Single quotes in the target name would break the expression string —
+    // guard rather than produce a silently-wrong expression.
+    var fitName = String(fitLayer.name).replace(/'/g, "\\'");
+    sizeProp.expression =
+      "var s = thisComp.layer('" + fitName + "').sourceRectAtTime(); [s.width+" + pad[0] + ", s.height+" + pad[1] + "];";
+    if (p.position) box.property("Transform").property("Position").setValue(p.position);
+    return AEB.layerInfo(box);
+  });
+};
+
 // Shape operators (Trim Paths, Repeater, ...) live inside a shape layer's
 // vector-group tree, added via group.addProperty(matchName) — not addEffect().
 // Mirrors shared/src/commands.js SHAPE_OPERATORS; keep the two in sync. Kept

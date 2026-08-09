@@ -243,6 +243,32 @@ describe('validateCommand', () => {
       assert.equal(r.ok, false);
       assert.match(r.error, /position must be one of/);
     });
+
+    it('accepts accentLine as true, false, or an options object', () => {
+      for (const accentLine of [true, false, {}, { width: 6, color: [1, 0, 0], gap: 12 }]) {
+        const r = validateCommand('applyLowerThird', { compId: 1, title: 'X', accentLine });
+        assert.equal(r.ok, true, `${JSON.stringify(accentLine)}: ${r.error}`);
+      }
+    });
+
+    it('rejects a malformed accentLine', () => {
+      const r = validateCommand('applyLowerThird', { compId: 1, title: 'X', accentLine: 'yes please' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /accentLine/);
+    });
+  });
+
+  describe('addResponsiveBox (pre-socket)', () => {
+    it('accepts a minimal call', () => {
+      const r = validateCommand('addResponsiveBox', { compId: 1, fitTo: 1 });
+      assert.equal(r.ok, true);
+    });
+
+    it('rejects without fitTo', () => {
+      const r = validateCommand('addResponsiveBox', { compId: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /fitTo/);
+    });
   });
 
   describe('alignAnchor (pre-socket)', () => {
