@@ -235,7 +235,14 @@ Object.assign(COMMANDS, {
       'For a gradient with chosen colors use rampGradient instead), ' +
       'rampGradient? ({ startColor, endColor (both required), startPoint?, endPoint?, type? (linear|radial), scatter?, blendWithOriginal? }) ' +
       '— a Gradient Ramp EFFECT (ADBE Ramp) applied on the layer, fully color-scriptable. Needs some fill/stroke to carry alpha; if none of ' +
-      'fillColor/fillGradient/strokeColor/strokeGradient is given, a default white fill is added automatically as an alpha source. }',
+      'fillColor/fillGradient/strokeColor/strokeGradient is given, a default white fill is added automatically as an alpha source. ' +
+      'Stroke style, requires strokeColor or strokeGradient: lineCap? (butt|round|projecting), lineJoin? (miter|round|bevel), ' +
+      'miterLimit? (only when lineJoin is miter, AE default), dashes? ([{dash,gap}, ...] up to 3 pairs), dashOffset?, ' +
+      'taper? ({ lengthUnits? (percent|pixels, default percent), startLength?/endLength? (percent mode), startLengthPx?/endLengthPx? ' +
+      '(pixels mode), startWidth?/endWidth? (0..1 fraction, always active), startEase?/endEase? (always active) }), ' +
+      'wave? ({ units? (percent|pixels), amount?, wavelength?, phase? }) — no cycles: AE does not allow scripting ' +
+      'it (confirmed live 2026-08-10, every mutation path throws "hidden property"; same category as gradient ' +
+      'stop colors, see fillGradient). }',
     schema: {
       compId: { type: 'integer' }, shape: { type: 'string' },
       size: { type: 'array', items: { type: 'number' } },
@@ -275,6 +282,32 @@ Object.assign(COMMANDS, {
           endPoint: { type: 'array', items: { type: 'number' } },
           type: { type: 'string' },
           scatter: { type: 'number' }, blendWithOriginal: { type: 'number' },
+        },
+      },
+      lineCap: { type: 'string' }, lineJoin: { type: 'string' }, miterLimit: { type: 'number' },
+      dashes: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { dash: { type: 'number' }, gap: { type: 'number' } },
+        },
+      },
+      dashOffset: { type: 'number' },
+      taper: {
+        type: 'object',
+        properties: {
+          lengthUnits: { type: 'string' },
+          startLength: { type: 'number' }, endLength: { type: 'number' },
+          startLengthPx: { type: 'number' }, endLengthPx: { type: 'number' },
+          startWidth: { type: 'number' }, endWidth: { type: 'number' },
+          startEase: { type: 'number' }, endEase: { type: 'number' },
+        },
+      },
+      wave: {
+        type: 'object',
+        properties: {
+          units: { type: 'string' }, amount: { type: 'number' },
+          wavelength: { type: 'number' }, phase: { type: 'number' },
         },
       },
     },
@@ -319,6 +352,65 @@ Object.assign(COMMANDS, {
         }
         if (rg.type !== undefined && !GRAD_TYPES.includes(String(rg.type).toLowerCase())) {
           throw new ValidationError('rampGradient.type must be "linear" or "radial"');
+        }
+      }
+      // Stroke style params (lineCap/.../wave) only mean something with a
+      // stroke — no silent no-op if given without one (mirrors the JSX-side
+      // AEB.assert in layer.jsx's addShape, defense in depth).
+      const STROKE_STYLE_FIELDS = ['lineCap', 'lineJoin', 'miterLimit', 'dashes', 'dashOffset', 'taper', 'wave'];
+      const hasStrokeStyle = STROKE_STYLE_FIELDS.some((f) => p[f] !== undefined);
+      if (hasStrokeStyle && p.strokeColor === undefined && p.strokeGradient === undefined) {
+        throw new ValidationError(
+          'stroke style params (lineCap/lineJoin/miterLimit/dashes/dashOffset/taper/wave) require strokeColor or strokeGradient',
+        );
+      }
+      const LINE_CAPS = ['butt', 'round', 'projecting'];
+      const LINE_JOINS = ['miter', 'round', 'bevel'];
+      if (p.lineCap !== undefined && !LINE_CAPS.includes(String(p.lineCap).toLowerCase())) {
+        throw new ValidationError(`lineCap must be one of: ${LINE_CAPS.join(', ')}`);
+      }
+      if (p.lineJoin !== undefined && !LINE_JOINS.includes(String(p.lineJoin).toLowerCase())) {
+        throw new ValidationError(`lineJoin must be one of: ${LINE_JOINS.join(', ')}`);
+      }
+      if (p.miterLimit !== undefined && p.lineJoin !== undefined && String(p.lineJoin).toLowerCase() !== 'miter') {
+        // AE hides Miter Limit entirely unless Line Join is "miter" — fail
+        // clearly here rather than let AE's cryptic "hidden property" error
+        // surface from the JSX layer (confirmed live 2026-08-10).
+        throw new ValidationError('miterLimit only applies when lineJoin is "miter" (AE hides it otherwise)');
+      }
+      if (p.dashes !== undefined) {
+        const dashes = v.optionalArray(p, 'dashes');
+        base.dashes = dashes;
+        if (dashes.length > 3) {
+          throw new ValidationError('dashes supports at most 3 dash/gap pairs (AE UI limit)');
+        }
+        for (const pair of dashes) {
+          if (!isPlainObject(pair)) throw new ValidationError('each dashes[] entry must be an object { dash?, gap? }');
+        }
+      }
+      const UNITS = ['percent', 'pixels'];
+      if (p.taper !== undefined) {
+        const taper = v.optionalObject(p, 'taper');
+        base.taper = taper;
+        if (taper.lengthUnits !== undefined && !UNITS.includes(String(taper.lengthUnits).toLowerCase())) {
+          throw new ValidationError('taper.lengthUnits must be "percent" or "pixels"');
+        }
+      }
+      if (p.wave !== undefined) {
+        const wave = v.optionalObject(p, 'wave');
+        base.wave = wave;
+        if (wave.units !== undefined && !UNITS.includes(String(wave.units).toLowerCase())) {
+          throw new ValidationError('wave.units must be "percent" or "pixels"');
+        }
+        if (wave.cycles !== undefined) {
+          // AE does not allow scripting Wave's Cycles sub-property at all —
+          // confirmed live 2026-08-10, every mutation path (setValue,
+          // setValueAtTime, expression=, indexed property()) throws "the
+          // property or a parent property is hidden", and addProperty()
+          // (the Dashes-style unhide trick) fails outright because this
+          // group is a NAMED_GROUP, not an INDEXED_GROUP. Fail clearly here
+          // rather than let AE's cryptic error surface from the JSX layer.
+          throw new ValidationError('wave.cycles cannot be set (AE does not allow scripting it — omit it)');
         }
       }
       return base;

@@ -141,4 +141,20 @@ export const v = {
     fail(field, 'must be an object');
     return undefined; // unreachable — fail() always throws
   },
+  // nested array param whose items are objects (e.g. addShape's dashes:
+  // [{dash,gap}, ...]) — same JSON-stringified-string tolerance as
+  // optionalObject, for the same reason (confirmed live 2026-08-10).
+  optionalArray(params, field, dflt = undefined) {
+    const raw = params[field];
+    if (raw === undefined || raw === null) return dflt;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* falls through to the failure below */ }
+    }
+    fail(field, 'must be an array');
+    return undefined; // unreachable — fail() always throws
+  },
 };

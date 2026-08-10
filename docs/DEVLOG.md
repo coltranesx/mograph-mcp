@@ -12,6 +12,95 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (25)
+- **(24)'ün canlı doğrulaması tamamlandı: `wave.cycles` scriptlenemiyor,
+  şemadan çıkarıldı.** (24) sonunda commit atılmadan oturum kesilmişti;
+  bu oturumda canlı doğrulamaya devam edildi.
+  - Wave alt-property'leri tek tek izole edilerek test edildi (her biri
+    tek başına, ayrı layer): `amount`, `wavelength`, `phase` sorunsuz;
+    `cycles` tek başına bile "Can not set value... property or a parent
+    property is hidden" veriyor.
+  - Dashes'teki gibi `addProperty(matchName)` ile "unhide" denendi — farklı
+    bir hatayla patladı: *"Can not add a property... because this
+    propertyGroup is neither an INDEXED_GROUP nor a text animator property
+    group."* Yani Dashes'in gizli-slot deseni Wave'e uygulanamıyor: Dashes
+    grubu gerçek bir `INDEXED_GROUP` (tekrarlı dash/gap çiftlerine izin
+    veriyor), Wave ise sabit 5 alanlı bir `NAMED_GROUP` — `addProperty`
+    kavramsal olarak yanlış çağrı.
+  - `AE_BRIDGE_ALLOW_DEV=1` ile geçici olarak (LaunchAgent durdurulup elle
+    dev-mode controller çalıştırıldı, teşhis bitince normale döndürüldü)
+    `runJSX` üzerinden derin sondaj: `propertyValueType` normal (`OneD`,
+    6417) — bozuk/`NO_VALUE` bir tip değil, sıradan sayısal bir property.
+    Ama `canSetExpression:false`, ve dört farklı mutasyon yolu da
+    (`setValue`, `setValueAtTime`, `.expression=`, index'le `property()`
+    erişimi) aynı "hidden" hatasını veriyor. **Sonuç: `cycles` bu AE
+    build'inde (26.3x87) hiçbir scripting yoluyla ayarlanamıyor** —
+    gradient stop renkleriyle (`ADBE Vector Grad Colors`, (22)) aynı
+    kategoride bir AE kısıtı, kod tarafında düzeltilecek bir "doğru
+    yöntem" yok.
+  - **Karar: `cycles` wave şemasından çıkarıldı**, gradient stop renkleri
+    emsaliyle tutarlı — kırık bir özelliği expose etmek yerine hiç
+    sunulmuyor. `shared/src/commands.js` (tool şeması + validate() içinde
+    net `ValidationError`), `panel/jsx/commands/layer.jsx` (JSX katmanında
+    da savunma amaçlı `AEB.assert`, runJSX gibi validate'i atlayan
+    çağrılara karşı) güncellendi. Simulator tarafı (`MockWaveGroup` adında
+    geçici bir sınıf denenmişti, gerekli olmadığı anlaşılınca geri alındı)
+    sade `MockVectorGroup` olarak kaldı — `cycles` zaten JSX'e hiç
+    ulaşmıyor.
+  - 2 yeni test (validate.js reddi + JSX savunma katmanı reddi).
+    `npm test` 223/223, lint temiz.
+  - Canlıda son doğrulama: `miterLimit`+`taper`+`wave` (cycles hariç, tam
+    kombinasyon) tek `addShape` çağrısında sorunsuz; `wave: {cycles:3}`
+    artık AE'nin kriptik hatası yerine bizim net `ValidationError`'ımızla
+    reddediliyor.
+  - Sıradaki adım (ROADMAP): shape group transform (grup içi anchor/scale/
+    rotate).
+
+## 2026-08-10 (24)
+- **`addShape`'e stroke stili eklendi: lineCap/lineJoin/miterLimit/dashes/
+  dashOffset/taper/wave.** Bilinen eksikler listesinin 2. ve 3. maddesi
+  (dash/cap/join ile taper/wave) tek turda birleştirildi — ikisi de aynı
+  Stroke/G-Stroke property bölgesinde, canlı sondaj sırasında ikisinin de
+  aynı anda netleştiği ortaya çıktı.
+  - **Kritik davranış bulgusu (canlı, AE 26.3x87): Dashes grubu "gizli
+    slot" deseni kullanıyor.** `ADBE Vector Stroke Dashes` altındaki
+    Dash1-3/Gap1-3/Offset'in hepsi baştan var ama tek tek gizli —
+    `setValue` doğrudan çağrılırsa "Can not set value... property or a
+    parent property is hidden" veriyor. Çözüm: `addProperty(matchName)`
+    o slotu "açıyor" (numProperties hiç değişmiyor, gerçek bir indexed-
+    group ekleme değil, aynı slotu döndürüyor) — bundan sonra `setValue`
+    çalışıyor. Sıra bağımlılığı yok (Dash 2, Dash 1 hiç açılmadan
+    çalıştı), ama Offset kendi `addProperty` çağrısını istiyor.
+  - **Miter Limit** de aynı şekilde gizli — sadece Line Join "miter"
+    (AE varsayılanı) iken açık. `lineJoin` başka bir şeye ayarlanmışken
+    `miterLimit` verilirse artık AE'nin kriptik hatası yerine net bir
+    ValidationError ile önden reddediliyor.
+  - **Taper**'ın `Start/End Length` (yüzde) ile `StartWidthPx/EndWidthPx`
+    (piksel) çifti `Length Units` toggle'ıyla aynı gizli-slot mantığıyla
+    birbirini kilitliyor — sadece aktif birim ayarı settable. `Start/End
+    Width` (taper genişlik oranı) ve `Start/End Ease` hiç kilitli değil.
+  - **Wave**'in `amount`/`wavelength`/`units`/`phase` alt property'leri
+    kilitli değil, direkt settable. `cycles` ise canlı doğrulamada ayrı bir
+    bug olarak çıktı — düzeltmesi (25)'te.
+  - Şema: `dashes` bir dizi `{dash?, gap?}` (en fazla 3 çift, AE UI
+    sınırı), `taper`/`wave` nested obje. (23)'teki nested-object/array
+    marshalling bug'ı burada da geçerli — `v.optionalArray` (validate.js,
+    `v.optionalObject`'in dizi karşılığı) `dashes` için eklendi.
+  - Simulator: `MockDashesGroup` (yeni sınıf, `MockVectorGroup`'tan türer)
+    gizli-slot davranışını taklit ediyor — `addProperty()` zaten var olan
+    slotu döndürüyor, yeni öğe eklemiyor (diğer matchName'ler için normal
+    "her zaman yeni ekle" davranışı korunuyor, sadece Dashes'e özel).
+    Taper/Wave basit `VECTOR_AUTO_CHILDREN` girdisi yeterli oldu (gizli
+    değiller); Taper'ın yüzde/piksel kilit mekanizması bilinçli olarak
+    mock'lanmadı (ikisi de mock'ta her zaman settable — komut katmanının
+    doğru property path'e yazdığını test etmek yeterli, AE'nin runtime
+    kısıtını simüle etmek gerekli değil).
+  - 15 yeni test (9 controller validate, 6 simulator/JSX — biri G-Stroke
+    üzerinde de aynı stilin çalıştığını doğruluyor). `npm test` 221/221,
+    lint temiz.
+  - **Deploy edildi, canlı doğrulama AE relaunch bekliyor** (README §7 —
+    CEP imzayı sadece açılışta okuyor).
+
 ## 2026-08-10 (23)
 - **Yeni kritik bug bulundu ve düzeltildi: CORE MCP tool'larında nested
   object parametreler de array'ler gibi bozuluyor.** (22)'nin canlı

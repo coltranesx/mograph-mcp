@@ -572,6 +572,89 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.deepEqual(Array.from(shapeGroup.property('ADBE Vector Graphic - Fill').property('ADBE Vector Fill Color').value), [0, 1, 0]);
     });
 
+    // Stroke style: line cap/join/miter, dashes, taper, wave. Dashes'
+    // hidden-until-addProperty() behavior (docs/DEVLOG.md 2026-08-10) is
+    // exercised for real here via MockDashesGroup.
+    it('addShape stroke style sets lineCap/lineJoin/dashes/dashOffset on a solid stroke', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShStrokeStyle' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, strokeColor: [0, 0, 0], strokeWidth: 4,
+        lineCap: 'round', lineJoin: 'bevel',
+        dashes: [{ dash: 10, gap: 5 }, { dash: 4, gap: 4 }], dashOffset: 3,
+      });
+      assert.equal(r.ok, true, r.error);
+      const stroke = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group')
+        .property('ADBE Vector Graphic - Stroke');
+      assert.equal(stroke.property('ADBE Vector Stroke Line Cap').value, 2); // round
+      assert.equal(stroke.property('ADBE Vector Stroke Line Join').value, 3); // bevel
+      const dashes = stroke.property('ADBE Vector Stroke Dashes');
+      assert.equal(dashes.property('ADBE Vector Stroke Dash 1').value, 10);
+      assert.equal(dashes.property('ADBE Vector Stroke Gap 1').value, 5);
+      assert.equal(dashes.property('ADBE Vector Stroke Dash 2').value, 4);
+      assert.equal(dashes.property('ADBE Vector Stroke Gap 2').value, 4);
+      assert.equal(dashes.property('ADBE Vector Stroke Offset').value, 3);
+      // untouched pairs (Dash 3/Gap 3) are never "activated" — dashes[] only
+      // had 2 entries — so numProperties still reflects the fixed slot count
+      // (mirrors real AE), not something meaningfully assertable beyond that.
+    });
+
+    it('addShape stroke style: miterLimit works with default lineJoin, taper/wave apply directly', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShTaperWave' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, strokeColor: [1, 1, 1], miterLimit: 7,
+        taper: { lengthUnits: 'pixels', startLengthPx: 20, endLengthPx: 10, startWidth: 0.5, startEase: 30 },
+        wave: { units: 'percent', amount: 15, wavelength: 50, phase: 90 },
+      });
+      assert.equal(r.ok, true, r.error);
+      const stroke = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group')
+        .property('ADBE Vector Graphic - Stroke');
+      assert.equal(stroke.property('ADBE Vector Stroke Miter Limit').value, 7);
+      const taper = stroke.property('ADBE Vector Stroke Taper');
+      assert.equal(taper.property('ADBE Vector Taper Length Units').value, 2); // pixels
+      assert.equal(taper.property('ADBE Vector Taper StartWidthPx').value, 20);
+      assert.equal(taper.property('ADBE Vector Taper EndWidthPx').value, 10);
+      assert.equal(taper.property('ADBE Vector Taper Start Width').value, 0.5);
+      assert.equal(taper.property('ADBE Vector Taper Start Ease').value, 30);
+      const wave = stroke.property('ADBE Vector Stroke Wave');
+      assert.equal(wave.property('ADBE Vector Taper Wave Amount').value, 15);
+      assert.equal(wave.property('ADBE Vector Taper Wavelength').value, 50);
+      assert.equal(wave.property('ADBE Vector Taper Wave Phase').value, 90);
+    });
+
+    it('addShape rejects wave.cycles — AE does not allow scripting it (defense in depth)', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShWaveCycles' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, strokeColor: [1, 1, 1], wave: { cycles: 3 },
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /wave\.cycles/);
+    });
+
+    it('addShape stroke style works on strokeGradient (G-Stroke) too, not just solid stroke', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShGradStrokeStyle' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, strokeGradient: { type: 'linear' },
+        dashes: [{ dash: 8, gap: 8 }],
+      });
+      assert.equal(r.ok, true, r.error);
+      const gstroke = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group')
+        .property('ADBE Vector Graphic - G-Stroke');
+      assert.equal(gstroke.property('ADBE Vector Stroke Dashes').property('ADBE Vector Stroke Dash 1').value, 8);
+    });
+
+    // Defense-in-depth (mirrors the unknown-shape test below): controller
+    // validate() rejects this pre-socket (shared/test/commands.test.js);
+    // this JSX-level AEB.assert covers a caller that bypasses that.
+    it('rejects stroke style params without a stroke (defense in depth)', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShNoStroke' });
+      const r = runner.dispatch('addShape', { compId: comp.result.compId, fillColor: [1, 0, 0], lineCap: 'round' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /stroke style params/);
+    });
+
     // No silent fallback: a typo'd/unknown shape used to silently build a
     // rectangle (docs/ROADMAP.md "Faz 1.C"). shared/src/commands.js rejects
     // this pre-socket (see shared/test/commands.test.js); this JSX-level

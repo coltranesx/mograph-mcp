@@ -313,8 +313,10 @@ Shape tarafı:
   doğrulandı) ve `rampGradient` (Gradient Ramp efekti, tam renk kontrolü)
   eklendi. (23)'te ayrıca CORE MCP tool'larında nested-object parametrelerin
   de array'ler gibi bozulduğu bulundu ve `v.optionalObject` ile düzeltildi.
-- dash / line cap / join (G-Stroke'un `Dashes`/`Taper`/`Wave`
-  property'leri (22)'de görüldü ama dokunulmadı — sıradaki aday)
-- shape group transform (grup içi anchor/scale/rotate)
-- taper & wave (aynı G-Stroke `Taper`/`Wave` property'leri, dash'le
-  birlikte ele alınabilir)
+- ~~dash / line cap / join~~ ✅ bitti, canlıda uçtan uca doğrulandı (DEVLOG
+  2026-08-10 (24)/(25)) — taper & wave ile birlikte tek turda yapıldı.
+- ~~taper & wave~~ ✅ bitti, canlıda uçtan uca doğrulandı (DEVLOG 2026-08-10
+  (24)/(25)) — yukarıdaki madde ile aynı iş, aynı Stroke/G-Stroke property
+  bölgesi. `wave.cycles` hariç: AE'de hiçbir yoldan scriptlenemiyor (gradient
+  stop renkleriyle aynı kategori), şemadan bilinçli olarak çıkarıldı.
+- shape group transform (grup içi anchor/scale/rotate) — kalan tek madde

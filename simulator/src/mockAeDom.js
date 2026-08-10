@@ -108,6 +108,29 @@ class MockShapeProperty {
   get numKeys() { return this._keys || 0; }
 }
 
+// Line cap/join/miter + dashes/taper/wave — shared between plain Stroke and
+// G-Stroke (identical sub-matchNames, confirmed live 2026-08-10). Dashes'
+// hidden-until-addProperty() behavior is why it needs MockDashesGroup
+// (defined below, after MockVectorGroup) instead of a plain
+// MockVectorGroup; Taper is NOT gated (its sub-properties are all directly
+// settable, confirmed live) — the linked percent/pixel toggle on Taper's
+// Start/End Length vs StartWidthPx/EndWidthPx is a live AE nuance not
+// worth replicating here: both are simply always-settable in the mock.
+// Wave's Amount/Wavelength/Units/Phase are likewise plain and settable;
+// Cycles is NOT scriptable at all live (confirmed 2026-08-10 — every
+// mutation path throws, and it's not even an INDEXED_GROUP so the Dashes
+// unhide trick doesn't apply) and is rejected before it ever reaches the
+// JSX layer (validate.js + a defense-in-depth assert in layer.jsx), so the
+// mock doesn't need to model it — a plain MockVectorGroup is enough.
+const STROKE_STYLE_AUTO_CHILDREN = [
+  ['ADBE Vector Stroke Line Cap', () => new MockProperty('ADBE Vector Stroke Line Cap', 1)],
+  ['ADBE Vector Stroke Line Join', () => new MockProperty('ADBE Vector Stroke Line Join', 1)],
+  ['ADBE Vector Stroke Miter Limit', () => new MockProperty('ADBE Vector Stroke Miter Limit', 4)],
+  ['ADBE Vector Stroke Dashes', () => new MockDashesGroup()],
+  ['ADBE Vector Stroke Taper', () => new MockVectorGroup('ADBE Vector Stroke Taper')],
+  ['ADBE Vector Stroke Wave', () => new MockVectorGroup('ADBE Vector Stroke Wave')],
+];
+
 // Auto-populated children per matchName, mirroring the AE structures that
 // exist without an explicit addProperty() call (a Group's Contents, a Path
 // group's Shape, a Fill/Stroke's color/width). Only what addShape() /
@@ -119,6 +142,7 @@ const VECTOR_AUTO_CHILDREN = {
   'ADBE Vector Graphic - Stroke': [
     ['ADBE Vector Stroke Color', () => new MockProperty('ADBE Vector Stroke Color', [0, 0, 0, 1])],
     ['ADBE Vector Stroke Width', () => new MockProperty('ADBE Vector Stroke Width', 2)],
+    ...STROKE_STYLE_AUTO_CHILDREN,
   ],
   // Gradient fill/stroke geometry props, live-confirmed 2026-08-10 (AE
   // 26.3x87) — see docs/DEVLOG.md. "ADBE Vector Grad Colors" (the stop
@@ -146,6 +170,7 @@ const VECTOR_AUTO_CHILDREN = {
     ['ADBE Vector Grad HiLite Angle', () => new MockProperty('ADBE Vector Grad HiLite Angle', 0)],
     ['ADBE Vector Stroke Opacity', () => new MockProperty('ADBE Vector Stroke Opacity', 100)],
     ['ADBE Vector Stroke Width', () => new MockProperty('ADBE Vector Stroke Width', 2)],
+    ...STROKE_STYLE_AUTO_CHILDREN,
   ],
   'ADBE Vector Shape - Ellipse': [['ADBE Vector Ellipse Size', () => new MockProperty('ADBE Vector Ellipse Size', [100, 100])]],
   'ADBE Vector Shape - Rect': [['ADBE Vector Rect Size', () => new MockProperty('ADBE Vector Rect Size', [100, 100])]],
@@ -168,6 +193,27 @@ const VECTOR_AUTO_CHILDREN = {
   'ADBE Vector Filter - Repeater': [
     ['ADBE Vector Repeater Copies', () => new MockProperty('ADBE Vector Repeater Copies', 3)],
     ['ADBE Vector Repeater Offset', () => new MockProperty('ADBE Vector Repeater Offset', 0)],
+  ],
+  // Stroke Taper/Wave sub-groups, live-confirmed 2026-08-10 — see
+  // STROKE_STYLE_AUTO_CHILDREN above for why neither is gated in the mock
+  // (Wave's Cycles is gated live but never reaches here — rejected upstream).
+  'ADBE Vector Stroke Taper': [
+    ['ADBE Vector Taper Length Units', () => new MockProperty('ADBE Vector Taper Length Units', 1)],
+    ['ADBE Vector Taper Start Length', () => new MockProperty('ADBE Vector Taper Start Length', 0)],
+    ['ADBE Vector Taper End Length', () => new MockProperty('ADBE Vector Taper End Length', 0)],
+    ['ADBE Vector Taper StartWidthPx', () => new MockProperty('ADBE Vector Taper StartWidthPx', 0)],
+    ['ADBE Vector Taper EndWidthPx', () => new MockProperty('ADBE Vector Taper EndWidthPx', 0)],
+    ['ADBE Vector Taper Start Width', () => new MockProperty('ADBE Vector Taper Start Width', 0)],
+    ['ADBE Vector Taper End Width', () => new MockProperty('ADBE Vector Taper End Width', 0)],
+    ['ADBE Vector Taper Start Ease', () => new MockProperty('ADBE Vector Taper Start Ease', 0)],
+    ['ADBE Vector Taper End Ease', () => new MockProperty('ADBE Vector Taper End Ease', 0)],
+  ],
+  'ADBE Vector Stroke Wave': [
+    ['ADBE Vector Taper Wave Amount', () => new MockProperty('ADBE Vector Taper Wave Amount', 0)],
+    ['ADBE Vector Taper Wave Units', () => new MockProperty('ADBE Vector Taper Wave Units', 1)],
+    ['ADBE Vector Taper Wavelength', () => new MockProperty('ADBE Vector Taper Wavelength', 100)],
+    ['ADBE Vector Taper Wave Cycles', () => new MockProperty('ADBE Vector Taper Wave Cycles', 10)],
+    ['ADBE Vector Taper Wave Phase', () => new MockProperty('ADBE Vector Taper Wave Phase', 0)],
   ],
 };
 
@@ -214,6 +260,31 @@ class MockVectorGroup {
   property(ref) {
     if (typeof ref === 'number') return this._items[ref - 1] || null;
     return this._byMatchName[ref] || null;
+  }
+}
+
+// Mirrors AE's real Dashes group: Dash N/Gap N/Offset all pre-exist but are
+// individually inert until "activated" via addProperty(matchName) on that
+// SAME matchName (confirmed live 2026-08-10: setValue on a fresh Stroke's
+// Dash 1 throws "Can not set value... property or a parent property is
+// hidden"; addProperty() on it is what unhides it — numProperties never
+// changes, it is not a real indexed-group append). A plain MockVectorGroup's
+// addProperty always creates+appends a NEW child instead, which is right for
+// repeatable things like multiple shape groups/operators but wrong here —
+// this override returns the existing pre-populated slot instead.
+class MockDashesGroup extends MockVectorGroup {
+  constructor() {
+    super('ADBE Vector Stroke Dashes');
+    const pairs = [
+      ['ADBE Vector Stroke Dash 1', 10], ['ADBE Vector Stroke Gap 1', 10],
+      ['ADBE Vector Stroke Dash 2', 10], ['ADBE Vector Stroke Gap 2', 10],
+      ['ADBE Vector Stroke Dash 3', 10], ['ADBE Vector Stroke Gap 3', 10],
+      ['ADBE Vector Stroke Offset', 0],
+    ];
+    for (const [mn, dflt] of pairs) this._addChild(mn, new MockProperty(mn, dflt));
+  }
+  addProperty(matchName) {
+    return this._byMatchName[matchName] || super.addProperty(matchName);
   }
 }
 

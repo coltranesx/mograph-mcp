@@ -291,6 +291,80 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('addShape stroke style (pre-socket) — docs/DEVLOG.md 2026-08-10', () => {
+    it('accepts lineCap/lineJoin/dashes/dashOffset/taper/wave with strokeColor', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, strokeColor: [0, 0, 0], strokeWidth: 4,
+        lineCap: 'round', lineJoin: 'bevel',
+        dashes: [{ dash: 10, gap: 5 }, { dash: 4, gap: 4 }], dashOffset: 2,
+        taper: { lengthUnits: 'pixels', startLengthPx: 20, startWidth: 0.5 },
+        wave: { units: 'percent', amount: 20, wavelength: 50 },
+      });
+      assert.equal(r.ok, true, r.error);
+    });
+
+    it('accepts miterLimit when lineJoin is miter or omitted', () => {
+      assert.equal(validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], miterLimit: 6 }).ok, true);
+      assert.equal(validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], lineJoin: 'miter', miterLimit: 6 }).ok, true);
+    });
+
+    it('rejects miterLimit combined with a non-miter lineJoin', () => {
+      const r = validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], lineJoin: 'round', miterLimit: 6 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /miterLimit only applies/);
+    });
+
+    it('rejects an invalid lineCap/lineJoin', () => {
+      assert.equal(validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], lineCap: 'square' }).ok, false);
+      assert.equal(validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], lineJoin: 'square' }).ok, false);
+    });
+
+    it('rejects more than 3 dash/gap pairs', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, strokeColor: [0, 0, 0],
+        dashes: [{ dash: 1, gap: 1 }, { dash: 1, gap: 1 }, { dash: 1, gap: 1 }, { dash: 1, gap: 1 }],
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /at most 3/);
+    });
+
+    it('rejects an invalid taper.lengthUnits / wave.units', () => {
+      assert.equal(validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], taper: { lengthUnits: 'inches' } }).ok, false);
+      assert.equal(validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], wave: { units: 'inches' } }).ok, false);
+    });
+
+    it('rejects wave.cycles — AE does not allow scripting it (confirmed live 2026-08-10)', () => {
+      const r = validateCommand('addShape', { compId: 1, strokeColor: [0, 0, 0], wave: { cycles: 3 } });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /wave\.cycles/);
+    });
+
+    it('rejects stroke style params without strokeColor or strokeGradient', () => {
+      const r = validateCommand('addShape', { compId: 1, fillColor: [1, 0, 0], lineCap: 'round' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /require strokeColor or strokeGradient/);
+    });
+
+    it('works with strokeGradient too, not just strokeColor', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, strokeGradient: { type: 'linear' }, dashes: [{ dash: 5, gap: 5 }],
+      });
+      assert.equal(r.ok, true, r.error);
+    });
+
+    // Same nested-object/array marshalling quirk as fillGradient (2026-08-10).
+    it('tolerates a JSON-stringified dashes array and taper object', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, strokeColor: [0, 0, 0],
+        dashes: JSON.stringify([{ dash: 10, gap: 5 }]),
+        taper: JSON.stringify({ startWidth: 0.5 }),
+      });
+      assert.equal(r.ok, true, r.error);
+      assert.deepEqual(r.params.dashes, [{ dash: 10, gap: 5 }]);
+      assert.deepEqual(r.params.taper, { startWidth: 0.5 });
+    });
+  });
+
   describe('applyLowerThird (pre-socket)', () => {
     it('accepts a title-only call', () => {
       const r = validateCommand('applyLowerThird', { compId: 1, title: 'Breaking News' });

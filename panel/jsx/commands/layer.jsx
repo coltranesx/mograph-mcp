@@ -93,6 +93,103 @@ function _applyGradientGeometry(propGroup, g, opacityMatchName) {
   if (g.opacity !== undefined) propGroup.property(opacityMatchName).setValue(g.opacity);
 }
 
+var LINE_CAPS = { butt: 1, round: 2, projecting: 3 };
+var LINE_JOINS = { miter: 1, round: 2, bevel: 3 };
+
+// Applies stroke style (line cap/join/miter, dashes, taper, wave) to a
+// Stroke or G-Stroke property group — both share identical sub-matchNames
+// for all of this, confirmed live 2026-08-10, so one function serves both
+// addShape's strokeColor and strokeGradient paths.
+//
+// Dashes: every one of Dash N/Gap N/Offset is HIDDEN by default —
+// setValue() on it directly throws "Can not set value... property or a
+// parent property is hidden" (confirmed live). addProperty(matchName) on
+// that already-existing-but-hidden slot is what unhides it (numProperties
+// never changes — it is not a real indexed-group append, despite the API
+// shape). No ordering dependency between pairs (Dash 2 works without Dash
+// 1 first) but Offset needs its own addProperty() call regardless of how
+// many pairs are active.
+//
+// Taper: Start/End Length (percent) and Start/EndWidthPx (pixels) are a
+// linked pair gated by Length Units the same hidden-property way — only
+// the unit currently selected is settable. Start/End Width (the width
+// taper fraction) and Start/End Ease are NOT gated, always settable.
+//
+// Wave: Cycles is NOT scriptable at all (confirmed live 2026-08-10, AE
+// 26.3x87) — unlike Dashes/miterLimit, there is no unhide path: setValue(),
+// setValueAtTime(), .expression=, and indexed property() access all throw
+// the same "property or a parent property is hidden" error, and
+// addProperty() fails outright with a different error because this group
+// is a NAMED_GROUP, not an INDEXED_GROUP like Dashes (so the Dashes trick
+// doesn't apply). Same category of AE limitation as gradient stop colors
+// (ADBE Vector Grad Colors, see addShape's fillGradient) — deliberately
+// left out of the wave param schema rather than exposed as broken.
+// Amount/Wavelength/Units/Phase are all plain, always-settable.
+function _applyStrokeStyle(strokeGroup, p) {
+  if (p.lineCap !== undefined) {
+    var cap = LINE_CAPS[String(p.lineCap).toLowerCase()];
+    AEB.assert(cap, "lineCap must be one of: butt, round, projecting");
+    strokeGroup.property("ADBE Vector Stroke Line Cap").setValue(cap);
+  }
+  if (p.lineJoin !== undefined) {
+    var join = LINE_JOINS[String(p.lineJoin).toLowerCase()];
+    AEB.assert(join, "lineJoin must be one of: miter, round, bevel");
+    strokeGroup.property("ADBE Vector Stroke Line Join").setValue(join);
+  }
+  if (p.miterLimit !== undefined) {
+    // Miter Limit is itself hidden unless Line Join is "miter" (AE's
+    // default, so omitting lineJoin is fine) — confirmed live. Fail with a
+    // clear message here rather than let AE's generic "hidden" error surface.
+    AEB.assert(p.lineJoin === undefined || String(p.lineJoin).toLowerCase() === "miter",
+      "miterLimit only applies when lineJoin is \"miter\" (AE hides it otherwise)");
+    strokeGroup.property("ADBE Vector Stroke Miter Limit").setValue(p.miterLimit);
+  }
+  if (p.dashes && p.dashes.length) {
+    AEB.assert(p.dashes.length <= 3, "dashes supports at most 3 dash/gap pairs (AE UI limit)");
+    var dashGroup = strokeGroup.property("ADBE Vector Stroke Dashes");
+    for (var di = 0; di < p.dashes.length; di++) {
+      var pair = p.dashes[di];
+      var n = di + 1;
+      if (pair.dash !== undefined) dashGroup.addProperty("ADBE Vector Stroke Dash " + n).setValue(pair.dash);
+      if (pair.gap !== undefined) dashGroup.addProperty("ADBE Vector Stroke Gap " + n).setValue(pair.gap);
+    }
+    if (p.dashOffset !== undefined) {
+      dashGroup.addProperty("ADBE Vector Stroke Offset").setValue(p.dashOffset);
+    }
+  }
+  if (p.taper) {
+    var taperGroup = strokeGroup.property("ADBE Vector Stroke Taper");
+    var taperPx = (String(p.taper.lengthUnits).toLowerCase() === "pixels");
+    if (p.taper.lengthUnits !== undefined) {
+      taperGroup.property("ADBE Vector Taper Length Units").setValue(taperPx ? 2 : 1);
+    }
+    if (taperPx) {
+      if (p.taper.startLengthPx !== undefined) taperGroup.property("ADBE Vector Taper StartWidthPx").setValue(p.taper.startLengthPx);
+      if (p.taper.endLengthPx !== undefined) taperGroup.property("ADBE Vector Taper EndWidthPx").setValue(p.taper.endLengthPx);
+    } else {
+      if (p.taper.startLength !== undefined) taperGroup.property("ADBE Vector Taper Start Length").setValue(p.taper.startLength);
+      if (p.taper.endLength !== undefined) taperGroup.property("ADBE Vector Taper End Length").setValue(p.taper.endLength);
+    }
+    if (p.taper.startWidth !== undefined) taperGroup.property("ADBE Vector Taper Start Width").setValue(p.taper.startWidth);
+    if (p.taper.endWidth !== undefined) taperGroup.property("ADBE Vector Taper End Width").setValue(p.taper.endWidth);
+    if (p.taper.startEase !== undefined) taperGroup.property("ADBE Vector Taper Start Ease").setValue(p.taper.startEase);
+    if (p.taper.endEase !== undefined) taperGroup.property("ADBE Vector Taper End Ease").setValue(p.taper.endEase);
+  }
+  if (p.wave) {
+    // wave.cycles is rejected by validate.js before this runs for normal
+    // MCP calls — this is defense-in-depth for a caller that bypasses that
+    // (e.g. runJSX). See the comment above this function for why.
+    AEB.assert(p.wave.cycles === undefined, "wave.cycles cannot be set (AE does not allow scripting it — omit it)");
+    var waveGroup = strokeGroup.property("ADBE Vector Stroke Wave");
+    if (p.wave.units !== undefined) {
+      waveGroup.property("ADBE Vector Taper Wave Units").setValue(String(p.wave.units).toLowerCase() === "pixels" ? 2 : 1);
+    }
+    if (p.wave.amount !== undefined) waveGroup.property("ADBE Vector Taper Wave Amount").setValue(p.wave.amount);
+    if (p.wave.wavelength !== undefined) waveGroup.property("ADBE Vector Taper Wavelength").setValue(p.wave.wavelength);
+    if (p.wave.phase !== undefined) waveGroup.property("ADBE Vector Taper Wave Phase").setValue(p.wave.phase);
+  }
+}
+
 COMMANDS.addShape = function (p) {
   var comp = AEB.requireComp(p);
   return AEB.undo("mograph-mcp: addShape", function () {
@@ -145,10 +242,21 @@ COMMANDS.addShape = function (p) {
       var stroke = shapeGroup.addProperty("ADBE Vector Graphic - Stroke");
       stroke.property("ADBE Vector Stroke Color").setValue(AEB.normColor(p.strokeColor));
       if (p.strokeWidth) stroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
+      _applyStrokeStyle(stroke, p);
     } else if (p.strokeGradient) {
       var gstroke = shapeGroup.addProperty("ADBE Vector Graphic - G-Stroke");
       _applyGradientGeometry(gstroke, p.strokeGradient, "ADBE Vector Stroke Opacity");
       if (p.strokeWidth) gstroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
+      _applyStrokeStyle(gstroke, p);
+    } else {
+      // lineCap/lineJoin/.../wave are meaningless without a stroke — no
+      // silent no-op (shared/src/commands.js rejects this pre-socket; this
+      // is defense-in-depth for a caller that bypasses that, e.g. runJSX).
+      AEB.assert(
+        p.lineCap === undefined && p.lineJoin === undefined && p.miterLimit === undefined &&
+        p.dashes === undefined && p.dashOffset === undefined && p.taper === undefined && p.wave === undefined,
+        "stroke style params (lineCap/lineJoin/miterLimit/dashes/dashOffset/taper/wave) require strokeColor or strokeGradient"
+      );
     }
     // rampGradient: a real 2-color gradient with full color control, via the
     // Gradient Ramp effect (ADBE Ramp) applied on the layer — the working
