@@ -12,6 +12,38 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (28)
+- **Login item isim/ikon düzeltmesi denendi, görsel sonuç alınamadı —
+  kod yine de kalıcı, teknik olarak daha doğru.** `tools/service.mjs`'in
+  ürettiği LaunchAgent çıplak Homebrew `node`'u çağırıyordu; System
+  Settings → Login Items & Extensions'ta bu "node" + generic exec ikonu +
+  "unidentified developer" olarak görünüyordu. Kök neden bulundu (canlı
+  doğrulandı): görünen isim tam `CFBundleExecutable` string'iyle
+  eşleşiyordu çünkü hedef bir bash script'ti, imzasızdı — Background Task
+  Management (BTM) bunu "gerçek app" olarak tanımıyordu.
+  - **Düzeltme:** `buildApp()` artık gerçek bir Mach-O binary (`clang -x c
+    -` ile stdin'den derlenen trivial `execl()` wrapper'ı) + `Info.plist` +
+    ikon içeren bir `.app` bundle üretiyor, `codesign --sign -` ile ad-hoc
+    imzalıyor. `sfltool dumpbtm` bunu doğruladı: BTM kaydı artık `Name:
+    Mograph Controller`, doğru executable path'e işaret ediyor — **kayıt
+    tarafı tamamen doğru.**
+  - **Ama görsel sonuç değişmedi.** Üç logout/login + System Settings.app'i
+    tamamen sonlandırıp yeniden açmak (pencere kapat/aç değil, process
+    seviyesinde) hiçbiri Login Items & Extensions'taki eski isim/ikonu
+    güncellemedi. BTM verisi doğruyken UI'ın neden eskiyi gösterdiği
+    çözülemedi — muhtemelen System Settings'in kendi render/icon cache'i,
+    ama kanıtlanamadı.
+  - **Karar: daha fazla uğraşılmayacak, kod kalıyor.** Kullanıcı ek
+    denemeyi (identifier değiştirme, `SMAppService` API'sine geçiş) faydası
+    belirsizken bırakmayı tercih etti. Kod tutuluyor çünkü kayıt tarafı
+    gerçekten daha doğru (gerçek imzalı Mach-O bundle, çıplak script değil)
+    — geri almanın kazandıracağı tek şey basitlik, ama mevcut hâli de
+    çalışıyor (controller servisi doğrulandı, `launchctl print` running).
+  - **Kabul edilen sınır:** Login Items & Extensions'ta "unidentified
+    developer" + (görünüşe göre) eski isim/ikon kalıcı olarak duruyor.
+    Apple Developer ID ($99/yıl) bilinçli olarak alınmıyor (tek kullanıcılı
+    private araç). Bu satır artık aranmayacak bir konu.
+
 ## 2026-08-10 (27)
 - **Faz 3'ün açık sorusu kapandı: şablon doldurma soyutlanmayacak (B).**
   (14)'te yapılan ilk canlı şablon testinden beri askıda duran soru —
