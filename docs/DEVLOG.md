@@ -12,6 +12,95 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (23)
+- **Yeni kritik bug bulundu ve düzeltildi: CORE MCP tool'larında nested
+  object parametreler de array'ler gibi bozuluyor.** (22)'nin canlı
+  doğrulaması sırasında AE relaunch sonrası doğrudan `ae_addShape` tool'u
+  (workaround olan `ae_command` değil) `fillGradient`/`strokeGradient`/
+  `rampGradient`'i denedi: `"fillGradient must be an object"` — nesne, JSON
+  string olarak ulaşıyordu, şema `type:'object'` dese bile. (17)'de array
+  parametreler için bulunan/düzeltilen kök neden ("client, tipsiz şemada
+  array'i bozuyor") bu sefer geçerli değildi — şema tipi doğru deklare
+  edilmişti, yine de bozuluyordu; yani (17)'nin düzeltmesi (üst seviye
+  `type:'array'` deklare etmek) nested `type:'object'` alanlara genellemiyor.
+  `ae_command` (tipsiz, genel `params: object`) üzerinden aynı çağrı sorunsuz
+  çalıştı — bu ayrım tanıyı doğruladı.
+  - **Kalıcı düzeltme:** `validate.js`'e `v.optionalObject()` eklendi —
+    `numericLike`'ın (aynı dosya, sayısal-string toleransı) nesne
+    karşılığı: gelen değer zaten obje ise aynen kabul, string ise
+    `JSON.parse` deneyip obje çıkarsa onu kullan, olmazsa net hata.
+    `addShape`'in gradient validate() bloğu `isPlainObject` yerine bunu
+    kullanacak şekilde güncellendi, coerced obje `base[field]`'e geri
+    yazılıyor (JSX tarafı düz string değil gerçek obje görsün diye).
+  - Controller restart sonrası **doğrudan `ae_addShape` tool'uyla** (üç
+    gradient alanı da) canlıda tekrar test edildi, `getLayerDetails deep`
+    ile property ağacı satır satır doğrulandı: G-Fill (radial, start/end
+    point, scale, rotation, opacity), G-Stroke (linear varsayılan, start/end
+    point, strokeWidth reuse — Dashes/Taper/Wave alt-gruplarının tam yapısı
+    da bu doğrulamada görüldü, gelecekteki dash/taper/wave işine referans),
+    `ADBE Ramp` (start/end color RGBA + alpha, start/end of ramp, ramp
+    shape) — hepsi beklenen değerlerle uyuştu.
+  - 3 yeni test (JSON-string tolere ediliyor, geçersiz JSON'da net hata).
+    `npm test` 208/208, lint temiz.
+  - **Ders:** (17)'nin "array parametre" bulgusu kapsamını dar
+    yorumlamıştım (sadece top-level array) — aynı transport quirk'i nested
+    object'lere de bulaşıyormuş. Bir sonraki yeni nested-obje param
+    eklenen CORE komutunda bunu varsayılan olarak akılda tutmak lazım;
+    `v.optionalObject` şimdi hazır, tekrar keşfetmeye gerek yok.
+
+## 2026-08-10 (22)
+- **`addShape` gradient fill/stroke desteği eklendi — bilinen eksikler
+  listesinin ilk maddesi.** Önce canlı doğrulama (AE 26.3x87,
+  `AE_BRIDGE_ALLOW_DEV=1` + `runJSX`, geçici probe comp'ları, sonra
+  silindi):
+  - **Kritik bulgu: native gradient fill/stroke'un stop renkleri
+    scriptlenemiyor.** `ADBE Vector Graphic - G-Fill`/`G-Stroke`'un geometri
+    property'leri (Grad Type/Start Pt/End Pt/Scale/Rotation/HiLite
+    Length/Angle, Fill/Stroke Opacity) hepsi normal `setValue` ile
+    çalışıyor — ama renkleri tutan `ADBE Vector Grad Colors` alt-property'si
+    `PropertyValueType.NO_VALUE`, AE "Can not get or set a value from this
+    property" diyor. Bu bir bridge bug'ı değil, AE'nin kendi scripting API
+    sınırı — tahmin değil, canlı doğrulandı. G-Stroke'ta ayrıca (bu işin
+    kapsamı dışında, ROADMAP'in kalan üç maddesine denk düşüyor)
+    `ADBE Vector Stroke Dashes`/`Taper`/`Wave` property'leri var, dokunulmadı.
+  - **Karar (kullanıcıyla): ikisini de ekle.** `fillGradient`/
+    `strokeGradient` (native, geometri-only, stop renkleri AE varsayılanında
+    kalır) + `rampGradient` (Gradient Ramp efekti, `ADBE Ramp` — Start/End
+    Color dahil tamamen scriptlenebilir, canlı `introspectEffect` ile teyit
+    edildi). `rampGradient` layer'ın alfasını renklendiriyor; fill/stroke
+    hiç verilmemişse otomatik beyaz bir fill ekleniyor (salt alfa kaynağı
+    olarak, Ramp RGB'yi tamamen eziyor).
+  - `AEB.color4` (host.jsx) eklendi — daha önce `plugins.jsx`'te yerel
+    `_color4` olarak Deep Glow/Shadow Studio için vardı (RGBA efekt
+    renkleri), Ramp'in Start/End Color'ı için de gerekince paylaşılan
+    helper'a taşındı, `plugins.jsx` da ona yönlendirildi (tekrar kaldırıldı).
+  - `shared/src/commands.js`: `addShape` şemasına `fillGradient`/
+    `strokeGradient`/`rampGradient` (hepsi nested `type:'object'`, iç
+    array alanları da tek tek tipli — CORE'daki `ae_addShape` tool'u
+    için array-parametre bug'ının nested obje içinde de tekrarlamaması
+    adına, bkz. dosya başlığındaki 2026-08-09 notu) + validate(): gradient
+    alanı ile aynı yöndeki solid renk alanı (`fillColor`/`fillGradient` vb.)
+    birbirini dışlıyor, `rampGradient` `startColor`/`endColor` zorunlu,
+    `type` linear|radial.
+  - `addPathShape`/`addResponsiveBox`'a bilinçli olarak dokunulmadı — kapsam
+    `addShape`'le sınırlı tutuldu (asıl kullanılan shape-oluşturma komutu),
+    diğer ikisi hâlâ solid-only.
+  - Simulator: `VECTOR_AUTO_CHILDREN`'a G-Fill/G-Stroke geometri
+    property'leri eklendi (Grad Colors bilinçli olarak MOCK'LANMADI —
+    canlıda çalışmayan bir şeyi teste "çalışıyor" gibi geçirmemek için),
+    `_MOCK_EFFECTS`'e `'Gradient Ramp': 'ADBE Ramp'`. 11 yeni test (7
+    controller-side validate, 4 simulator-side JSX). `npm test` 205/205.
+  - Test yazarken bir harness tuhaflığı bulundu: simulator `vm.createContext`
+    ile ayrı bir realm'de çalıştığı için o realm'in `Array`'i Node'un
+    `Array`'inden farklı — `assert.deepEqual(prop.value, [...])` "same
+    structure but not reference-equal" ile patlıyor (koddaki bug değil,
+    testin kendisi; `Array.from(prop.value)` ile realm normalize edilerek
+    çözüldü). Bu dosyada array-değerli bir `.value`'yu ilk kez doğrudan
+    `deepEqual`'e sokan testler olduğu için daha önce hiç görünmemişti.
+  - **Canlı doğrulama, kullanıcı AE'yi kapatıp açtıktan sonra tamamlandı**
+    (bkz. (23) — süreçte bir kritik nested-object marshalling bug'ı daha
+    bulundu ve düzeltildi).
+
 ## 2026-08-10 (21)
 - **README taraması: fork sonrası eklenen komutlar dokümantasyona hiç
   yansımamıştı, düzeltildi.** `shared/src/commands.js`'i `commandList()`

@@ -261,6 +261,17 @@ AEB.normColor = function (c) {
   return [c[0], c[1], c[2]];
 };
 
+// Some properties (effect Color params, e.g. Gradient Ramp's Start/End Color)
+// are 4-component RGBA (0..1) unlike shape fill/stroke colors, which are RGB
+// via normColor. Promoted here from plugins.jsx (where it started as a
+// local for Deep Glow/Shadow Studio) once layer.jsx's Ramp gradient support
+// needed the same thing — see docs/DEVLOG.md 2026-08-10.
+AEB.color4 = function (c) {
+  var n = AEB.normColor(c);
+  var a = (c && c.length >= 4) ? c[3] : 1;
+  return [n[0], n[1], n[2], a];
+};
+
 // undo wrapper
 AEB.undo = function (name, fn) {
   app.beginUndoGroup(name);

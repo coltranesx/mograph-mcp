@@ -504,6 +504,74 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.equal(star.property('ADBE Vector Star Type').value, 2);
     });
 
+    // fillGradient/strokeGradient add a NATIVE gradient (G-Fill/G-Stroke) —
+    // geometry only. Stop colors are deliberately not asserted here: real AE
+    // won't let you get/set them either (docs/DEVLOG.md 2026-08-10).
+    it('addShape fillGradient sets G-Fill geometry (type/points/scale/rotation/opacity)', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShGradFill' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId,
+        fillGradient: { type: 'radial', startPoint: [10, 20], endPoint: [90, 20], scale: 150, rotation: 45, hiliteLength: 30, hiliteAngle: 15, opacity: 60 },
+      });
+      assert.equal(r.ok, true, r.error);
+      const gfill = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group').property('ADBE Vector Graphic - G-Fill');
+      assert.equal(gfill.property('ADBE Vector Grad Type').value, 2); // radial
+      assert.deepEqual(Array.from(gfill.property('ADBE Vector Grad Start Pt').value), [10, 20]);
+      assert.deepEqual(Array.from(gfill.property('ADBE Vector Grad End Pt').value), [90, 20]);
+      assert.deepEqual(Array.from(gfill.property('ADBE Vector Grad Scale').value), [150, 150]);
+      assert.equal(gfill.property('ADBE Vector Grad Rotation').value, 45);
+      assert.equal(gfill.property('ADBE Vector Grad HiLite Length').value, 30);
+      assert.equal(gfill.property('ADBE Vector Grad HiLite Angle').value, 15);
+      assert.equal(gfill.property('ADBE Vector Fill Opacity').value, 60);
+    });
+
+    it('addShape strokeGradient sets G-Stroke geometry and reuses strokeWidth', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShGradStroke' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId,
+        strokeGradient: { startPoint: [0, 0], endPoint: [50, 0] }, strokeWidth: 6,
+      });
+      assert.equal(r.ok, true, r.error);
+      const gstroke = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group').property('ADBE Vector Graphic - G-Stroke');
+      assert.equal(gstroke.property('ADBE Vector Grad Type').value, 1); // linear default
+      assert.deepEqual(Array.from(gstroke.property('ADBE Vector Grad End Pt').value), [50, 0]);
+      assert.equal(gstroke.property('ADBE Vector Stroke Width').value, 6);
+    });
+
+    it('addShape rampGradient applies ADBE Ramp with color4 start/end and auto-adds a fill for alpha', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShRamp' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId,
+        rampGradient: { startColor: [1, 0, 0], endColor: [0, 0, 1, 0.5], type: 'radial' },
+      });
+      assert.equal(r.ok, true, r.error);
+      const layer = runner.dom.app.project.item(1).layer(1);
+      // no fillColor/fillGradient/strokeColor/strokeGradient given -> auto white fill for alpha
+      const shapeGroup = layer.property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group');
+      const autoFill = shapeGroup.property('ADBE Vector Graphic - Fill');
+      assert.ok(autoFill, 'auto fill should have been added as an alpha source');
+      assert.deepEqual(Array.from(autoFill.property('ADBE Vector Fill Color').value), [1, 1, 1]);
+      const ramp = layer.property('ADBE Effect Parade').property('ADBE Ramp');
+      assert.ok(ramp, 'Gradient Ramp effect should have been added');
+      assert.deepEqual(Array.from(ramp.property('ADBE Ramp-0002').value), [1, 0, 0, 1]);
+      assert.deepEqual(Array.from(ramp.property('ADBE Ramp-0004').value), [0, 0, 1, 0.5]);
+      assert.equal(ramp.property('ADBE Ramp-0005').value, 2); // radial
+    });
+
+    it('addShape rampGradient does not auto-add a fill when fillColor was already given', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShRampFill' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, fillColor: [0, 1, 0],
+        rampGradient: { startColor: [1, 1, 1], endColor: [0, 0, 0] },
+      });
+      assert.equal(r.ok, true, r.error);
+      const shapeGroup = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vectors Group');
+      assert.deepEqual(Array.from(shapeGroup.property('ADBE Vector Graphic - Fill').property('ADBE Vector Fill Color').value), [0, 1, 0]);
+    });
+
     // No silent fallback: a typo'd/unknown shape used to silently build a
     // rectangle (docs/ROADMAP.md "Faz 1.C"). shared/src/commands.js rejects
     // this pre-socket (see shared/test/commands.test.js); this JSX-level

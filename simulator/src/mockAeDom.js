@@ -120,6 +120,33 @@ const VECTOR_AUTO_CHILDREN = {
     ['ADBE Vector Stroke Color', () => new MockProperty('ADBE Vector Stroke Color', [0, 0, 0, 1])],
     ['ADBE Vector Stroke Width', () => new MockProperty('ADBE Vector Stroke Width', 2)],
   ],
+  // Gradient fill/stroke geometry props, live-confirmed 2026-08-10 (AE
+  // 26.3x87) — see docs/DEVLOG.md. "ADBE Vector Grad Colors" (the stop
+  // colors) is deliberately NOT mocked here: real AE refuses to get/set it
+  // (PropertyValueType.NO_VALUE), and layer.jsx's addShape never touches it
+  // either — mocking a value there would let a test pass on behavior that
+  // doesn't exist live.
+  'ADBE Vector Graphic - G-Fill': [
+    ['ADBE Vector Grad Type', () => new MockProperty('ADBE Vector Grad Type', 1)],
+    ['ADBE Vector Grad Start Pt', () => new MockProperty('ADBE Vector Grad Start Pt', [0, 0])],
+    ['ADBE Vector Grad End Pt', () => new MockProperty('ADBE Vector Grad End Pt', [100, 0])],
+    ['ADBE Vector Grad Scale', () => new MockProperty('ADBE Vector Grad Scale', [100, 100])],
+    ['ADBE Vector Grad Rotation', () => new MockProperty('ADBE Vector Grad Rotation', 0)],
+    ['ADBE Vector Grad HiLite Length', () => new MockProperty('ADBE Vector Grad HiLite Length', 0)],
+    ['ADBE Vector Grad HiLite Angle', () => new MockProperty('ADBE Vector Grad HiLite Angle', 0)],
+    ['ADBE Vector Fill Opacity', () => new MockProperty('ADBE Vector Fill Opacity', 100)],
+  ],
+  'ADBE Vector Graphic - G-Stroke': [
+    ['ADBE Vector Grad Type', () => new MockProperty('ADBE Vector Grad Type', 1)],
+    ['ADBE Vector Grad Start Pt', () => new MockProperty('ADBE Vector Grad Start Pt', [0, 0])],
+    ['ADBE Vector Grad End Pt', () => new MockProperty('ADBE Vector Grad End Pt', [100, 0])],
+    ['ADBE Vector Grad Scale', () => new MockProperty('ADBE Vector Grad Scale', [100, 100])],
+    ['ADBE Vector Grad Rotation', () => new MockProperty('ADBE Vector Grad Rotation', 0)],
+    ['ADBE Vector Grad HiLite Length', () => new MockProperty('ADBE Vector Grad HiLite Length', 0)],
+    ['ADBE Vector Grad HiLite Angle', () => new MockProperty('ADBE Vector Grad HiLite Angle', 0)],
+    ['ADBE Vector Stroke Opacity', () => new MockProperty('ADBE Vector Stroke Opacity', 100)],
+    ['ADBE Vector Stroke Width', () => new MockProperty('ADBE Vector Stroke Width', 2)],
+  ],
   'ADBE Vector Shape - Ellipse': [['ADBE Vector Ellipse Size', () => new MockProperty('ADBE Vector Ellipse Size', [100, 100])]],
   'ADBE Vector Shape - Rect': [['ADBE Vector Rect Size', () => new MockProperty('ADBE Vector Rect Size', [100, 100])]],
   'ADBE Vector Shape - Star': [
@@ -199,6 +226,8 @@ const _MOCK_EFFECTS = {
   'Curves': 'ADBE CurvesCustom', 'Fill': 'ADBE Fill',
   // third-party (Plugin Everything), captured live via introspectEffect
   'Deep Glow 2': 'PEDG2', 'Shadow Studio 3': 'PESS3',
+  // addShape's rampGradient (layer.jsx) applies this directly by matchName.
+  'Gradient Ramp': 'ADBE Ramp',
 };
 function _lookupEffect(x) {
   if (_MOCK_EFFECTS[x]) return _MOCK_EFFECTS[x];

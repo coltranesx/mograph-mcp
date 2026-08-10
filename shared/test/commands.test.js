@@ -213,6 +213,84 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('addShape gradients (pre-socket) — docs/DEVLOG.md 2026-08-10', () => {
+    it('accepts fillGradient and strokeGradient with full geometry params', () => {
+      const r = validateCommand('addShape', {
+        compId: 1,
+        fillGradient: { type: 'radial', startPoint: [0, 0], endPoint: [100, 0], scale: 150, rotation: 45, hiliteLength: 20, hiliteAngle: 10, opacity: 80 },
+        strokeGradient: { startPoint: [0, 0], endPoint: [50, 50] },
+        strokeWidth: 4,
+      });
+      assert.equal(r.ok, true, r.error);
+    });
+
+    it('rejects fillGradient combined with fillColor (mutually exclusive)', () => {
+      const r = validateCommand('addShape', { compId: 1, fillColor: [1, 0, 0], fillGradient: {} });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /mutually exclusive/);
+    });
+
+    it('rejects strokeGradient combined with strokeColor', () => {
+      const r = validateCommand('addShape', { compId: 1, strokeColor: [1, 0, 0], strokeGradient: {} });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /mutually exclusive/);
+    });
+
+    it('rejects an invalid fillGradient.type', () => {
+      const r = validateCommand('addShape', { compId: 1, fillGradient: { type: 'diagonal' } });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /fillGradient\.type/);
+    });
+
+    it('accepts a rampGradient with startColor/endColor', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, rampGradient: { startColor: [1, 0, 0], endColor: [0, 0, 1], type: 'linear' },
+      });
+      assert.equal(r.ok, true, r.error);
+    });
+
+    it('rejects rampGradient missing startColor/endColor', () => {
+      const r = validateCommand('addShape', { compId: 1, rampGradient: { startColor: [1, 0, 0] } });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /rampGradient requires startColor and endColor/);
+    });
+
+    it('rejects an invalid rampGradient.type', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, rampGradient: { startColor: [1, 0, 0], endColor: [0, 0, 1], type: 'diagonal' },
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /rampGradient\.type/);
+    });
+
+    // Confirmed live 2026-08-10: the direct ae_addShape MCP tool delivers
+    // fillGradient/strokeGradient/rampGradient as a JSON-stringified string
+    // even though the schema declares type:'object' — v.optionalObject
+    // (validate.js) tolerates it, mirroring numericLike's tolerance for the
+    // equivalent numeric-string case.
+    it('tolerates a JSON-stringified fillGradient (direct ae_addShape tool quirk)', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, fillGradient: JSON.stringify({ type: 'radial', opacity: 80 }),
+      });
+      assert.equal(r.ok, true, r.error);
+      assert.deepEqual(r.params.fillGradient, { type: 'radial', opacity: 80 });
+    });
+
+    it('tolerates a JSON-stringified rampGradient', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, rampGradient: JSON.stringify({ startColor: [1, 0, 0], endColor: [0, 0, 1] }),
+      });
+      assert.equal(r.ok, true, r.error);
+      assert.deepEqual(r.params.rampGradient, { startColor: [1, 0, 0], endColor: [0, 0, 1] });
+    });
+
+    it('rejects a fillGradient string that is not valid JSON', () => {
+      const r = validateCommand('addShape', { compId: 1, fillGradient: 'not json' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /fillGradient must be an object/);
+    });
+  });
+
   describe('applyLowerThird (pre-socket)', () => {
     it('accepts a title-only call', () => {
       const r = validateCommand('applyLowerThird', { compId: 1, title: 'Breaking News' });

@@ -7,13 +7,9 @@
 // captured live with `introspectEffect`; re-run it if the plugin version bumps
 // (the maps are versioned: Deep Glow 2 v1.1.0, Shadow Studio 3 v1.0.0).
 
-// Color props on these plugins are 4-component RGBA (0..1). normColor gives RGB;
-// append alpha so setValue gets the shape it expects.
-function _color4(c) {
-  var n = AEB.normColor(c);
-  var a = (c && c.length >= 4) ? c[3] : 1;
-  return [n[0], n[1], n[2], a];
-}
+// Color props on these plugins are 4-component RGBA (0..1); AEB.color4
+// (host.jsx) appends alpha to normColor's RGB so setValue gets the shape it
+// expects.
 
 // Add an effect by matchName, or reuse the first existing instance on the layer
 // (so re-applying tweaks the same effect instead of stacking duplicates).
@@ -67,8 +63,8 @@ COMMANDS.deepGlow = function (p) {
     // a `color` enables the Tint section and sets the glow color
     if (p.color !== undefined) {
       pairs["PEDG2-0041"] = 1;                 // Tint > Enable
-      pairs["PEDG2-0042"] = _color4(p.color);  // Color (inner)
-      if (p.colorOuter !== undefined) pairs["PEDG2-0066"] = _color4(p.colorOuter);
+      pairs["PEDG2-0042"] = AEB.color4(p.color);  // Color (inner)
+      if (p.colorOuter !== undefined) pairs["PEDG2-0066"] = AEB.color4(p.colorOuter);
       if (p.tintStrength !== undefined) pairs["PEDG2-0044"] = p.tintStrength;
       if (p.tintMode !== undefined) pairs["PEDG2-0043"] = p.tintMode;
     }
@@ -92,7 +88,7 @@ COMMANDS.shadowStudio = function (p) {
   return AEB.undo("mograph-mcp: shadowStudio", function () {
     var fx = _ensureEffect(layer, "PESS3", "Shadow Studio 3");
     var pairs = _collectPairs(p, _SHADOWSTUDIO);
-    if (p.color !== undefined) pairs["PESS3-0006"] = _color4(p.color);
+    if (p.color !== undefined) pairs["PESS3-0006"] = AEB.color4(p.color);
     var applied = _applyParamMap(fx, pairs);
     return { matchName: "PESS3", effectName: fx.name, layer: layer.name, applied: applied };
   });

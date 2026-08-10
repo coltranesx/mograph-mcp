@@ -228,7 +228,14 @@ Object.assign(COMMANDS, {
     description:
       'Add a shape layer. { compId, shape? (rectangle|ellipse|polystar, default rectangle), size? ([w,h], rectangle/ellipse only), ' +
       'polyType? (star|polygon, default star, polystar only), points? (int >=3, polystar only), innerRadius?/outerRadius? (polystar only), ' +
-      'fillColor?, strokeColor?, strokeWidth?, name? }',
+      'fillColor?, strokeColor?, strokeWidth?, name?, ' +
+      'fillGradient?/strokeGradient? ({ type? (linear|radial, default linear), startPoint?, endPoint?, scale?, rotation?, hiliteLength?, ' +
+      'hiliteAngle?, opacity? }) — a NATIVE AE gradient (geometry only; AE does not allow scripting its stop colors, confirmed live ' +
+      '2026-08-10 — ADBE Vector Grad Colors is PropertyValueType.NO_VALUE. Mutually exclusive with fillColor/strokeColor respectively. ' +
+      'For a gradient with chosen colors use rampGradient instead), ' +
+      'rampGradient? ({ startColor, endColor (both required), startPoint?, endPoint?, type? (linear|radial), scatter?, blendWithOriginal? }) ' +
+      '— a Gradient Ramp EFFECT (ADBE Ramp) applied on the layer, fully color-scriptable. Needs some fill/stroke to carry alpha; if none of ' +
+      'fillColor/fillGradient/strokeColor/strokeGradient is given, a default white fill is added automatically as an alpha source. }',
     schema: {
       compId: { type: 'integer' }, shape: { type: 'string' },
       size: { type: 'array', items: { type: 'number' } },
@@ -237,6 +244,39 @@ Object.assign(COMMANDS, {
       fillColor: { type: 'array', items: { type: 'number' } },
       strokeColor: { type: 'array', items: { type: 'number' } },
       strokeWidth: { type: 'number' }, name: { type: 'string' },
+      fillGradient: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' },
+          startPoint: { type: 'array', items: { type: 'number' } },
+          endPoint: { type: 'array', items: { type: 'number' } },
+          scale: { type: 'number' }, rotation: { type: 'number' },
+          hiliteLength: { type: 'number' }, hiliteAngle: { type: 'number' },
+          opacity: { type: 'number' },
+        },
+      },
+      strokeGradient: {
+        type: 'object',
+        properties: {
+          type: { type: 'string' },
+          startPoint: { type: 'array', items: { type: 'number' } },
+          endPoint: { type: 'array', items: { type: 'number' } },
+          scale: { type: 'number' }, rotation: { type: 'number' },
+          hiliteLength: { type: 'number' }, hiliteAngle: { type: 'number' },
+          opacity: { type: 'number' },
+        },
+      },
+      rampGradient: {
+        type: 'object',
+        properties: {
+          startColor: { type: 'array', items: { type: 'number' } },
+          endColor: { type: 'array', items: { type: 'number' } },
+          startPoint: { type: 'array', items: { type: 'number' } },
+          endPoint: { type: 'array', items: { type: 'number' } },
+          type: { type: 'string' },
+          scatter: { type: 'number' }, blendWithOriginal: { type: 'number' },
+        },
+      },
     },
     validate(p) {
       const base = requireFields(p, ['compId']);
@@ -255,6 +295,31 @@ Object.assign(COMMANDS, {
       }
       if (p.points !== undefined && (typeof p.points !== 'number' || !Number.isInteger(p.points) || p.points < 3)) {
         throw new ValidationError('points must be an integer >= 3');
+      }
+      const GRAD_TYPES = ['linear', 'radial'];
+      for (const [field, colorField] of [['fillGradient', 'fillColor'], ['strokeGradient', 'strokeColor']]) {
+        if (p[field] === undefined) continue;
+        // v.optionalObject (not a bare isPlainObject check) — the direct
+        // ae_addShape MCP tool delivers this as a JSON string, confirmed
+        // live 2026-08-10, see validate.js's comment on optionalObject.
+        const g = v.optionalObject(p, field);
+        base[field] = g;
+        if (p[colorField] !== undefined) {
+          throw new ValidationError(`${field} and ${colorField} are mutually exclusive (pick one)`);
+        }
+        if (g.type !== undefined && !GRAD_TYPES.includes(String(g.type).toLowerCase())) {
+          throw new ValidationError(`${field}.type must be "linear" or "radial"`);
+        }
+      }
+      if (p.rampGradient !== undefined) {
+        const rg = v.optionalObject(p, 'rampGradient');
+        base.rampGradient = rg;
+        if (rg.startColor === undefined || rg.endColor === undefined) {
+          throw new ValidationError('rampGradient requires startColor and endColor');
+        }
+        if (rg.type !== undefined && !GRAD_TYPES.includes(String(rg.type).toLowerCase())) {
+          throw new ValidationError('rampGradient.type must be "linear" or "radial"');
+        }
       }
       return base;
     },

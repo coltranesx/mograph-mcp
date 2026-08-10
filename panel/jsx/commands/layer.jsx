@@ -78,6 +78,21 @@ COMMANDS.addLight = function (p) {
   });
 };
 
+// Sets the shared geometry knobs on a G-Fill/G-Stroke property group (type,
+// start/end point, scale, rotation, highlight). Does NOT touch color — see
+// _applyGradientGeometry's header comment on addShape below for why.
+function _applyGradientGeometry(propGroup, g, opacityMatchName) {
+  var isRadial = (String(g.type).toLowerCase() === "radial");
+  propGroup.property("ADBE Vector Grad Type").setValue(isRadial ? 2 : 1);
+  if (g.startPoint) propGroup.property("ADBE Vector Grad Start Pt").setValue(g.startPoint);
+  if (g.endPoint) propGroup.property("ADBE Vector Grad End Pt").setValue(g.endPoint);
+  if (g.scale !== undefined) propGroup.property("ADBE Vector Grad Scale").setValue([g.scale, g.scale]);
+  if (g.rotation !== undefined) propGroup.property("ADBE Vector Grad Rotation").setValue(g.rotation);
+  if (g.hiliteLength !== undefined) propGroup.property("ADBE Vector Grad HiLite Length").setValue(g.hiliteLength);
+  if (g.hiliteAngle !== undefined) propGroup.property("ADBE Vector Grad HiLite Angle").setValue(g.hiliteAngle);
+  if (g.opacity !== undefined) propGroup.property(opacityMatchName).setValue(g.opacity);
+}
+
 COMMANDS.addShape = function (p) {
   var comp = AEB.requireComp(p);
   return AEB.undo("mograph-mcp: addShape", function () {
@@ -110,14 +125,51 @@ COMMANDS.addShape = function (p) {
       var rectSize = p.size || [200, 200];
       try { shapeGroup.property("ADBE Vector Shape - Rect").property("ADBE Vector Rect Size").setValue(rectSize); } catch (e) {}
     }
+    // fillGradient/strokeGradient add a NATIVE AE gradient (ADBE Vector
+    // Graphic - G-Fill/G-Stroke) — geometry only (type, points, scale,
+    // rotation, highlight, opacity). Their stop COLORS are not settable:
+    // the sub-property that holds them ("ADBE Vector Grad Colors") is
+    // PropertyValueType.NO_VALUE — "Can not get or set a value from this
+    // property" — confirmed live in AE 26.3x87, 2026-08-10, not a bug in
+    // this bridge. A gradient added this way keeps whatever stop colors AE
+    // assigns by default; for a gradient with chosen colors use
+    // rampGradient below instead (a Gradient Ramp effect, fully scriptable).
     if (p.fillColor) {
       var fill = shapeGroup.addProperty("ADBE Vector Graphic - Fill");
       fill.property("ADBE Vector Fill Color").setValue(AEB.normColor(p.fillColor));
+    } else if (p.fillGradient) {
+      var gfill = shapeGroup.addProperty("ADBE Vector Graphic - G-Fill");
+      _applyGradientGeometry(gfill, p.fillGradient, "ADBE Vector Fill Opacity");
     }
     if (p.strokeColor) {
       var stroke = shapeGroup.addProperty("ADBE Vector Graphic - Stroke");
       stroke.property("ADBE Vector Stroke Color").setValue(AEB.normColor(p.strokeColor));
       if (p.strokeWidth) stroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
+    } else if (p.strokeGradient) {
+      var gstroke = shapeGroup.addProperty("ADBE Vector Graphic - G-Stroke");
+      _applyGradientGeometry(gstroke, p.strokeGradient, "ADBE Vector Stroke Opacity");
+      if (p.strokeWidth) gstroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
+    }
+    // rampGradient: a real 2-color gradient with full color control, via the
+    // Gradient Ramp effect (ADBE Ramp) applied on the layer — the working
+    // alternative to fillGradient/strokeGradient's color limitation above.
+    // Ramp recolors the layer's existing alpha; it needs SOME fill/stroke to
+    // have put alpha there first, so if none was requested we add an
+    // invisible-in-intent white fill purely as an alpha source (Ramp
+    // overwrites its RGB entirely).
+    if (p.rampGradient) {
+      if (!p.fillColor && !p.fillGradient && !p.strokeColor && !p.strokeGradient) {
+        shapeGroup.addProperty("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue([1, 1, 1]);
+      }
+      var ramp = AEB.effectsGroup(layer).addProperty("ADBE Ramp");
+      ramp.property("ADBE Ramp-0002").setValue(AEB.color4(p.rampGradient.startColor));
+      ramp.property("ADBE Ramp-0004").setValue(AEB.color4(p.rampGradient.endColor));
+      if (p.rampGradient.startPoint) ramp.property("ADBE Ramp-0001").setValue(p.rampGradient.startPoint);
+      if (p.rampGradient.endPoint) ramp.property("ADBE Ramp-0003").setValue(p.rampGradient.endPoint);
+      var rampRadial = (String(p.rampGradient.type).toLowerCase() === "radial");
+      ramp.property("ADBE Ramp-0005").setValue(rampRadial ? 2 : 1);
+      if (p.rampGradient.scatter !== undefined) ramp.property("ADBE Ramp-0006").setValue(p.rampGradient.scatter);
+      if (p.rampGradient.blendWithOriginal !== undefined) ramp.property("ADBE Ramp-0007").setValue(p.rampGradient.blendWithOriginal);
     }
     return AEB.layerInfo(layer);
   });

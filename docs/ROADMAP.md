@@ -306,5 +306,15 @@ birincil hedef (yapı taşlarının sağlıklı olması) karşılandı.
 
 ## Bilinen eksikler (henüz planlanmadı)
 
-Shape tarafı: gradient fill/stroke, dash / line cap / join, shape group
-transform (grup içi anchor/scale/rotate), taper & wave.
+Shape tarafı:
+- ~~gradient fill/stroke~~ ✅ bitti, canlıda uçtan uca doğrulandı (DEVLOG
+  2026-08-10 (22)/(23)) — `addShape`'e `fillGradient`/`strokeGradient`
+  (native, geometri-only — stop renkleri AE scriptinde ayarlanamıyor, canlı
+  doğrulandı) ve `rampGradient` (Gradient Ramp efekti, tam renk kontrolü)
+  eklendi. (23)'te ayrıca CORE MCP tool'larında nested-object parametrelerin
+  de array'ler gibi bozulduğu bulundu ve `v.optionalObject` ile düzeltildi.
+- dash / line cap / join (G-Stroke'un `Dashes`/`Taper`/`Wave`
+  property'leri (22)'de görüldü ama dokunulmadı — sıradaki aday)
+- shape group transform (grup içi anchor/scale/rotate)
+- taper & wave (aynı G-Stroke `Taper`/`Wave` property'leri, dash'le
+  birlikte ele alınabilir)

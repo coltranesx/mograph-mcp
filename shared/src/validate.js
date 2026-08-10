@@ -118,4 +118,27 @@ export const v = {
     }
     return params[field];
   },
+  // nested object param (e.g. addShape's fillGradient). Confirmed live
+  // 2026-08-10: the per-command CORE MCP tools (controller/src/mcpServer.js)
+  // deliver a JSON-schema `type:'object'` argument as a JSON-stringified
+  // string in at least one client, even though declaring the type is exactly
+  // what fixed the equivalent case for top-level arrays (see this file's
+  // numericLike, and the header comment in commands.js, 2026-08-09) — that
+  // fix does not extend to nested object-typed fields on this transport.
+  // Mirrors numericLike's tolerance for the same class of problem instead of
+  // rejecting a well-formed call; ae_command (untyped `params: object`) never
+  // hits this because it isn't a typed field.
+  optionalObject(params, field, dflt = undefined) {
+    const raw = params[field];
+    if (raw === undefined || raw === null) return dflt;
+    if (isPlainObject(raw)) return raw;
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (isPlainObject(parsed)) return parsed;
+      } catch { /* falls through to the failure below */ }
+    }
+    fail(field, 'must be an object');
+    return undefined; // unreachable — fail() always throws
+  },
 };
