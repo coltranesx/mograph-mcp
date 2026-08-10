@@ -12,6 +12,34 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (27)
+- **Faz 3'ün açık sorusu kapandı: şablon doldurma soyutlanmayacak (B).**
+  (14)'te yapılan ilk canlı şablon testinden beri askıda duran soru —
+  "bu iş akışı `applyLowerThird` gibi tek bir komut/spec'e mi
+  soyutlanmalı, yoksa mevcut komutları elle bir araya getirmek mi
+  yeterli" — kullanıcı kararıyla **elle** olarak kapatıldı. Yani
+  `fillTemplate` tarzı bir komut **yazılmayacak**; şablon işleri
+  `openProject` + `setTextDocument` + `importFootage`/`addFootageLayer` +
+  `setLayerProperty`/`moveLayer` zinciriyle, şablon başına elle
+  kurulmaya devam edecek.
+  - **Gerekçe:** elde hâlâ tek gerçek şablon var (`aep/
+    Ae_Template_Test.aep`); şablon başına iç düzen (katman isimleri,
+    placeholder sayısı, hangi comp, fit mantığı) çok değişken. Tek
+    örnekten çıkarılacak soyutlama yanlış soyutlama olma riski taşıyor,
+    ve elle yol zaten uçtan uca çalıştığı kanıtlanmış durumda —
+    soyutlamanın kazandıracağı tek şey satır sayısı.
+  - **Elenen alternatif (A):** `fillTemplate` tek komutu. Elenme sebebi
+    yukarıdaki; ayrıca üçüncü bir yol (şablonları zorunlu bir katman
+    isimlendirme konvansiyonuyla kurup komutu ona göre yazmak) da
+    şimdilik gerekmiyor — konvansiyon dayatması, kazancı belirsizken
+    ödenecek bir bedel.
+  - **Kapanma biçimi:** "ertelendi" değil, **karar verildi**. İleride
+    gerçekten tekrar eden bir şablon işi belirirse (aynı şablonu
+    defalarca doldurmak, toplu varyant üretimi) konu yeniden açılabilir;
+    o zamana kadar tekrar gündeme getirilmeyecek.
+- **Sıradaki yön:** yapı taşlarındaki eksikleri, kullandıkça görüldükçe
+  tamamlamaya devam. Planlı büyük bir faz yok.
+
 ## 2026-08-10 (26)
 - **`addShape`'e `groupTransform` eklendi — shape tarafındaki bilinen
   eksikler listesinin son maddesi bitti.** Grubun (`Group 1`, `ADBE

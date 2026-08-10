@@ -27,8 +27,9 @@ başlarken önce oraya bak.**
 - **Korhan 25 fps çalışıyor**, 30 değil. Ana formatlar: 1920×1080 (yatay),
   1080×1920 (dikey), 1080×1080 (kare), 1080×1320. Aynı işi birden fazla
   formatta teslim etmek nadir — format türetme düşük öncelikli.
-- Faz 0 altyapı paketi bitti (Sonnet'te, DEVLOG 2026-08-08 (6)). Sırada:
-  Faz 1 — shape temeli (spec ROADMAP'te).
+- **Planlı fazlar bitti (Faz 0/1/2/3/3.5, 2026-08-10).** Bundan sonrası
+  planlı bir faz değil: kullandıkça görülen eksikler tamamlanıyor. Yeni bir
+  iş gelince önce ROADMAP'in "bilinen eksikler" bölümüne bak.
 - Model ayrımı: karar/tasarım işleri Opus'ta, yürütme Sonnet'te (ayrı
   terminal).
 
@@ -55,6 +56,12 @@ değiştirme.
 - **Shape operatörleri tek komutta toplanıyor: `addShapeOperator`**, operatör
   başına ayrı komut değil. Gerekçe: `addEffect` de matchName alan tek komut,
   tutarlılık kazanıyor. Şema ve operatör tablosu ROADMAP'te.
+- **Şablon doldurma (Faz 3) soyutlanmayacak.** `fillTemplate` tarzı tek
+  komut yazılmayacak; şablon işleri mevcut komutlarla (`openProject`,
+  `setTextDocument`, `importFootage`/`addFootageLayer`, `setLayerProperty`,
+  `moveLayer`) şablon başına elle kurulur. Gerekçe: şablon başına düzen
+  çok değişken, elle yol uçtan uca kanıtlı (DEVLOG 2026-08-10 (27)).
+  Tekrar eden gerçek bir şablon işi çıkmadıkça yeniden açma.
 - **Reviewer'ı gerçek yapmak bilinçli olarak geç sırada.** `claudeReviewer()`
   stub olduğu için otonom öz-düzeltme döngüsü çalışmıyor; ama tek tek iş
   yapılırken çıktıya zaten insan bakıyor. Toplu üretim başlayınca sırası

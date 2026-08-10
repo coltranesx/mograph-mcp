@@ -33,10 +33,9 @@ temeli düzeliyor** — kırık temelin üstüne kütüphane kurmanın anlamı y
 1. ~~Faz 0 — altyapı borcu~~ *(bitti, bkz. DEVLOG 2026-08-08 (6))*
 2. Shape temeli *(bitti — A/B/C/D, DEVLOG 2026-08-08 (7) ve 2026-08-09 (3)/(5))*
 3. Tipografi / lower-third *(bitti — "Faz 2" 1-6, DEVLOG 2026-08-09 (8)-(13))*
-4. Logo / bumper şablonları — **ilk canlı test aşaması bitti** (DEVLOG
-   2026-08-09 (14)); "tek komut mu / elle mi" soyutlama kararı **ertelendi**
-   (kullanıcı: önce yapı taşları, DEVLOG 2026-08-09 (17)) — 2./3. gerçek
-   şablonla tekrar ele alınacak, bkz. "Faz 3" aşağıda
+4. Logo / bumper şablonları *(bitti — canlı test DEVLOG 2026-08-09 (14);
+   "tek komut mu / elle mi" sorusu **elle** lehine kapandı, DEVLOG
+   2026-08-10 (27))*
 5. **Efekt / grade — yapı taşları audit'i bitti** (DEVLOG 2026-08-09 (17)):
    array-parametre MCP bug'ı kök nedeninden düzeltildi, `applyLumetri`/
    `cinematicGrade`/`smokeEffect`/`glitchEffect`/`neonGlow` canlıda
@@ -262,13 +261,15 @@ patlıyordu — köprünün render özelliği muhtemelen hiç canlı test edilme
 üzerinde metin değiştirme + görsel import edip placeholder'a cover-fit ile
 oturtma, render alıp görsel doğrulama. Elle, komut komut yapıldı.
 
-**Açık soru (ertelendi, DEVLOG 2026-08-09 (17)):** Bu, tekrarlanan bir iş
-akışı olarak (`applyLowerThird` gibi tek bir komut/spec) mı soyutlanmalı,
-yoksa şablon başına düzen çok değişken olduğu için mevcut komutların elle
-bir araya getirilmesi mi yeterli? Henüz karar verilmedi — ikinci/üçüncü
-gerçek şablonla karşılaşınca netleşir (tek örnekten genelleme yapmamak için
-bilinçli olarak erken karar verilmedi). Kullanıcı kararıyla öncelik "önce
-yapı taşları" oldu (bkz. Faz 3.5 aşağıda) — bu soru askıda, terk edilmedi.
+**Karar verildi ✅ (2026-08-10, DEVLOG (27)): soyutlanmayacak, elle
+kalıyor.** "Tek komut/spec mi (`fillTemplate`), elle mi" sorusu **elle**
+lehine kapandı. Şablon işleri `openProject` + `setTextDocument` +
+`importFootage`/`addFootageLayer` + `setLayerProperty`/`moveLayer`
+zinciriyle, şablon başına elle kurulur. Gerekçe: şablon başına iç düzen
+çok değişken, elde tek gerçek örnek var, elle yol zaten uçtan uca
+kanıtlandı. **Faz 3 kapandı — tekrar tartışmaya açma;** ancak gerçekten
+tekrar eden bir şablon işi (aynı şablonu defalarca doldurma, toplu varyant)
+ortaya çıkarsa yeniden değerlendirilir.
 
 ---
 
