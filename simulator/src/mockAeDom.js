@@ -136,7 +136,22 @@ const STROKE_STYLE_AUTO_CHILDREN = [
 // group's Shape, a Fill/Stroke's color/width). Only what addShape() /
 // addPathShape() actually touch — not a full vector property tree.
 const VECTOR_AUTO_CHILDREN = {
-  'ADBE Vector Group': [['ADBE Vectors Group', () => new MockVectorGroup('ADBE Vectors Group')]],
+  'ADBE Vector Group': [
+    ['ADBE Vectors Group', () => new MockVectorGroup('ADBE Vectors Group')],
+    ['ADBE Vector Transform Group', () => new MockVectorGroup('ADBE Vector Transform Group')],
+  ],
+  // The shape GROUP's own transform (addShape's groupTransform) — a
+  // sibling of Contents, separate from the layer's main Transform. All
+  // fields plain and settable, confirmed live 2026-08-10.
+  'ADBE Vector Transform Group': [
+    ['ADBE Vector Anchor', () => new MockProperty('ADBE Vector Anchor', [0, 0])],
+    ['ADBE Vector Position', () => new MockProperty('ADBE Vector Position', [0, 0])],
+    ['ADBE Vector Scale', () => new MockProperty('ADBE Vector Scale', [100, 100])],
+    ['ADBE Vector Skew', () => new MockProperty('ADBE Vector Skew', 0)],
+    ['ADBE Vector Skew Axis', () => new MockProperty('ADBE Vector Skew Axis', 0)],
+    ['ADBE Vector Rotation', () => new MockProperty('ADBE Vector Rotation', 0)],
+    ['ADBE Vector Group Opacity', () => new MockProperty('ADBE Vector Group Opacity', 100)],
+  ],
   'ADBE Vector Shape - Group': [['ADBE Vector Shape', () => new MockShapeProperty()]],
   'ADBE Vector Graphic - Fill': [['ADBE Vector Fill Color', () => new MockProperty('ADBE Vector Fill Color', [0, 0, 0, 1])]],
   'ADBE Vector Graphic - Stroke': [

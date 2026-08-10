@@ -279,6 +279,24 @@ COMMANDS.addShape = function (p) {
       if (p.rampGradient.scatter !== undefined) ramp.property("ADBE Ramp-0006").setValue(p.rampGradient.scatter);
       if (p.rampGradient.blendWithOriginal !== undefined) ramp.property("ADBE Ramp-0007").setValue(p.rampGradient.blendWithOriginal);
     }
+    // groupTransform: the shape GROUP's own transform (ADBE Vector Transform
+    // Group, a sibling of Contents inside Group 1) — separate from the
+    // layer's main Transform. Lets content be offset/scaled/rotated around a
+    // pivot independent of the layer's own anchor/position (e.g. a shape
+    // that grows from a corner instead of its layer anchor). matchNames seen
+    // live in the (22) gradient probe (none looked gated there) — live
+    // settability confirmed for real here, see docs/DEVLOG.md 2026-08-10.
+    if (p.groupTransform) {
+      var gt = p.groupTransform;
+      var xform = grp.property("ADBE Vector Transform Group");
+      if (gt.anchorPoint !== undefined) xform.property("ADBE Vector Anchor").setValue(gt.anchorPoint);
+      if (gt.position !== undefined) xform.property("ADBE Vector Position").setValue(gt.position);
+      if (gt.scale !== undefined) xform.property("ADBE Vector Scale").setValue(gt.scale);
+      if (gt.skew !== undefined) xform.property("ADBE Vector Skew").setValue(gt.skew);
+      if (gt.skewAxis !== undefined) xform.property("ADBE Vector Skew Axis").setValue(gt.skewAxis);
+      if (gt.rotation !== undefined) xform.property("ADBE Vector Rotation").setValue(gt.rotation);
+      if (gt.opacity !== undefined) xform.property("ADBE Vector Group Opacity").setValue(gt.opacity);
+    }
     return AEB.layerInfo(layer);
   });
 };

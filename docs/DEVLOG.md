@@ -12,6 +12,30 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-10 (26)
+- **`addShape`'e `groupTransform` eklendi — shape tarafındaki bilinen
+  eksikler listesinin son maddesi bitti.** Grubun (`Group 1`, `ADBE
+  Vector Group`) kendi transform'u — `ADBE Vector Transform Group`,
+  `Contents`'in kardeşi — layer'ın ana Transform'undan bağımsız: içeriği
+  layer'ın kendi anchor/position'ından ayrı bir pivot etrafında kaydır/
+  ölçekle/döndür (ör. bir şekli layer anchor'ından değil kendi köşesinden
+  büyütmek).
+  - Alanlar: `anchorPoint`, `position`, `scale` ([x,y], yüzde, AE
+    varsayılanı [100,100]), `skew`, `skewAxis`, `rotation`, `opacity`
+    (0..100). matchName'ler (22)'nin gradient sondajında zaten görülmüştü.
+  - Canlı doğrulama: yedi alanın hepsi tek `addShape` çağrısında, hiçbir
+    hata olmadan, verilen değerlerle tam eşleşti — Wave'in `cycles`'ından
+    farklı olarak burada **hiçbir alan gated değil**. Ayrıca dashes/wave/
+    ellipse ile birlikte tek çağrıda da sorunsuz çalıştığı doğrulandı.
+  - Şema (`shared/src/commands.js`) + `v.optionalObject` (JSON-string
+    tolerans, (23)'teki nested-object marshalling bug'ına karşı) +
+    simulator (`VECTOR_AUTO_CHILDREN['ADBE Vector Transform Group']`,
+    gated değil, sade property listesi) + 3 yeni test (2 controller
+    validate, 1 simulator/JSX). `npm test` 226/226, lint temiz.
+  - **Not:** bu oturumun MCP tool cache'i eski şemada kaldığı için typed
+    `ae_addShape` tool'u yerine `ae_command` (tipsiz) ile doğrulandı —
+    yeni oturumda `/mcp` yenilenince typed tool da güncel şemayı görür.
+
 ## 2026-08-10 (25)
 - **(24)'ün canlı doğrulaması tamamlandı: `wave.cycles` scriptlenemiyor,
   şemadan çıkarıldı.** (24) sonunda commit atılmadan oturum kesilmişti;

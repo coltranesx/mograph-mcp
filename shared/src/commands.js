@@ -242,7 +242,11 @@ Object.assign(COMMANDS, {
       '(pixels mode), startWidth?/endWidth? (0..1 fraction, always active), startEase?/endEase? (always active) }), ' +
       'wave? ({ units? (percent|pixels), amount?, wavelength?, phase? }) — no cycles: AE does not allow scripting ' +
       'it (confirmed live 2026-08-10, every mutation path throws "hidden property"; same category as gradient ' +
-      'stop colors, see fillGradient). }',
+      'stop colors, see fillGradient). ' +
+      'groupTransform? ({ anchorPoint?, position?, scale? ([x,y], percent, default [100,100]), skew?, skewAxis?, ' +
+      'rotation?, opacity? (0..100) }) — the shape GROUP\'s own transform (separate from the layer transform), ' +
+      'lets content pivot/scale/rotate around a point independent of the layer\'s anchor. All fields confirmed ' +
+      'live and settable, 2026-08-10. }',
     schema: {
       compId: { type: 'integer' }, shape: { type: 'string' },
       size: { type: 'array', items: { type: 'number' } },
@@ -308,6 +312,16 @@ Object.assign(COMMANDS, {
         properties: {
           units: { type: 'string' }, amount: { type: 'number' },
           wavelength: { type: 'number' }, phase: { type: 'number' },
+        },
+      },
+      groupTransform: {
+        type: 'object',
+        properties: {
+          anchorPoint: { type: 'array', items: { type: 'number' } },
+          position: { type: 'array', items: { type: 'number' } },
+          scale: { type: 'array', items: { type: 'number' } },
+          skew: { type: 'number' }, skewAxis: { type: 'number' },
+          rotation: { type: 'number' }, opacity: { type: 'number' },
         },
       },
     },
@@ -412,6 +426,9 @@ Object.assign(COMMANDS, {
           // rather than let AE's cryptic error surface from the JSX layer.
           throw new ValidationError('wave.cycles cannot be set (AE does not allow scripting it — omit it)');
         }
+      }
+      if (p.groupTransform !== undefined) {
+        base.groupTransform = v.optionalObject(p, 'groupTransform');
       }
       return base;
     },

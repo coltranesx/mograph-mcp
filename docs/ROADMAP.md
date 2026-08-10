@@ -319,4 +319,8 @@ Shape tarafı:
   (24)/(25)) — yukarıdaki madde ile aynı iş, aynı Stroke/G-Stroke property
   bölgesi. `wave.cycles` hariç: AE'de hiçbir yoldan scriptlenemiyor (gradient
   stop renkleriyle aynı kategori), şemadan bilinçli olarak çıkarıldı.
-- shape group transform (grup içi anchor/scale/rotate) — kalan tek madde
+- ~~shape group transform~~ ✅ bitti, canlıda uçtan uca doğrulandı (DEVLOG
+  2026-08-10 (26)) — `addShape`'e `groupTransform` (anchorPoint/position/
+  scale/skew/skewAxis/rotation/opacity, `ADBE Vector Transform Group`
+  üzerinde) eklendi, hiçbir alanı gated değil. **Shape tarafındaki bilinen
+  eksikler listesi tamamen bitti.**

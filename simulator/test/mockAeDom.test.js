@@ -655,6 +655,27 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.match(r.error, /stroke style params/);
     });
 
+    it('addShape groupTransform sets the shape GROUP\'s own transform (anchor/position/scale/skew/rotation/opacity)', () => {
+      const comp = runner.dispatch('createComp', { name: 'ShGroupTransform' });
+      const r = runner.dispatch('addShape', {
+        compId: comp.result.compId, fillColor: [1, 0, 0],
+        groupTransform: {
+          anchorPoint: [75, 75], position: [100, 50], scale: [150, 80],
+          skew: 10, skewAxis: 45, rotation: 20, opacity: 60,
+        },
+      });
+      assert.equal(r.ok, true, r.error);
+      const xform = runner.dom.app.project.item(1).layer(1)
+        .property('ADBE Root Vectors Group').property(1).property('ADBE Vector Transform Group');
+      assert.deepEqual(Array.from(xform.property('ADBE Vector Anchor').value), [75, 75]);
+      assert.deepEqual(Array.from(xform.property('ADBE Vector Position').value), [100, 50]);
+      assert.deepEqual(Array.from(xform.property('ADBE Vector Scale').value), [150, 80]);
+      assert.equal(xform.property('ADBE Vector Skew').value, 10);
+      assert.equal(xform.property('ADBE Vector Skew Axis').value, 45);
+      assert.equal(xform.property('ADBE Vector Rotation').value, 20);
+      assert.equal(xform.property('ADBE Vector Group Opacity').value, 60);
+    });
+
     // No silent fallback: a typo'd/unknown shape used to silently build a
     // rectangle (docs/ROADMAP.md "Faz 1.C"). shared/src/commands.js rejects
     // this pre-socket (see shared/test/commands.test.js); this JSX-level

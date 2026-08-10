@@ -365,6 +365,25 @@ describe('validateCommand', () => {
     });
   });
 
+  describe('addShape groupTransform (pre-socket) — docs/DEVLOG.md 2026-08-10', () => {
+    it('accepts groupTransform — no stroke/fill requirement, it applies to the shape group itself', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, fillColor: [1, 0, 0],
+        groupTransform: { anchorPoint: [50, 50], position: [10, 10], scale: [150, 150], skew: 5, skewAxis: 10, rotation: 30, opacity: 50 },
+      });
+      assert.equal(r.ok, true, r.error);
+    });
+
+    it('tolerates a JSON-stringified groupTransform (nested-object marshalling quirk, DEVLOG (23))', () => {
+      const r = validateCommand('addShape', {
+        compId: 1, fillColor: [1, 0, 0],
+        groupTransform: JSON.stringify({ rotation: 30 }),
+      });
+      assert.equal(r.ok, true, r.error);
+      assert.deepEqual(r.params.groupTransform, { rotation: 30 });
+    });
+  });
+
   describe('applyLowerThird (pre-socket)', () => {
     it('accepts a title-only call', () => {
       const r = validateCommand('applyLowerThird', { compId: 1, title: 'Breaking News' });
