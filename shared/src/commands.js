@@ -191,6 +191,21 @@ function requireFields(p, names) {
 // doesn't silently mangle array-valued params.
 const withDesc = (description, required, schema) => ({ description, schema, validate: (p) => requireFields(p, required) });
 
+// Reusable schema fragments for the property/value pair that shows up across
+// keyframe + introspection commands (setKeyframe, setEase, setInterpolation,
+// removeKeyframes, getProperty, ...). `property` may be a friendly transform
+// name (string) OR an array property-path (e.g. a SHAPE-typed path, see
+// AEB.resolveProperty, host.jsx) — anyOf keeps the array branch typed so it
+// survives the MCP tool's inputSchema the same way addShape's array fields do
+// (see this file's header comment). `value` is genuinely polymorphic
+// (number/string/boolean for scalar props, [x,y]/[x,y,z] for spatial ones,
+// and a { vertices[], inTangents?, outTangents?, closed? } object for
+// SHAPE-typed properties, see AEB.toShape).
+const PROPERTY_SCHEMA = { anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] };
+const VALUE_SCHEMA = {
+  anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }, { type: 'object' }],
+};
+
 // Shape operators (Trim Paths, Repeater, ...) live inside a shape layer's
 // vector-group tree as PropertyGroup children, added via addProperty(matchName)
 // — not addEffect(), and NOT guarded by canAddProperty() the way addEffect is
@@ -462,21 +477,32 @@ Object.assign(COMMANDS, {
   },
   addFootageLayer: withDesc('Add an existing project item into a comp. { compId, itemId|itemName }', ['compId'],
     { compId: { type: 'integer' }, itemName: { type: 'string' } }),
-  setParent: withDesc('Parent one layer to another. { compId, layer, parent|parentName(null to unparent) }', ['compId']),
+  setParent: withDesc('Parent one layer to another. { compId, layer, parent|parentName(null to unparent) }', ['compId'],
+    { compId: { type: 'integer' }, parent: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
+      parentName: { anyOf: [{ type: 'string' }, { type: 'null' }] } }),
   trimLayer: withDesc('Set layer in/out/start. { compId, layer, inPoint?, outPoint?, startTime? }', ['compId'],
     { compId: { type: 'integer' }, inPoint: { type: 'number' }, outPoint: { type: 'number' }, startTime: { type: 'number' } }),
-  moveLayer: withDesc('Move a layer to a stack index. { compId, layer, toIndex }', ['compId', 'toIndex']),
-  duplicateLayer: withDesc('Duplicate a layer. { compId, layer, name? }', ['compId']),
-  deleteLayer: withDesc('Delete a layer. { compId, layer }', ['compId']),
+  moveLayer: withDesc('Move a layer to a stack index. { compId, layer, toIndex }', ['compId', 'toIndex'],
+    { compId: { type: 'integer' }, toIndex: { type: 'integer' } }),
+  duplicateLayer: withDesc('Duplicate a layer. { compId, layer, name? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' } }),
+  deleteLayer: withDesc('Delete a layer. { compId, layer }', ['compId'], { compId: { type: 'integer' } }),
   getLayers: withDesc('List layers in a comp.', ['compId'], { compId: { type: 'integer' } }),
 
   // keyframes / expressions
-  setKeyframe: withDesc('One keyframe. { compId, layer, property, time, value }. On a SHAPE-typed property (e.g. a path, property: ["ADBE Root Vectors Group",...,"ADBE Vector Shape"]), value is { vertices[], inTangents?, outTangents?, closed? } — every keyframe on that property must use the same vertex count or the call fails.', ['compId', 'property', 'time', 'value']),
+  setKeyframe: withDesc('One keyframe. { compId, layer, property, time, value }. On a SHAPE-typed property (e.g. a path, property: ["ADBE Root Vectors Group",...,"ADBE Vector Shape"]), value is { vertices[], inTangents?, outTangents?, closed? } — every keyframe on that property must use the same vertex count or the call fails.', ['compId', 'property', 'time', 'value'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA, time: { type: 'number' }, value: VALUE_SCHEMA }),
   setKeyframes: withDesc('Bulk keyframes. { compId, layer, property, times[], values[], easyEase? }. On a SHAPE-typed property, values[] entries are { vertices[], inTangents?, outTangents?, closed? } and must all share the same vertex count (also matching any pre-existing keyframes) — mismatches fail loudly instead of producing broken path interpolation.', ['compId', 'property', 'times', 'values'],
-    { compId: { type: 'integer' }, times: { type: 'array', items: { type: 'number' } }, values: { type: 'array' }, easyEase: { type: 'boolean' } }),
-  setEase: withDesc('Temporal ease on a key. { compId, layer, property, keyIndex, inInfluence?, outInfluence? }', ['compId', 'property', 'keyIndex']),
-  setInterpolation: withDesc('Interp type on a key (linear|bezier|hold). { compId, layer, property, keyIndex, inType, outType? }', ['compId', 'property', 'keyIndex']),
-  removeKeyframes: withDesc('Clear all keyframes on a property.', ['compId', 'property']),
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA, times: { type: 'array', items: { type: 'number' } }, values: { type: 'array' }, easyEase: { type: 'boolean' } }),
+  setEase: withDesc('Temporal ease on a key. { compId, layer, property, keyIndex, inInfluence?, outInfluence? }', ['compId', 'property', 'keyIndex'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA, keyIndex: { type: 'integer' },
+      inInfluence: { type: 'number' }, outInfluence: { type: 'number' },
+      inSpeed: { type: 'number' }, outSpeed: { type: 'number' } }),
+  setInterpolation: withDesc('Interp type on a key (linear|bezier|hold). { compId, layer, property, keyIndex, inType, outType? }', ['compId', 'property', 'keyIndex'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA, keyIndex: { type: 'integer' },
+      inType: { type: 'string' }, outType: { type: 'string' } }),
+  removeKeyframes: withDesc('Clear all keyframes on a property.', ['compId', 'property'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA }),
   setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression'],
     { compId: { type: 'integer' }, expression: { type: 'string' } }),
   removeExpression: withDesc('Remove an expression.', ['compId', 'property']),
@@ -523,13 +549,62 @@ Object.assign(COMMANDS, {
 // and the OS keystroke layer.
 Object.assign(COMMANDS, {
   // masks
-  addMask: withDesc('Add a mask. { compId, layer, vertices?, closed?, mode?, feather?, opacity?, expansion? }', ['compId']),
-  addRectMask: withDesc('Add a rectangular mask. { compId, layer, left?, top?, width?, height?, feather? }', ['compId']),
-  setMaskProperty: withDesc('Set a mask property (mode|opacity|feather|expansion|inverted). { compId, layer, maskIndex|maskName, property, value }', ['compId', 'property']),
+  addMask: withDesc('Add a mask. { compId, layer, vertices?, closed?, mode?, feather?, opacity?, expansion? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' }, mode: { type: 'string' },
+      vertices: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      inTangents: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      outTangents: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      closed: { type: 'boolean' }, opacity: { type: 'number' },
+      feather: { anyOf: [{ type: 'number' }, { type: 'array', items: { type: 'number' } }] },
+      expansion: { type: 'number' }, inverted: { type: 'boolean' } }),
+  addRectMask: withDesc('Add a rectangular mask. { compId, layer, left?, top?, width?, height?, feather? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' }, left: { type: 'number' }, top: { type: 'number' },
+      width: { type: 'number' }, height: { type: 'number' }, feather: { type: 'number' } }),
+  setMaskProperty: withDesc('Set a mask property (mode|opacity|feather|expansion|inverted). { compId, layer, maskIndex|maskName, property, value }', ['compId', 'property'],
+    { compId: { type: 'integer' }, maskIndex: { type: 'integer' }, maskName: { type: 'string' },
+      property: { type: 'string' }, value: VALUE_SCHEMA }),
 
   // text
-  setTextDocument: withDesc('Style a text layer (text/font/size/tracking/fill/stroke/justification/...). { compId, layer, ... }', ['compId']),
-  addTextAnimator: withDesc('Add a text animator (Animate panel). { compId, layer, name?, properties:{position,scale,rotation,opacity,tracking,blur}, selector:{basedOn,shape,easeHigh,easeLow,start,end,offset}, animate:{field:offset|start|end, from, to, startFrame, endFrame, ease:easeOut|easyEase}, motionBlur? }', ['compId']),
+  setTextDocument: withDesc('Style a text layer (text/font/size/tracking/fill/stroke/justification/...). { compId, layer, ... }', ['compId'],
+    { compId: { type: 'integer' }, text: { type: 'string' }, font: { type: 'string' },
+      fontSize: { type: 'number' }, tracking: { type: 'number' }, leading: { type: 'number' },
+      applyFill: { type: 'boolean' }, fillColor: { type: 'array', items: { type: 'number' } },
+      applyStroke: { type: 'boolean' }, strokeColor: { type: 'array', items: { type: 'number' } },
+      strokeWidth: { type: 'number' }, fauxBold: { type: 'boolean' }, fauxItalic: { type: 'boolean' },
+      allCaps: { type: 'boolean' }, justification: { type: 'integer' } }),
+  addTextAnimator: {
+    description: 'Add a text animator (Animate panel). { compId, layer, name?, properties:{position,scale,rotation,opacity,tracking,blur}, selector:{basedOn,shape,easeHigh,easeLow,start,end,offset}, animate:{field:offset|start|end, from, to, startFrame, endFrame, ease:easeOut|easyEase, bezier?[4], outStartFrame?, outEndFrame?} (or an array of these), motionBlur? }',
+    schema: {
+      compId: { type: 'integer' }, name: { type: 'string' },
+      properties: {
+        type: 'object',
+        properties: {
+          position: { anyOf: [{ type: 'number' }, { type: 'array', items: { type: 'number' } }] },
+          scale: { anyOf: [{ type: 'number' }, { type: 'array', items: { type: 'number' } }] },
+          rotation: { type: 'number' }, opacity: { type: 'number' }, tracking: { type: 'number' },
+          blur: { anyOf: [{ type: 'number' }, { type: 'array', items: { type: 'number' } }] },
+        },
+      },
+      selector: {
+        type: 'object',
+        properties: {
+          basedOn: { type: 'string' }, shape: { type: 'string' },
+          easeHigh: { type: 'number' }, easeLow: { type: 'number' },
+          start: { type: 'number' }, end: { type: 'number' }, offset: { type: 'number' },
+        },
+      },
+      animate: {
+        anyOf: [
+          { type: 'object' },
+          { type: 'array', items: { type: 'object' } },
+        ],
+      },
+      motionBlur: { type: 'boolean' },
+    },
+    validate(p) {
+      return requireFields(p, ['compId']);
+    },
+  },
   applyTextPreset: withDesc('Apply a named text-animation preset. { compId, layer, preset: wordReveal|charScale|bunchRotate|blurFade }', ['compId', 'preset'],
     { compId: { type: 'integer' }, preset: { type: 'string' } }),
   applyWordReveal: withDesc('Deterministic text-driven per-word reveal. Splits text (\\n = lines) into words, measures each glyph run, centers each line on centerX and the block on centerY, animates each word as its own layer with a cubic-bezier and overlapping cascade. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, revealFrames?, stagger?, startFrame?, bezier?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
@@ -593,6 +668,10 @@ Object.assign(COMMANDS, {
       'EXISTING text layer live, inheriting its own font/size/tracking unless overridden. Returns { width, height, left, top, capHeight, ' +
       'ascent, descent } (px) — capHeight is a font metric ("H" at this font/size); ascent/descent are content-dependent (from the actual ' +
       'text\'s ink). docs/ROADMAP.md Faz 2 madde 3.',
+    schema: {
+      compId: { type: 'integer' }, text: { type: 'string' }, font: { type: 'string' },
+      fontSize: { type: 'number' }, tracking: { type: 'number' },
+    },
     validate(p) {
       const base = requireFields(p, ['compId']);
       const hasLayer = (p.layer !== undefined || p.layerIndex !== undefined || p.layerName !== undefined);
@@ -607,10 +686,11 @@ Object.assign(COMMANDS, {
   addLayerStyle: withDesc('Add a layer style (dropShadow|outerGlow|stroke|...). { compId, layer, style, params? }', ['compId', 'style']),
 
   // introspection (read-back)
-  getProperty: withDesc('Read a property value/expression/keyframes. { compId, layer, property }', ['compId', 'property']),
+  getProperty: withDesc('Read a property value/expression/keyframes. { compId, layer, property }', ['compId', 'property'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA }),
   getLayerDetails: withDesc('Full layer snapshot (transform/effects/flags, deep? tree). { compId, layer, deep?, depth? }', ['compId'],
     { compId: { type: 'integer' }, deep: { type: 'boolean' }, depth: { type: 'integer' } }),
-  getCompDetails: withDesc('Comp settings + all layers.', ['compId']),
+  getCompDetails: withDesc('Comp settings + all layers.', ['compId'], { compId: { type: 'integer' } }),
   getProjectItems: withDesc('List all project items.', []),
 
   resolveSafePosition: {
@@ -620,6 +700,16 @@ Object.assign(COMMANDS, {
       'bottomCenter|bottomRight), safeArea? ({top,right,bottom,left}, each a fraction of comp width [left/right] or height ' +
       '[top/bottom]; defaults from config.json, currently 0.08 each side) }. Returns { x, y, safeArea: {left,top,right,bottom} } (px) — ' +
       'x/y are the point for that position WITHIN the safe rect. docs/ROADMAP.md Faz 2 madde 2.',
+    schema: {
+      compId: { type: 'integer' }, position: { type: 'string' },
+      safeArea: {
+        type: 'object',
+        properties: {
+          top: { type: 'number' }, right: { type: 'number' },
+          bottom: { type: 'number' }, left: { type: 'number' },
+        },
+      },
+    },
     validate(p) {
       const base = requireFields(p, ['compId', 'position']);
       const POSITIONS = [
@@ -656,13 +746,22 @@ Object.assign(COMMANDS, {
   clearRenderQueue: withDesc('Remove all Render Queue items.', []),
 
   // comp
-  setCompSettings: withDesc('Update comp settings (name/size/duration/fps/bg/motionBlur/workArea/...). { compId, ... }', ['compId']),
-  addCompMarker: withDesc('Add a comp marker. { compId, time, comment?, duration? }', ['compId', 'time']),
+  setCompSettings: withDesc('Update comp settings (name/size/duration/fps/bg/motionBlur/workArea/...). { compId, ... }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' }, width: { type: 'integer' }, height: { type: 'integer' },
+      pixelAspect: { type: 'number' }, duration: { type: 'number' }, frameRate: { type: 'number' },
+      bgColor: { type: 'array', items: { type: 'number' } }, motionBlur: { type: 'boolean' },
+      workAreaStart: { type: 'number' }, workAreaDuration: { type: 'number' },
+      resolutionFactor: { type: 'array', items: { type: 'number' } } }),
+  addCompMarker: withDesc('Add a comp marker. { compId, time, comment?, duration? }', ['compId', 'time'],
+    { compId: { type: 'integer' }, time: { type: 'number' }, comment: { type: 'string' }, duration: { type: 'number' } }),
 
   // layer
-  setBlendMode: withDesc('Set a layer blend mode. { compId, layer, mode }', ['compId', 'mode']),
-  setTrackMatte: withDesc('Set a track matte (alpha|alphaInverted|luma|lumaInverted|none). { compId, layer, type, matteLayer? }', ['compId']),
-  setLayerFlag: withDesc('Toggle a layer flag (motionBlur|adjustment|guide|threeD|collapse|solo|shy|lock|frameBlending). { compId, layer, flag, value? }', ['compId', 'flag']),
+  setBlendMode: withDesc('Set a layer blend mode. { compId, layer, mode }', ['compId', 'mode'],
+    { compId: { type: 'integer' }, mode: { type: 'string' } }),
+  setTrackMatte: withDesc('Set a track matte (alpha|alphaInverted|luma|lumaInverted|none). { compId, layer, type, matteLayer? }', ['compId'],
+    { compId: { type: 'integer' }, type: { type: 'string' }, matteLayer: { anyOf: [{ type: 'string' }, { type: 'number' }] } }),
+  setLayerFlag: withDesc('Toggle a layer flag (motionBlur|adjustment|guide|threeD|collapse|solo|shy|lock|frameBlending). { compId, layer, flag, value? }', ['compId', 'flag'],
+    { compId: { type: 'integer' }, flag: { type: 'string' }, value: { type: 'boolean' } }),
   addLayerMarker: withDesc('Add a layer marker. { compId, layer, time, comment? }', ['compId', 'time']),
   setTimeStretch: withDesc('Set layer time stretch percent. { compId, layer, stretch }', ['compId', 'stretch']),
   enableTimeRemap: withDesc('Enable/disable time remapping. { compId, layer, enabled? }', ['compId']),
@@ -698,13 +797,18 @@ Object.assign(COMMANDS, {
   batch: withDesc('Run many commands in ONE round-trip + ONE undo group. { commands:[{command,params}], undoName?, stopOnError? }', ['commands']),
   getCompTime: withDesc('Read comp playhead/work-area/frame info. { compId }', ['compId']),
   duplicateComp: withDesc('Duplicate a comp. { compId, name? }', ['compId']),
-  alignLayer: withDesc('Align a layer (center|hcenter|vcenter|left|right|top|bottom). { compId, layer, align, margin? }', ['compId']),
+  alignLayer: withDesc('Align a layer (center|hcenter|vcenter|left|right|top|bottom). { compId, layer, align, margin? }', ['compId'],
+    { compId: { type: 'integer' }, align: { type: 'string' }, margin: { type: 'number' } }),
   alignAnchor: {
     description:
       'Sit a layer\'s own anchor point on an edge/corner/center of its own rendered content (via sourceRectAtTime) — for directional ' +
       'wipes / a bar that grows from one edge. { compId, layer, h? (left|center|right, default center), v? (top|middle|bottom, default ' +
       'middle), time?, keepPosition? (default true — compensates Position by the scaled delta so the layer doesn\'t visibly move; does ' +
       'NOT account for rotation) }. Returns { anchorPoint, position, h, v }. docs/ROADMAP.md Faz 2 madde 4.',
+    schema: {
+      compId: { type: 'integer' }, h: { type: 'string' }, v: { type: 'string' },
+      time: { type: 'number' }, keepPosition: { type: 'boolean' },
+    },
     validate(p) {
       const base = requireFields(p, ['compId']);
       if (p.h !== undefined && !['left', 'center', 'right'].includes(p.h)) {
@@ -717,8 +821,10 @@ Object.assign(COMMANDS, {
     },
   },
   sequenceLayers: withDesc('Offset layers in time. { compId, layers[], step?, start? }', ['compId', 'layers']),
-  setWorkArea: withDesc('Set the comp work area. { compId, start, duration }', ['compId']),
-  clearComp: withDesc('Remove all layers in a comp. { compId, keepPrefix? }', ['compId']),
+  setWorkArea: withDesc('Set the comp work area. { compId, start, duration }', ['compId'],
+    { compId: { type: 'integer' }, start: { type: 'number' }, duration: { type: 'number' } }),
+  clearComp: withDesc('Remove all layers in a comp. { compId, keepPrefix? }', ['compId'],
+    { compId: { type: 'integer' }, keepPrefix: { type: 'string' } }),
 
   // one-call realistic fire preset (flame noise + displace + colorize + embers + glow)
   fireEffect: withDesc('Add a realistic fire effect to a comp. { compId, center?, size?, width?, height?, embers?, highlight?, midtone?, glowRadius?, glowIntensity?, ambient?, prefix? }', ['compId']),

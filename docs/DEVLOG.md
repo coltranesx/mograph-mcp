@@ -12,6 +12,44 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-11 (2)
+- **MCP tool şema tamamlama — Tier 1 bitti (25 komut).** `setKeyframe`,
+  `setParent`, `moveLayer`, `duplicateLayer`, `deleteLayer`, `setEase`,
+  `setInterpolation`, `removeKeyframes`, `addMask`, `addRectMask`,
+  `setMaskProperty`, `setTextDocument`, `addTextAnimator`, `alignLayer`,
+  `alignAnchor`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`,
+  `setCompSettings`, `setWorkArea`, `clearComp`, `getProperty`,
+  `getCompDetails`, `resolveSafePosition`, `measureText` — hepsine
+  `shared/src/commands.js`'te gerçek `inputSchema` yazıldı (handler'ları
+  `panel/jsx/commands/{keyframe,layer,mask,text,advanced,comp,introspect}.jsx`
+  okunarak) ve `controller/src/mcpServer.js`'in `CORE` setine eklenip
+  top-level `ae_<komut>` tool'u olarak açıldı. İki ortak şema parçası
+  eklendi: `PROPERTY_SCHEMA` (friendly string | array property-path —
+  SHAPE-tipi yollar için) ve `VALUE_SCHEMA` (number/string/boolean/array/
+  object — SHAPE keyframe değeri `{vertices[],...}` bir obje olduğu için).
+  Bu arada zaten CORE'da olan `setKeyframes`'in şemasına da eksik olan
+  `property: PROPERTY_SCHEMA` eklendi (aynı array-path mangling riski
+  oradaydı, kapsam dahilinde küçük düzeltme). `npm test` yeşil (226/226).
+  **Canlı AE doğrulaması yapılamadı** — bu oturumda After Effects açık
+  değildi (`ae_status` → `connected: false`, controller ayaktaydı ama
+  panel yoktu); şemalar sadece kod okunarak ve headless simülatör
+  testleriyle doğrulandı, gerçek AE round-trip'i henüz yok. Sıradaki iş:
+  Tier 2 (13 komut), sonra kullanıcı AE'yi açtığında canlı smoke test.
+
+## 2026-08-11
+- **MCP tool şema tamamlama planı** çıkarıldı ve ROADMAP'e yazıldı (bkz.
+  "Bilinen eksikler" → "MCP tool şema tamamlama"). Tetikleyici: Premiere-pro
+  MCP (280 top-level tool) ile mograph-mcp (client'a görünen ~40 tool)
+  arasındaki görünürlük farkı sohbette konuşuldu — `ae_list_commands`'taki
+  112 iç komuttan 82'sinin top-level tool'u/gerçek `inputSchema`'sı yok.
+  Karar: sayıyı kozmetik olarak şişirmek yerine (çoğu zaten `ae_command`
+  üzerinden erişilebiliyor) her komuta gerçek şema yazıp kademeli terfi
+  ettirmek. 82 komut 4 kademeye ayrıldı (çekirdek edit / vitrin / ikincil /
+  düşük öncelik-getter+niş), Tier 1+2 (38 komut) ilk sırada. Hepsi
+  Sonnet'te kalacak — Haiku'ya düşürme, yanlış şemanın tool çağrılarını
+  sessizce bozma riski nedeniyle reddedildi. Henüz uygulamaya
+  başlanmadı, sadece plan.
+
 ## 2026-08-10 (28)
 - **Login item isim/ikon düzeltmesi denendi, görsel sonuç alınamadı —
   kod yine de kalıcı, teknik olarak daha doğru.** `tools/service.mjs`'in

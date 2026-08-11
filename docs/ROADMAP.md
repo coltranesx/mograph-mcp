@@ -325,3 +325,57 @@ Shape tarafı:
   scale/skew/skewAxis/rotation/opacity, `ADBE Vector Transform Group`
   üzerinde) eklendi, hiçbir alanı gated değil. **Shape tarafındaki bilinen
   eksikler listesi tamamen bitti.**
+
+MCP tool şema tamamlama (2026-08-11):
+
+`ae_list_commands` içindeki 112 iç komuttan **82'sinin top-level MCP
+tool'u / gerçek `inputSchema`'sı yok** (`schema: null`, sadece
+`ae_command` dispatcher'ı üzerinden erişilebiliyor). Tetikleyici: dış
+görünürlük kıyası — mograph-mcp client'a ~40 tool gösteriyor, premiere-pro
+MCP 280 tool gösteriyor; MCP dizinleri (Smithery/mcp.so) ve tool listeleri
+`tools/list`'i sayar, `ae_list_commands`'ı saymaz. Hedef **kozmetik sayı
+şişirme değil** — her komut için gerçek şema yazıp top-level tool'a
+terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
+öncelik sırasıyla:
+
+1. ~~**Tier 1 — çekirdek edit (25 komut, ŞİMDİ):** `setKeyframe`,
+   `setParent`, `moveLayer`, `duplicateLayer`, `deleteLayer`, `setEase`,
+   `setInterpolation`, `removeKeyframes`, `addMask`, `addRectMask`,
+   `setMaskProperty`, `setTextDocument`, `addTextAnimator`, `alignLayer`,
+   `alignAnchor`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`,
+   `setCompSettings`, `setWorkArea`, `clearComp`, `getProperty`,
+   `getCompDetails`, `resolveSafePosition`, `measureText`.~~ ✅ bitti
+   (DEVLOG 2026-08-11 (2)) — 25/25 komuta gerçek `inputSchema` yazıldı ve
+   `CORE`'a terfi ettirildi, `npm test` yeşil. Canlı AE round-trip'i o
+   oturumda AE kapalı olduğu için yapılamadı, sadece kod okuma + headless
+   simülatör testiyle doğrulandı — sıradaki AE oturumunda smoke test edilmeli.
+2. **Tier 2 — vitrin/farklılaştırıcı (13 komut, ŞİMDİ):**
+   `applyWordReveal`, `applyCharScale`, `applyLowerThird`, `fireEffect`,
+   `smokeEffect`, `glitchEffect`, `cinematicGrade`, `neonGlow`,
+   `addShapeOperator`, `addPathShape`, `addResponsiveBox`, `addCamera`,
+   `addLight`.
+3. **Tier 3 — ikincil yardımcılar (26 komut, sonra):** `listEffects`,
+   `addExpressionControl`, `removeExpression`, `enableExpression`,
+   `compFromFootage`, `addCompMarker`, `addLayerMarker`,
+   `addToRenderQueue`, `listRenderQueue`, `setOutputModule`,
+   `clearRenderQueue`, `getProjectItems`, `listTextStyles`, `getCompTime`,
+   `duplicateComp`, `sequenceLayers`, `setTimeStretch`, `enableTimeRemap`,
+   `replaceSource`, `createFolder`, `moveToFolder`, `setProxy`,
+   `renameItem`, `deleteItem`, `addLayerStyle`, `removeLayersByPrefix`.
+4. **Tier 4a — parametresiz/az parametreli getter'lar (13 komut, düşük
+   öncelik):** `ping`, `getProjectInfo`, `listComps`, `undo`, `redo`,
+   `purge`, `getSelection`, `getAppInfo`, `getEnvironment`, `listPlugins`,
+   `lumetriParams`, `setActiveComp`, `setCompTime`. `schema: null` burada
+   zaten doğru (gerçek argüman yok) — gap sayılmaz, istenirse hızlıca
+   yapılır.
+5. **Tier 4b — niş/riskli (5 komut, flatten etmeden önce ayrı tasarım
+   ister):** `quitApp` (yanlışlıkla AE'yi kapatabilir), `executeMenuCommand`
+   / `findMenuCommand` (serbest metin, geniş yüzey), `keystroke` (OS-level),
+   `batch` (meta-komut, kendi şeması ayrı).
+
+**Model:** hepsi Sonnet'te (`ae-mcp-expert` frontmatter zaten `model:
+sonnet`) — Haiku'ya düşürme değerlendirildi, yanlış şemanın gerçek tool
+çağrılarını sessizce bozma riski nedeniyle vazgeçildi.
+
+**Şu an:** Tier 1 bitti (yukarıda ✅). Tier 2 (13 komut) sırada. Tier
+3/4a/4b bu iş bitmeden ele alınmayacak.
