@@ -77,6 +77,25 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
   sessizce bozma riski nedeniyle reddedildi. Henüz uygulamaya
   başlanmadı, sadece plan.
 
+## 2026-08-11 (4)
+- **Tier 1+2 (38 komut) canlı AE'de doğrulandı.** Önceki oturumda (2) ve
+  (3) AE kapalıyken yapılmıştı, sadece kod okuma + headless simülatörle
+  doğrulanmıştı. Bu oturumda: controller restart edildi (`npm run
+  service:restart`, kod değişikliklerinin yeni process'e yansıması için —
+  eski pid hâlâ eski `CORE` set'ini serviyordu), `claude mcp list` üzerinden
+  `tools/list` çekilip 78 tool (40 eski + 38 yeni) doğrulandı. ToolSearch
+  bu oturumda henüz 38'ini indekslemedi (bilinen "mid-session ToolSearch
+  gap" — bkz. proje dışı memory), o yüzden `mcp-direct-call` yöntemiyle
+  (ham HTTP JSON-RPC, `curl`/Python) doğrudan sunucuya karşı test edildi.
+  Test comp'ta (`tier12_livetest`) 38 komutun hepsi ayrı ayrı çağrıldı:
+  ilk turda 37/38 geçti, `addShapeOperator` shape-olmayan bir layer'a
+  (solid) karşı çağrıldığı için beklenen "target vector group not found"
+  hatasını verdi — test kurulumu hatasıydı, gerçek shape layer'a karşı
+  tekrarlanınca geçti (38/38). `addTextAnimator`'ın nested
+  `properties`/`selector` objeleri dahil hiçbir yerde marshalling sorunu
+  çıkmadı — önceki oturumun en riskli gördüğü şema sağlam çıktı.
+  Test comp temizlenip (`clearComp`) proje kaydedilmeden bırakıldı.
+
 ## 2026-08-10 (28)
 - **Login item isim/ikon düzeltmesi denendi, görsel sonuç alınamadı —
   kod yine de kalıcı, teknik olarak daha doğru.** `tools/service.mjs`'in

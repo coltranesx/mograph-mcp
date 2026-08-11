@@ -346,9 +346,7 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
    `setCompSettings`, `setWorkArea`, `clearComp`, `getProperty`,
    `getCompDetails`, `resolveSafePosition`, `measureText`.~~ ✅ bitti
    (DEVLOG 2026-08-11 (2)) — 25/25 komuta gerçek `inputSchema` yazıldı ve
-   `CORE`'a terfi ettirildi, `npm test` yeşil. Canlı AE round-trip'i o
-   oturumda AE kapalı olduğu için yapılamadı, sadece kod okuma + headless
-   simülatör testiyle doğrulandı — sıradaki AE oturumunda smoke test edilmeli.
+   `CORE`'a terfi ettirildi, `npm test` yeşil.
 2. ~~**Tier 2 — vitrin/farklılaştırıcı (13 komut, ŞİMDİ):**
    `applyWordReveal`, `applyCharScale`, `applyLowerThird`, `fireEffect`,
    `smokeEffect`, `glitchEffect`, `cinematicGrade`, `neonGlow`,
@@ -360,9 +358,15 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
    `v.optionalObject` ile JSON-stringified geldiğinde de tolere ediliyor
    (top-level tool'a terfi ederken addShape'in fillGradient'te zaten çözdüğü
    aynı marshalling riskine giriyorlardı — bkz. `shared/src/validate.js`
-   `optionalObject` yorumu). Canlı AE round-trip'i o oturumda AE kapalı
-   olduğu için yapılamadı — sıradaki AE oturumunda smoke test edilmeli.
-   **Tier 1 + 2 (38/38) tamamlandı.**
+   `optionalObject` yorumu).
+   **Tier 1 + 2 (38/38) tamamlandı, canlı AE'de doğrulandı** (DEVLOG
+   2026-08-11 (4)) — 38 komutun 38'i de top-level `ae_*` tool olarak gerçek
+   AE'ye (26.3x87) karşı çağrıldı, hepsi başarılı; `addShapeOperator` ilk
+   denemede shape-olmayan bir layer'a karşı çağrıldığı için beklenen hatayı
+   verdi (test setup hatası, tool bug'ı değil), shape layer'a karşı
+   tekrarlanınca geçti. `addTextAnimator`'ın nested
+   `properties`/`selector`/`animate` şeması dahil hiçbir yerde marshalling
+   sorunu çıkmadı.
 3. **Tier 3 — ikincil yardımcılar (26 komut, sonra):** `listEffects`,
    `addExpressionControl`, `removeExpression`, `enableExpression`,
    `compFromFootage`, `addCompMarker`, `addLayerMarker`,
