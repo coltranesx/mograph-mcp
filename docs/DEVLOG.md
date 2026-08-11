@@ -12,6 +12,33 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-11 (3)
+- **MCP tool şema tamamlama — Tier 2 bitti (13 komut), 38/38 (Tier 1+2)
+  tamam.** `applyWordReveal`, `applyCharScale`, `applyLowerThird`,
+  `fireEffect`, `smokeEffect`, `glitchEffect`, `cinematicGrade`, `neonGlow`,
+  `addShapeOperator`, `addPathShape`, `addResponsiveBox`, `addCamera`,
+  `addLight` — hepsine `shared/src/commands.js`'te gerçek `inputSchema`
+  yazıldı (`panel/jsx/commands/{text,fire,vfx,layer}.jsx` okunarak) ve
+  `controller/src/mcpServer.js`'in `CORE` setine eklendi. Yol boyunca iki
+  gerçek düzeltme (kozmetik değil): `addShapeOperator.params` ve
+  `applyLowerThird.accentLine`'ın object-tipli alanları artık bir tool
+  şemasında `type:'object'` deklare edildiğinde bazı MCP client'ların onu
+  JSON-stringified string olarak gönderdiği bilinen sorununa karşı
+  `v.optionalObject` ile tolere ediliyor (daha önce çıplak `isPlainObject`
+  kontrolü vardı — top-level tool'a terfi etmeden önce zararsızdı çünkü hiç
+  tetiklenmiyordu, terfi ederken addShape'in fillGradient/rampGradient'te
+  zaten çözdüğü aynı riske giriyorlardı). `npm test` yeşil (226/226).
+  **Canlı AE doğrulaması yine yapılamadı** (AE bu oturumda hiç açık
+  değildi) — sıradaki AE oturumunda tüm 38 tool'un gerçek round-trip smoke
+  testi gerekiyor, özellikle: `addTextAnimator`'ın nested `properties`/
+  `selector`/`animate` objeleri (en karmaşık yeni şema, JSON-stringified-
+  object riskine en açık olan — ama `AEB.resolveProperty`/JSX tarafı zaten
+  obje bekliyor, `v.optionalObject`'siz bırakıldı çünkü mevcut `validate()`
+  zaten sadece `requireFields` yapıyordu ve bunu genişletmek kapsam dışıydı;
+  canlıda string geldiği görülürse aynı desenle düzeltilmeli) ve
+  `setKeyframe`/`setEase`/vb.'nin `property` alanındaki array-path (SHAPE
+  path) değerlerinin MCP üzerinden bozulmadan geçtiği.
+
 ## 2026-08-11 (2)
 - **MCP tool şema tamamlama — Tier 1 bitti (25 komut).** `setKeyframe`,
   `setParent`, `moveLayer`, `duplicateLayer`, `deleteLayer`, `setEase`,

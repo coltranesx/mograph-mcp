@@ -28,6 +28,11 @@ const CORE = new Set([
   'setTextDocument', 'addTextAnimator', 'alignLayer', 'alignAnchor', 'setBlendMode',
   'setTrackMatte', 'setLayerFlag', 'setCompSettings', 'setWorkArea', 'clearComp',
   'getProperty', 'getCompDetails', 'resolveSafePosition', 'measureText',
+
+  // Tier 2 — vitrin/farklılaştırıcı (same roadmap item)
+  'applyWordReveal', 'applyCharScale', 'applyLowerThird', 'fireEffect', 'smokeEffect',
+  'glitchEffect', 'cinematicGrade', 'neonGlow', 'addShapeOperator', 'addPathShape',
+  'addResponsiveBox', 'addCamera', 'addLight',
 ]);
 
 const META_TOOLS = [

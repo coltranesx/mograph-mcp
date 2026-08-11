@@ -237,8 +237,11 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, name: { type: 'string' }, duration: { type: 'number' } }),
   addAdjustmentLayer: withDesc('Add an adjustment layer. { compId, name? }', ['compId'],
     { compId: { type: 'integer' }, name: { type: 'string' } }),
-  addCamera: withDesc('Add a camera. { compId, name?, center? }', ['compId']),
-  addLight: withDesc('Add a light. { compId, name?, lightType?, center? }', ['compId']),
+  addCamera: withDesc('Add a camera. { compId, name?, center? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' }, center: { type: 'array', items: { type: 'number' } } }),
+  addLight: withDesc('Add a light. { compId, name?, lightType? (0=parallel,1=spot,2=point,3=ambient), center? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' }, lightType: { type: 'integer' },
+      center: { type: 'array', items: { type: 'number' } } }),
   addShape: {
     description:
       'Add a shape layer. { compId, shape? (rectangle|ellipse|polystar, default rectangle), size? ([w,h], rectangle/ellipse only), ' +
@@ -448,8 +451,18 @@ Object.assign(COMMANDS, {
       return base;
     },
   },
-  addPathShape: withDesc('Shape layer with a custom bezier path. { compId, vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId']),
-  addResponsiveBox: withDesc('A rect shape layer whose size tracks another layer\'s rendered bounds LIVE via an expression (re-evaluates every frame, e.g. if fitTo\'s text changes later) — not a one-time size like addShape. { compId, fitTo (layer|layerIndex|layerName, required), padding? ([w,h], default [60,40]), fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId', 'fitTo']),
+  addPathShape: withDesc('Shape layer with a custom bezier path. { compId, vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId'],
+    { compId: { type: 'integer' }, vertices: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      inTangents: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      outTangents: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      closed: { type: 'boolean' }, fillColor: { type: 'array', items: { type: 'number' } },
+      strokeColor: { type: 'array', items: { type: 'number' } }, strokeWidth: { type: 'number' },
+      position: { type: 'array', items: { type: 'number' } }, name: { type: 'string' } }),
+  addResponsiveBox: withDesc('A rect shape layer whose size tracks another layer\'s rendered bounds LIVE via an expression (re-evaluates every frame, e.g. if fitTo\'s text changes later) — not a one-time size like addShape. { compId, fitTo (layer|layerIndex|layerName, required), padding? ([w,h], default [60,40]), fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId', 'fitTo'],
+    { compId: { type: 'integer' }, fitTo: { anyOf: [{ type: 'string' }, { type: 'number' }] },
+      padding: { type: 'array', items: { type: 'number' } }, fillColor: { type: 'array', items: { type: 'number' } },
+      strokeColor: { type: 'array', items: { type: 'number' } }, strokeWidth: { type: 'number' },
+      position: { type: 'array', items: { type: 'number' } }, name: { type: 'string' } }),
   addShapeOperator: {
     description:
       `Add a shape operator to a shape layer's vector group. { compId, layer, operator (${Object.keys(SHAPE_OPERATORS).join('|')}), group?, params?, name? }. ` +
@@ -458,6 +471,14 @@ Object.assign(COMMANDS, {
       '(confirmed 26.3x87, docs/DEVLOG.md 2026-08-09), sometimes after already mutating state — not safe to expose. To control final stacking order, ' +
       'call addShapeOperator repeatedly in the order you want operators to end up in. ' +
       'operator is restricted to a whitelist of live-confirmed matchNames, see docs/ROADMAP.md "Faz 1.B" — most documented candidates are NOT yet enabled.',
+    // schema: now exposed as a top-level ae_addShapeOperator tool (Tier 2,
+    // docs/ROADMAP.md "MCP tool şema tamamlama") — group is a property-path
+    // array (see PROPERTY_SCHEMA's comment on setKeyframe), params an object.
+    schema: {
+      compId: { type: 'integer' }, operator: { type: 'string' },
+      group: PROPERTY_SCHEMA,
+      params: { type: 'object' }, name: { type: 'string' },
+    },
     validate(p) {
       const base = requireFields(p, ['compId', 'operator']);
       const op = String(p.operator);
@@ -469,8 +490,14 @@ Object.assign(COMMANDS, {
           `operator must be one of: ${Object.keys(SHAPE_OPERATORS).join(', ')} (got "${p.operator}").${hint}`,
         );
       }
-      if (p.params !== undefined && p.params !== null && !isPlainObject(p.params)) {
-        throw new ValidationError('params must be an object');
+      if (p.params !== undefined && p.params !== null) {
+        // v.optionalObject (not a bare isPlainObject check) — now that this
+        // is a typed top-level ae_addShapeOperator tool, `params` can arrive
+        // JSON-stringified the same way addShape's fillGradient/rampGradient
+        // do (confirmed live 2026-08-10, see validate.js's optionalObject
+        // comment) — a bare isPlainObject check would reject a well-formed
+        // call from that client instead of tolerating it.
+        base.params = v.optionalObject(p, 'params');
       }
       return base;
     },
@@ -607,8 +634,23 @@ Object.assign(COMMANDS, {
   },
   applyTextPreset: withDesc('Apply a named text-animation preset. { compId, layer, preset: wordReveal|charScale|bunchRotate|blurFade }', ['compId', 'preset'],
     { compId: { type: 'integer' }, preset: { type: 'string' } }),
-  applyWordReveal: withDesc('Deterministic text-driven per-word reveal. Splits text (\\n = lines) into words, measures each glyph run, centers each line on centerX and the block on centerY, animates each word as its own layer with a cubic-bezier and overlapping cascade. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, revealFrames?, stagger?, startFrame?, bezier?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
-  applyCharScale: withDesc('Deterministic letter-based char-scale reveal. Splits text into characters (kerning-correct via prefix measurement), each letter its own measured/positioned layer scaling up + rising + fading with an overlapping cascade and a cubic-bezier. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, scaleFrom?, revealFrames?, stagger?, startFrame?, bezier?, tracking?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text']),
+  applyWordReveal: withDesc('Deterministic text-driven per-word reveal. Splits text (\\n = lines) into words, measures each glyph run, centers each line on centerX and the block on centerY, animates each word as its own layer with a cubic-bezier and overlapping cascade. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, revealFrames?, stagger?, startFrame?, bezier?, motionBlur?, tracking?, trimIn?, trimOut?, namePrefix?, outFrame? (exit sweep, off unless given), outRevealFrames?, outStagger? }', ['compId', 'text'],
+    { compId: { type: 'integer' }, text: { type: 'string' }, font: { type: 'string' },
+      fontSize: { type: 'number' }, fillColor: { type: 'array', items: { type: 'number' } },
+      centerX: { type: 'number' }, centerY: { type: 'number' }, lineHeight: { type: 'number' },
+      rise: { type: 'number' }, revealFrames: { type: 'number' }, stagger: { type: 'number' },
+      startFrame: { type: 'number' }, bezier: { type: 'array', items: { type: 'number' } },
+      motionBlur: { type: 'boolean' }, tracking: { type: 'number' },
+      trimIn: { type: 'number' }, trimOut: { type: 'number' }, namePrefix: { type: 'string' },
+      outFrame: { type: 'number' }, outRevealFrames: { type: 'number' }, outStagger: { type: 'number' } }),
+  applyCharScale: withDesc('Deterministic letter-based char-scale reveal. Splits text into characters (kerning-correct via prefix measurement), each letter its own measured/positioned layer scaling up + rising + fading with an overlapping cascade and a cubic-bezier. { compId, text, font?, fontSize?, fillColor?, centerX?, centerY?, lineHeight?, rise?, scaleFrom?, revealFrames?, stagger?, startFrame?, bezier?, tracking?, motionBlur?, trimIn?, trimOut?, namePrefix? }', ['compId', 'text'],
+    { compId: { type: 'integer' }, text: { type: 'string' }, font: { type: 'string' },
+      fontSize: { type: 'number' }, fillColor: { type: 'array', items: { type: 'number' } },
+      centerX: { type: 'number' }, centerY: { type: 'number' }, lineHeight: { type: 'number' },
+      rise: { type: 'number' }, scaleFrom: { type: 'number' }, revealFrames: { type: 'number' },
+      stagger: { type: 'number' }, startFrame: { type: 'number' }, bezier: { type: 'array', items: { type: 'number' } },
+      tracking: { type: 'number' }, motionBlur: { type: 'boolean' },
+      trimIn: { type: 'number' }, trimOut: { type: 'number' }, namePrefix: { type: 'string' } }),
   applyTextStyle: withDesc('Combinatorial text preset: apply one of 4 styles x 8 eases by NAME. style: wordReveal|charScale|bunchRotate|blurFade; ease: easeInOutCubic|easeOutQuart|easeInOutQuart|easeOutQuint|easeInOutQuint|easeOutExpo|easeInOutExpo|easeInOutCirc (or pass bezier[4]). wordReveal is fully wired (deterministic); the other three are interim. { compId, style, ease|bezier, text, ...style params }', ['compId', 'style'],
     { compId: { type: 'integer' }, style: { type: 'string' }, ease: { type: 'string' },
       bezier: { type: 'array', items: { type: 'number' } }, text: { type: 'string' },
@@ -624,6 +666,31 @@ Object.assign(COMMANDS, {
       'or { width?, color?, gap? } — a thin bar spanning the block, opposite the text on the anchored side, fixed size computed once, not ' +
       'expression-driven; for that, use addResponsiveBox directly) }. Returns { controller, layers[], inFrame, outFrame }. ' +
       'docs/ROADMAP.md Faz 2 madde 5/6.',
+    // schema: now exposed as a top-level ae_applyLowerThird tool (Tier 2,
+    // docs/ROADMAP.md "MCP tool şema tamamlama").
+    schema: {
+      compId: { type: 'integer' }, title: { type: 'string' }, subtitle: { type: 'string' },
+      style: { type: 'string' }, ease: { type: 'string' }, position: { type: 'string' },
+      font: { type: 'string' }, titleFontSize: { type: 'number' }, subtitleFontSize: { type: 'number' },
+      titleColor: { type: 'array', items: { type: 'number' } },
+      subtitleColor: { type: 'array', items: { type: 'number' } },
+      gap: { type: 'number' },
+      safeArea: {
+        type: 'object',
+        properties: {
+          top: { type: 'number' }, right: { type: 'number' },
+          bottom: { type: 'number' }, left: { type: 'number' },
+        },
+      },
+      inFrame: { type: 'number' }, outFrame: { type: 'number' }, subtitleDelay: { type: 'number' },
+      namePrefix: { type: 'string' },
+      accentLine: {
+        anyOf: [
+          { type: 'boolean' },
+          { type: 'object', properties: { width: { type: 'number' }, color: { type: 'array', items: { type: 'number' } }, gap: { type: 'number' } } },
+        ],
+      },
+    },
     validate(p) {
       const base = requireFields(p, ['compId', 'title']);
       if (typeof p.title !== 'string' || p.title.length === 0) {
@@ -632,9 +699,14 @@ Object.assign(COMMANDS, {
       if (p.subtitle !== undefined && p.subtitle !== null && typeof p.subtitle !== 'string') {
         throw new ValidationError('subtitle must be a string');
       }
-      if (p.accentLine !== undefined && p.accentLine !== null && p.accentLine !== true && p.accentLine !== false
-        && !isPlainObject(p.accentLine)) {
-        throw new ValidationError('accentLine must be true/false or an object { width?, color?, gap? }');
+      if (p.accentLine !== undefined && p.accentLine !== null && p.accentLine !== true && p.accentLine !== false) {
+        // v.optionalObject (not a bare isPlainObject check) — now that this
+        // is a typed top-level tool, accentLine's object branch can arrive
+        // JSON-stringified the same way addShape's fillGradient/
+        // addShapeOperator's params do (confirmed live 2026-08-10, see
+        // validate.js's optionalObject comment) — tolerate it instead of
+        // rejecting a well-formed call.
+        base.accentLine = v.optionalObject(p, 'accentLine');
       }
       if (p.style !== undefined) {
         const style = String(p.style).toLowerCase().replace(/[^a-z]/g, '');
@@ -827,11 +899,22 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, keepPrefix: { type: 'string' } }),
 
   // one-call realistic fire preset (flame noise + displace + colorize + embers + glow)
-  fireEffect: withDesc('Add a realistic fire effect to a comp. { compId, center?, size?, width?, height?, embers?, highlight?, midtone?, glowRadius?, glowIntensity?, ambient?, prefix? }', ['compId']),
-  smokeEffect: withDesc('Add rising smoke to a comp. { compId, center?, size?, color?, opacity?, prefix? }', ['compId']),
-  glitchEffect: withDesc('Apply a digital glitch to a layer. { compId, layer, amount?, size?, shake? }', ['compId']),
-  cinematicGrade: withDesc('Apply a cinematic Lumetri grade to a layer. { compId, layer, warm?, contrast?, saturation? }', ['compId']),
-  neonGlow: withDesc('Apply a neon glow stack to a layer. { compId, layer, radius? }', ['compId']),
+  fireEffect: withDesc('Add a realistic fire effect to a comp. { compId, center?, size?, width?, height?, embers?, highlight?, midtone?, glowRadius?, glowIntensity?, ambient?, prefix?, compMotionBlur? (default true) }', ['compId'],
+    { compId: { type: 'integer' }, center: { type: 'array', items: { type: 'number' } }, size: { type: 'number' },
+      width: { type: 'number' }, height: { type: 'number' }, embers: { type: 'boolean' },
+      highlight: { type: 'array', items: { type: 'number' } }, midtone: { type: 'array', items: { type: 'number' } },
+      glowRadius: { type: 'number' }, glowIntensity: { type: 'number' }, ambient: { type: 'number' },
+      prefix: { type: 'string' }, compMotionBlur: { type: 'boolean' } }),
+  smokeEffect: withDesc('Add rising smoke to a comp. { compId, center?, size?, width?, height?, color?, opacity?, prefix? }', ['compId'],
+    { compId: { type: 'integer' }, center: { type: 'array', items: { type: 'number' } }, size: { type: 'number' },
+      width: { type: 'number' }, height: { type: 'number' }, color: { type: 'array', items: { type: 'number' } },
+      opacity: { type: 'number' }, prefix: { type: 'string' } }),
+  glitchEffect: withDesc('Apply a digital glitch to a layer. { compId, layer, amount?, size?, shake? }', ['compId'],
+    { compId: { type: 'integer' }, amount: { type: 'number' }, size: { type: 'number' }, shake: { type: 'number' } }),
+  cinematicGrade: withDesc('Apply a cinematic Lumetri grade to a layer. { compId, layer, warm?, contrast?, saturation? }', ['compId'],
+    { compId: { type: 'integer' }, warm: { type: 'boolean' }, contrast: { type: 'number' }, saturation: { type: 'number' } }),
+  neonGlow: withDesc('Apply a neon glow stack to a layer. { compId, layer, radius? }', ['compId'],
+    { compId: { type: 'integer' }, radius: { type: 'number' } }),
 
   // third-party plugin wrappers (Plugin Everything) — friendly params -> stable matchNames
   deepGlow: withDesc('Apply/Update Deep Glow 2 (PEDG2) on a layer by friendly name. { compId, layer, radius?, exposure?, threshold?, glowMode?, color?, colorOuter?, tintStrength?, params? }', ['compId'],

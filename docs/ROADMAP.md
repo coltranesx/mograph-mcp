@@ -349,11 +349,20 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
    `CORE`'a terfi ettirildi, `npm test` yeşil. Canlı AE round-trip'i o
    oturumda AE kapalı olduğu için yapılamadı, sadece kod okuma + headless
    simülatör testiyle doğrulandı — sıradaki AE oturumunda smoke test edilmeli.
-2. **Tier 2 — vitrin/farklılaştırıcı (13 komut, ŞİMDİ):**
+2. ~~**Tier 2 — vitrin/farklılaştırıcı (13 komut, ŞİMDİ):**
    `applyWordReveal`, `applyCharScale`, `applyLowerThird`, `fireEffect`,
    `smokeEffect`, `glitchEffect`, `cinematicGrade`, `neonGlow`,
    `addShapeOperator`, `addPathShape`, `addResponsiveBox`, `addCamera`,
-   `addLight`.
+   `addLight`.~~ ✅ bitti (DEVLOG 2026-08-11 (3)) — 13/13 komuta gerçek
+   `inputSchema` yazıldı ve `CORE`'a terfi ettirildi, `npm test` yeşil.
+   Yol boyunca iki gerçek düzeltme çıktı (kozmetik değil): `addShapeOperator`
+   ve `applyLowerThird`'ın `params`/`accentLine` object-tipli alanları artık
+   `v.optionalObject` ile JSON-stringified geldiğinde de tolere ediliyor
+   (top-level tool'a terfi ederken addShape'in fillGradient'te zaten çözdüğü
+   aynı marshalling riskine giriyorlardı — bkz. `shared/src/validate.js`
+   `optionalObject` yorumu). Canlı AE round-trip'i o oturumda AE kapalı
+   olduğu için yapılamadı — sıradaki AE oturumunda smoke test edilmeli.
+   **Tier 1 + 2 (38/38) tamamlandı.**
 3. **Tier 3 — ikincil yardımcılar (26 komut, sonra):** `listEffects`,
    `addExpressionControl`, `removeExpression`, `enableExpression`,
    `compFromFootage`, `addCompMarker`, `addLayerMarker`,
@@ -377,5 +386,5 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
 sonnet`) — Haiku'ya düşürme değerlendirildi, yanlış şemanın gerçek tool
 çağrılarını sessizce bozma riski nedeniyle vazgeçildi.
 
-**Şu an:** Tier 1 bitti (yukarıda ✅). Tier 2 (13 komut) sırada. Tier
-3/4a/4b bu iş bitmeden ele alınmayacak.
+**Şu an:** Tier 1 + Tier 2 (38/38) bitti (yukarıda ✅). Tier 3/4a/4b bu iş
+kapsamının dışında bırakıldı, ayrı bir oturumda ele alınacak.
