@@ -33,6 +33,22 @@ const CORE = new Set([
   'applyWordReveal', 'applyCharScale', 'applyLowerThird', 'fireEffect', 'smokeEffect',
   'glitchEffect', 'cinematicGrade', 'neonGlow', 'addShapeOperator', 'addPathShape',
   'addResponsiveBox', 'addCamera', 'addLight',
+
+  // Tier 3 — ikincil yardımcılar (same roadmap item, 2026-08-11)
+  // expression controls / effect introspection
+  'listEffects', 'addExpressionControl', 'removeExpression', 'enableExpression',
+  // render queue
+  'addToRenderQueue', 'listRenderQueue', 'setOutputModule', 'clearRenderQueue',
+  // markers
+  'addCompMarker', 'addLayerMarker',
+  // project items / folders / footage-comp
+  'getProjectItems', 'listTextStyles', 'compFromFootage', 'createFolder',
+  'moveToFolder', 'setProxy', 'renameItem', 'deleteItem',
+  // comp/layer time
+  'getCompTime', 'duplicateComp', 'sequenceLayers', 'setTimeStretch',
+  'enableTimeRemap', 'replaceSource',
+  // layer style / bulk cleanup
+  'addLayerStyle', 'removeLayersByPrefix',
 ]);
 
 const META_TOOLS = [

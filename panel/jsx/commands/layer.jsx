@@ -433,11 +433,7 @@ COMMANDS.addPathShape = function (p) {
 // Add an existing project footage/comp item into a comp as a layer.
 COMMANDS.addFootageLayer = function (p) {
   var comp = AEB.requireComp(p);
-  var src = null, proj = app.project;
-  for (var i = 1; i <= proj.numItems; i++) {
-    var it = proj.item(i);
-    if ((p.itemId !== undefined && it.id === p.itemId) || (p.itemName && it.name === p.itemName)) { src = it; break; }
-  }
+  var src = AEB.findProjectItem(p);
   AEB.assert(src, "Source item not found (itemId/itemName)");
   return AEB.undo("mograph-mcp: addFootageLayer", function () {
     var layer = comp.layers.add(src);
@@ -627,11 +623,7 @@ COMMANDS.enableTimeRemap = function (p) {
 COMMANDS.replaceSource = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
-  var src = null, proj = app.project;
-  for (var i = 1; i <= proj.numItems; i++) {
-    var it = proj.item(i);
-    if ((p.itemId !== undefined && it.id === p.itemId) || (p.itemName && it.name === p.itemName)) { src = it; break; }
-  }
+  var src = AEB.findProjectItem(p);
   AEB.assert(src, "replacement item not found (itemId/itemName)");
   return AEB.undo("mograph-mcp: replaceSource", function () {
     layer.replaceSource(src, (p.fixExpressions !== false));

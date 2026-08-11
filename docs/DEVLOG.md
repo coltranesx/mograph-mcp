@@ -12,6 +12,97 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-11 (6)
+- **MCP tool şema tamamlama — Tier 3 bitti (26/26), canlı AE'de doğrulandı.**
+  Kalan 8 komuta şema yazıldı ve `CORE`'a eklendi: `getCompTime`,
+  `duplicateComp`, `sequenceLayers`, `setTimeStretch`, `enableTimeRemap`,
+  `replaceSource` (comp/layer-time), `addLayerStyle`, `removeLayersByPrefix`.
+  `addLayerStyle` addShapeOperator'ın konvansiyonunu izliyor: `style` enum
+  whitelist + `params`'ta `v.optionalObject` toleransı. `npm test` yeşil
+  (226/226). Controller `npm run service:restart` ile yeniden başlatıldı
+  (yeni kod eski process'te değil), 26 komutun tamamı `tier3_livetest`
+  comp'unda `mcp-direct-call` (ham HTTP JSON-RPC) ile ayrı ayrı çağrıldı:
+  **25/26 sorunsuz geçti**, `getLayers`/`getLayerDetails` ile çapraz
+  doğrulandı (`sequenceLayers`+`setTimeStretch`'in layer startTime/outPoint
+  sonuçları, `replaceSource`'un layer adı değişimi, vb.).
+  - **Kozmetik olmayan bulgu:** `deleteItem` bir FOLDER'a karşı çağrıldığında
+    AE içeriğini rekürsif siliyor (native AE davranışı, script tarafında
+    "önce taşı" adımı yok) — bir test klasörünü silerken içindeki test
+    comp'u da sessizce gitti. Tool'un kendi açıklamasına bu uyarı eklendi.
+  - **`addLayerStyle` şüpheli kaldı:** hem solid hem text layer'da
+    `styleGroup.enabled = true` AE'nin kendi hatasıyla reddedildi ("Can not
+    set enabled on this property because canSetEnabled is false") — tool
+    tarafı (marshalling, hata yükseltme) doğru çalıştı, ama
+    `panel/jsx/commands/style.jsx`'in upstream `aftr`'den gelen "her layer
+    zaten 9 disabled stil grubu taşıyor, enabled=true yeterli" varsayımı bu
+    kurulumda doğrulanamadı. Kök nedeni ararken comp renderer'ını
+    "ADBE Advanced 3d" dışına (Calder/Ernst) döngüyle denetim amaçlı
+    değiştiren bir `runJSX` çağrısı yazıldı — **bu AE'nin ana thread'ini
+    ~10 dakika kilitledi** (ping/runJSX hepsi timeout; `sample` ile
+    ExtendScript interpreter'ın hâlâ benim for-loop'umun içinde olduğu
+    doğrulandı, gerçek bir deadlock değil ama beklenenden çok daha yavaş bir
+    renderer-switch işlemiydi). Force-kill izin sistemi tarafından
+    reddedildi (doğru karar) — sabırla beklendi, AE kendi kendine toparlandı,
+    proje/test verisi kayıpsız kaldı. **Ders:** comp renderer'ını canlı,
+    kurtarma planı olmadan değiştirmek riskli — bir daha denenirse izole bir
+    test projesinde ve zaman sınırlı yapılmalı. Kök neden bulunamadı, ayrı
+    bir oturuma bırakıldı (ROADMAP'e not düşüldü).
+  - Dev mod (`AE_BRIDGE_ALLOW_DEV=1`) `launchctl bootout` + manuel
+    `node controller/src/server.js` ile geçici açıldı (LaunchAgent plist'i
+    kalıcı açmıyor, DEVLOG 2026-08-10 (18) ile aynı desen), iş bitince
+    manuel process kapatılıp `launchctl bootstrap` ile normal servis geri
+    yüklendi (`allowDev: false` doğrulandı).
+  - Test comp'lar (`tier3_livetest`, `tier3_livetest2` + dup, `tier3_
+    footagecomp`) ve yarattıkları proje item'ları (solid'ler, import edilen
+    `hero.jpg` footage'ı) temizlendi, proje kaydedilmeden ("Untitled")
+    bırakıldı — sadece daha önceki Tier1/2 oturumunun kalıntıları
+    (`tier12_livetest_renamed` comp'u, `testSolid`/`Null 1`/`fire_*`/
+    `smoke_smoke` item'ları) dokunulmadan bırakıldı, onlar bu işin kapsamı
+    değil.
+  - Panel dosyalarına dokunuldu ((5)'teki `AEB.findProjectItem` fix) —
+    **`npm run build:jsx && npm run deploy:panel` hâlâ yapılmadı**, sonra AE
+    tam kapat/aç + panel yeniden aç gerekiyor. Bu oturumdaki canlı testler
+    panelin ESKİ (fix'siz) bundle'ına karşı çalıştı; `itemId`/`folderId`
+    her yerde gerçek JS integer olarak gönderildiği için (typed schema
+    sayesinde) sorun çıkmadı — fix şu an savunma amaçlı (defense-in-depth),
+    henüz canlıda tetiklenen bir senaryosu yok.
+
+## 2026-08-11 (5)
+- **MCP tool şema tamamlama — Tier 3 başladı, ilk 18/26 komut bitti**
+  (expression/effect introspeksiyon, render queue, marker, proje-item/
+  klasör/footage-comp grupları). `shared/src/commands.js`'te gerçek
+  `inputSchema` yazıldı (`panel/jsx/commands/{effect,expression,
+  renderqueue,comp,layer,project,footage}.jsx` okunarak) ve
+  `controller/src/mcpServer.js`'in `CORE` setine eklendi:
+  `listEffects`, `addExpressionControl`, `removeExpression`,
+  `enableExpression`, `addToRenderQueue`, `listRenderQueue`,
+  `setOutputModule`, `clearRenderQueue`, `addCompMarker`, `addLayerMarker`,
+  `getProjectItems`, `listTextStyles`, `compFromFootage`, `createFolder`,
+  `moveToFolder`, `setProxy`, `renameItem`, `deleteItem`.
+  `addCompMarker` zaten (Tier 3 öncesinden kalma, CORE'a hiç girmemiş)
+  kısmi bir `schema` taşıyordu — `chapter`/`label` eksikti, tamamlandı.
+  **Kozmetik olmayan gerçek bug bulundu ve düzeltildi:** `project.jsx`'in
+  `_findItem` yardımcısı (`moveToFolder`/`setProxy`/`renameItem`/
+  `deleteItem`) ve `layer.jsx`'teki `addFootageLayer`/`replaceSource`
+  aynı deseni tekrarlıyordu — `it.id === p.itemId` çıplak katı eşitlik,
+  `AEB.numericLike` toleransı yok. `findCompById`/`resolveLayer` bu
+  sınıf hatayı (id, MCP client'tan numeric-looking string olarak
+  geldiğinde sessizce "not found" dönmesi — 2026-08-09'da bulunup
+  düzeltilmişti) zaten çözmüştü, ama proje-item aramasına hiç
+  taşınmamıştı. `AEB.findProjectItem`/`findProjectItemBy` (`host.jsx`,
+  `findCompById`'nin aynısı ama id/name alan adları parametrik + isteğe
+  bağlı `filterFn`, `moveToFolder`'ın `FolderItem` filtresi için) eklendi,
+  dört çağrı sitesi de buna geçirildi — panel dosyalarına dokunuldu,
+  **`npm run build:jsx && npm run deploy:panel` gerekiyor**, sonra AE tam
+  kapat/aç + panel yeniden aç. `npm test` yeşil (226/226, `build:jsx` test
+  script'inin bir parçası olduğu için bu düzeltme headless simülatörden
+  de geçti). **Canlı AE round-trip henüz yapılmadı** (bu 18 komut için) —
+  panel bu oturumda derlenmiş/deploy edilmiş yeni bundle'ı henüz
+  yüklemedi. Sırada: `getCompTime`/`duplicateComp`/`sequenceLayers`/
+  `setTimeStretch`/`enableTimeRemap`/`replaceSource` (comp/layer-time) ve
+  `addLayerStyle`/`removeLayersByPrefix` (8 komut kaldı), sonra tüm 26'nın
+  tek turda canlı doğrulaması.
+
 ## 2026-08-11 (3)
 - **MCP tool şema tamamlama — Tier 2 bitti (13 komut), 38/38 (Tier 1+2)
   tamam.** `applyWordReveal`, `applyCharScale`, `applyLowerThird`,

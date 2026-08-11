@@ -19,15 +19,6 @@ COMMANDS.getProjectInfo = function () {
   };
 };
 
-function _findItem(p) {
-  var proj = app.project;
-  for (var i = 1; i <= proj.numItems; i++) {
-    var it = proj.item(i);
-    if ((p.itemId !== undefined && it.id === p.itemId) || (p.itemName && it.name === p.itemName)) return it;
-  }
-  return null;
-}
-
 COMMANDS.createFolder = function (p) {
   return AEB.undo("mograph-mcp: createFolder", function () {
     var folder = app.project.items.addFolder(p.name || "Folder");
@@ -36,13 +27,9 @@ COMMANDS.createFolder = function (p) {
 };
 
 COMMANDS.moveToFolder = function (p) {
-  var item = _findItem(p);
+  var item = AEB.findProjectItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
-  var proj = app.project, folder = null;
-  for (var i = 1; i <= proj.numItems; i++) {
-    var it = proj.item(i);
-    if (it instanceof FolderItem && ((p.folderId !== undefined && it.id === p.folderId) || (p.folderName && it.name === p.folderName))) { folder = it; break; }
-  }
+  var folder = AEB.findProjectItemBy(p, "folderId", "folderName", function (it) { return it instanceof FolderItem; });
   AEB.assert(folder, "folder not found (folderId/folderName)");
   return AEB.undo("mograph-mcp: moveToFolder", function () {
     item.parentFolder = folder;
@@ -51,7 +38,7 @@ COMMANDS.moveToFolder = function (p) {
 };
 
 COMMANDS.setProxy = function (p) {
-  var item = _findItem(p);
+  var item = AEB.findProjectItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
   AEB.assert(p.path, "path is required");
   return AEB.undo("mograph-mcp: setProxy", function () {
@@ -61,7 +48,7 @@ COMMANDS.setProxy = function (p) {
 };
 
 COMMANDS.renameItem = function (p) {
-  var item = _findItem(p);
+  var item = AEB.findProjectItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
   AEB.assert(p.name, "name is required");
   return AEB.undo("mograph-mcp: renameItem", function () {
@@ -71,7 +58,7 @@ COMMANDS.renameItem = function (p) {
 };
 
 COMMANDS.deleteItem = function (p) {
-  var item = _findItem(p);
+  var item = AEB.findProjectItem(p);
   AEB.assert(item, "item not found (itemId/itemName)");
   return AEB.undo("mograph-mcp: deleteItem", function () {
     var n = item.name; item.remove();

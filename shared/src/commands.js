@@ -532,8 +532,10 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, property: PROPERTY_SCHEMA }),
   setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression'],
     { compId: { type: 'integer' }, expression: { type: 'string' } }),
-  removeExpression: withDesc('Remove an expression.', ['compId', 'property']),
-  enableExpression: withDesc('Enable/disable an expression. { ..., enabled }', ['compId', 'property']),
+  removeExpression: withDesc('Remove an expression. { compId, layer, property }', ['compId', 'property'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA }),
+  enableExpression: withDesc('Enable/disable an expression. { compId, layer, property, enabled? (default true) }', ['compId', 'property'],
+    { compId: { type: 'integer' }, property: PROPERTY_SCHEMA, enabled: { type: 'boolean' } }),
 
   // effects
   addEffect: withDesc('Add an effect by matchName. { compId, layer, matchName, name?, params? }', ['compId'],
@@ -541,13 +543,16 @@ Object.assign(COMMANDS, {
   setEffectParam: withDesc('Set an effect param. { compId, layer, effect, param, value, time? }', ['compId', 'effect', 'param', 'value'],
     { compId: { type: 'integer' }, param: { type: 'string' }, time: { type: 'number' },
       value: { anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }] } }),
-  listEffects: withDesc('List a layer\'s effects.', ['compId']),
-  addExpressionControl: withDesc('Add a Slider/Point/Color/Checkbox/Angle control. { compId, layer, controlType, name?, value? }', ['compId']),
+  listEffects: withDesc('List a layer\'s effects. { compId, layer }', ['compId'], { compId: { type: 'integer' } }),
+  addExpressionControl: withDesc('Add a Slider/Point/Color/Checkbox/Angle/Layer/Point3D control. { compId, layer, controlType (slider|point|color|checkbox|angle|layer|point3d, default slider), name?, value? }', ['compId'],
+    { compId: { type: 'integer' }, controlType: { type: 'string' }, name: { type: 'string' }, value: VALUE_SCHEMA }),
 
   // footage
   importFootage: withDesc('Import a media file. { path, name?, sequence? }', ['path'],
     { path: { type: 'string' }, name: { type: 'string' }, sequence: { type: 'boolean' } }),
-  compFromFootage: withDesc('Import a file and build a matching comp pinned to t=0. { path, name? }', ['path']),
+  compFromFootage: withDesc('Import a file and build a matching comp pinned to t=0. Comp size/duration/frameRate come from the footage when it has them; { width?, height?, duration?, frameRate? } are fallbacks for footage that lacks one (e.g. a still image has no duration/frameRate). { path, name?, baseLayerName?, width?, height?, duration?, frameRate? }', ['path'],
+    { path: { type: 'string' }, name: { type: 'string' }, baseLayerName: { type: 'string' },
+      width: { type: 'integer' }, height: { type: 'integer' }, duration: { type: 'number' }, frameRate: { type: 'number' } }),
 
   // app / menu / project
   executeMenuCommand: withDesc('Run any AE menu command. { commandId | commandName }', []),
@@ -569,7 +574,8 @@ Object.assign(COMMANDS, {
   // executor (HLD)
   applySpec: withDesc('Idempotently realize a segment spec. { compId, segmentId|spec.segment_id, spec, segment? }', ['compId', 'spec'],
     { compId: { type: 'integer' }, spec: { type: 'object' }, segment: { type: 'object' } }),
-  removeLayersByPrefix: withDesc('Remove all layers whose name starts with prefix. { compId, prefix }', ['compId', 'prefix']),
+  removeLayersByPrefix: withDesc('Remove all layers whose name starts with prefix. { compId, prefix }', ['compId', 'prefix'],
+    { compId: { type: 'integer' }, prefix: { type: 'string' } }),
 });
 
 // v3 — masks, text, styles, introspection, render queue, comp/layer/project ops,
@@ -755,7 +761,36 @@ Object.assign(COMMANDS, {
   },
 
   // styles
-  addLayerStyle: withDesc('Add a layer style (dropShadow|outerGlow|stroke|...). { compId, layer, style, params? }', ['compId', 'style']),
+  addLayerStyle: {
+    description:
+      'Enable one of a layer\'s built-in Layer Style groups (every layer already has all 9 as disabled children of ' +
+      '"ADBE Layer Styles" — "adding" a style just flips that group\'s .enabled) and optionally set its sub-properties by name. ' +
+      '{ compId, layer, style (dropShadow|innerShadow|outerGlow|innerGlow|bevelEmboss|satin|colorOverlay|gradientOverlay|' +
+      'patternOverlay|stroke), params? (sub-property name -> value map, e.g. { "Opacity": 75, "Color": [1,0,0] } — unknown keys ' +
+      'are silently skipped, matching AE\'s addProperty tolerance) }',
+    schema: {
+      compId: { type: 'integer' }, style: { type: 'string' }, params: { type: 'object' },
+    },
+    validate(p) {
+      const base = requireFields(p, ['compId', 'style']);
+      const STYLES = [
+        'dropShadow', 'innerShadow', 'outerGlow', 'innerGlow', 'bevelEmboss',
+        'satin', 'colorOverlay', 'gradientOverlay', 'patternOverlay', 'stroke',
+      ];
+      const key = String(p.style).toLowerCase();
+      if (!STYLES.some((s) => s.toLowerCase() === key)) {
+        throw new ValidationError(`style must be one of: ${STYLES.join(', ')} (got "${p.style}")`);
+      }
+      if (p.params !== undefined && p.params !== null) {
+        // v.optionalObject (not a bare isPlainObject check) — same
+        // JSON-stringified-object risk as addShapeOperator's params /
+        // applyLowerThird's accentLine (see validate.js's optionalObject
+        // comment) now that this is a typed top-level tool.
+        base.params = v.optionalObject(p, 'params');
+      }
+      return base;
+    },
+  },
 
   // introspection (read-back)
   getProperty: withDesc('Read a property value/expression/keyframes. { compId, layer, property }', ['compId', 'property'],
@@ -812,9 +847,11 @@ Object.assign(COMMANDS, {
   },
 
   // render queue
-  addToRenderQueue: withDesc('Add a comp to the Render Queue. { compId, outputPath?, settingsTemplate?, outputModuleTemplate? }', ['compId']),
+  addToRenderQueue: withDesc('Add a comp to the Render Queue. { compId, outputPath?, settingsTemplate?, outputModuleTemplate? }', ['compId'],
+    { compId: { type: 'integer' }, outputPath: { type: 'string' }, settingsTemplate: { type: 'string' }, outputModuleTemplate: { type: 'string' } }),
   listRenderQueue: withDesc('List Render Queue items + status.', []),
-  setOutputModule: withDesc('Set an RQ output module file/template. { rqIndex, outputPath?, template? }', ['rqIndex']),
+  setOutputModule: withDesc('Set an RQ output module file/template. { rqIndex, omIndex? (default 1), outputPath?, template? }', ['rqIndex'],
+    { rqIndex: { type: 'integer' }, omIndex: { type: 'integer' }, outputPath: { type: 'string' }, template: { type: 'string' } }),
   clearRenderQueue: withDesc('Remove all Render Queue items.', []),
 
   // comp
@@ -824,8 +861,9 @@ Object.assign(COMMANDS, {
       bgColor: { type: 'array', items: { type: 'number' } }, motionBlur: { type: 'boolean' },
       workAreaStart: { type: 'number' }, workAreaDuration: { type: 'number' },
       resolutionFactor: { type: 'array', items: { type: 'number' } } }),
-  addCompMarker: withDesc('Add a comp marker. { compId, time, comment?, duration? }', ['compId', 'time'],
-    { compId: { type: 'integer' }, time: { type: 'number' }, comment: { type: 'string' }, duration: { type: 'number' } }),
+  addCompMarker: withDesc('Add a comp marker. { compId, time, comment?, duration?, chapter?, label? (0-16, AE label color index) }', ['compId', 'time'],
+    { compId: { type: 'integer' }, time: { type: 'number' }, comment: { type: 'string' }, duration: { type: 'number' },
+      chapter: { type: 'string' }, label: { type: 'integer' } }),
 
   // layer
   setBlendMode: withDesc('Set a layer blend mode. { compId, layer, mode }', ['compId', 'mode'],
@@ -834,17 +872,27 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, type: { type: 'string' }, matteLayer: { anyOf: [{ type: 'string' }, { type: 'number' }] } }),
   setLayerFlag: withDesc('Toggle a layer flag (motionBlur|adjustment|guide|threeD|collapse|solo|shy|lock|frameBlending). { compId, layer, flag, value? }', ['compId', 'flag'],
     { compId: { type: 'integer' }, flag: { type: 'string' }, value: { type: 'boolean' } }),
-  addLayerMarker: withDesc('Add a layer marker. { compId, layer, time, comment? }', ['compId', 'time']),
-  setTimeStretch: withDesc('Set layer time stretch percent. { compId, layer, stretch }', ['compId', 'stretch']),
-  enableTimeRemap: withDesc('Enable/disable time remapping. { compId, layer, enabled? }', ['compId']),
-  replaceSource: withDesc('Replace a layer\'s source item. { compId, layer, itemId|itemName }', ['compId']),
+  addLayerMarker: withDesc('Add a layer marker. { compId, layer, time, comment?, duration? }', ['compId', 'time'],
+    { compId: { type: 'integer' }, time: { type: 'number' }, comment: { type: 'string' }, duration: { type: 'number' } }),
+  setTimeStretch: withDesc('Set layer time stretch percent. { compId, layer, stretch }', ['compId', 'stretch'],
+    { compId: { type: 'integer' }, stretch: { type: 'number' } }),
+  enableTimeRemap: withDesc('Enable/disable time remapping. { compId, layer, enabled? (default true) }', ['compId'],
+    { compId: { type: 'integer' }, enabled: { type: 'boolean' } }),
+  replaceSource: withDesc('Replace a layer\'s source item. { compId, layer, itemId|itemName, fixExpressions? (default true) }', ['compId'],
+    { compId: { type: 'integer' }, itemId: { type: 'integer' }, itemName: { type: 'string' }, fixExpressions: { type: 'boolean' } }),
 
   // project
-  createFolder: withDesc('Create a project folder. { name }', []),
-  moveToFolder: withDesc('Move an item into a folder. { itemId|itemName, folderId|folderName }', []),
-  setProxy: withDesc('Set a footage proxy file. { itemId|itemName, path }', ['path']),
-  renameItem: withDesc('Rename a project item. { itemId|itemName, name }', ['name']),
-  deleteItem: withDesc('Delete a project item. { itemId|itemName }', []),
+  createFolder: withDesc('Create a project folder. { name? (default "Folder") }', [],
+    { name: { type: 'string' } }),
+  moveToFolder: withDesc('Move an item into a folder. { itemId|itemName, folderId|folderName }', [],
+    { itemId: { type: 'integer' }, itemName: { type: 'string' }, folderId: { type: 'integer' }, folderName: { type: 'string' } }),
+  setProxy: withDesc('Set a footage proxy file. { itemId|itemName, path }', ['path'],
+    { itemId: { type: 'integer' }, itemName: { type: 'string' }, path: { type: 'string' } }),
+  renameItem: withDesc('Rename a project item. { itemId|itemName, name }', ['name'],
+    { itemId: { type: 'integer' }, itemName: { type: 'string' }, name: { type: 'string' } }),
+  deleteItem: withDesc('Delete a project item. { itemId|itemName }. WARNING if the item is a folder: AE removes its contents ' +
+    'recursively along with it (confirmed live 2026-08-11) — there is no "move children out first" step.', [],
+    { itemId: { type: 'integer' }, itemName: { type: 'string' } }),
 
   // OS keystroke layer (panel-side)
   keystroke: withDesc('Send OS keystrokes to AE. { keys } (SendKeys, e.g. "^s") | { text } | { key, ctrl?, alt?, shift? }', []),
@@ -867,8 +915,10 @@ Object.assign(COMMANDS, {
 
   // orchestration-grade tooling
   batch: withDesc('Run many commands in ONE round-trip + ONE undo group. { commands:[{command,params}], undoName?, stopOnError? }', ['commands']),
-  getCompTime: withDesc('Read comp playhead/work-area/frame info. { compId }', ['compId']),
-  duplicateComp: withDesc('Duplicate a comp. { compId, name? }', ['compId']),
+  getCompTime: withDesc('Read comp playhead/work-area/frame info. { compId }', ['compId'],
+    { compId: { type: 'integer' } }),
+  duplicateComp: withDesc('Duplicate a comp. { compId, name? }', ['compId'],
+    { compId: { type: 'integer' }, name: { type: 'string' } }),
   alignLayer: withDesc('Align a layer (center|hcenter|vcenter|left|right|top|bottom). { compId, layer, align, margin? }', ['compId'],
     { compId: { type: 'integer' }, align: { type: 'string' }, margin: { type: 'number' } }),
   alignAnchor: {
@@ -892,7 +942,9 @@ Object.assign(COMMANDS, {
       return base;
     },
   },
-  sequenceLayers: withDesc('Offset layers in time. { compId, layers[], step?, start? }', ['compId', 'layers']),
+  sequenceLayers: withDesc('Offset layers in time — each of layers[] gets startTime = start + index*step. { compId, layers[] (each a layer name or index), step? (seconds, default 1), start? (seconds, default 0) }', ['compId', 'layers'],
+    { compId: { type: 'integer' }, layers: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'number' }] } },
+      step: { type: 'number' }, start: { type: 'number' } }),
   setWorkArea: withDesc('Set the comp work area. { compId, start, duration }', ['compId'],
     { compId: { type: 'integer' }, start: { type: 'number' }, duration: { type: 'number' } }),
   clearComp: withDesc('Remove all layers in a comp. { compId, keepPrefix? }', ['compId'],

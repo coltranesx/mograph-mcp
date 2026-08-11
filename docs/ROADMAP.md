@@ -367,14 +367,45 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
    tekrarlanınca geçti. `addTextAnimator`'ın nested
    `properties`/`selector`/`animate` şeması dahil hiçbir yerde marshalling
    sorunu çıkmadı.
-3. **Tier 3 — ikincil yardımcılar (26 komut, sonra):** `listEffects`,
-   `addExpressionControl`, `removeExpression`, `enableExpression`,
-   `compFromFootage`, `addCompMarker`, `addLayerMarker`,
-   `addToRenderQueue`, `listRenderQueue`, `setOutputModule`,
-   `clearRenderQueue`, `getProjectItems`, `listTextStyles`, `getCompTime`,
-   `duplicateComp`, `sequenceLayers`, `setTimeStretch`, `enableTimeRemap`,
-   `replaceSource`, `createFolder`, `moveToFolder`, `setProxy`,
-   `renameItem`, `deleteItem`, `addLayerStyle`, `removeLayersByPrefix`.
+3. **Tier 3 — ikincil yardımcılar (26 komut, sonra):**
+   - ~~expression/effect introspeksiyon (4): `listEffects`,
+     `addExpressionControl`, `removeExpression`, `enableExpression`.~~ ✅
+     bitti (DEVLOG 2026-08-11 (5)).
+   - ~~render queue (4): `addToRenderQueue`, `listRenderQueue`,
+     `setOutputModule`, `clearRenderQueue`.~~ ✅ bitti (DEVLOG 2026-08-11
+     (5)).
+   - ~~marker (2): `addCompMarker`, `addLayerMarker`.~~ ✅ bitti (DEVLOG
+     2026-08-11 (5)).
+   - ~~proje-item/klasör/footage-comp (8): `getProjectItems`,
+     `listTextStyles`, `compFromFootage`, `createFolder`, `moveToFolder`,
+     `setProxy`, `renameItem`, `deleteItem`.~~ ✅ bitti (DEVLOG 2026-08-11
+     (5)) — yol boyunca gerçek bir bug bulundu ve düzeltildi: `itemId`/
+     `folderId` karşılaştırması `it.id === p.itemId` idi (numericLike
+     tolerans yok), `findCompById`/`resolveLayer`'ın zaten çözdüğü aynı
+     sınıf hata (id numeric-looking string geldiğinde sessizce "not
+     found"). `AEB.findProjectItem`/`findProjectItemBy` (host.jsx) eklendi,
+     `project.jsx` + `layer.jsx`'teki (`addFootageLayer`, `replaceSource`)
+     dört tekrarlanan arama da buna geçirildi.
+   - ~~comp/layer-time (6): `getCompTime`, `duplicateComp`, `sequenceLayers`,
+     `setTimeStretch`, `enableTimeRemap`, `replaceSource`.~~ ✅ bitti (DEVLOG
+     2026-08-11 (5)/(6)), canlı doğrulandı — `enableTimeRemap` bir solid'e
+     karşı denendiğinde AE'nin kendi native reddini (`canSetTimeRemapEnabled`
+     false) doğru şekilde yükseltti (sessizce yutmadı), bu bir tool bug'ı
+     değil.
+   - ~~layer style / bulk cleanup (2): `addLayerStyle`,
+     `removeLayersByPrefix`.~~ ✅ şema/validasyon/CORE kaydı tamam, ama
+     `addLayerStyle` için **şüpheli bulgu**: canlıda hem bir solid hem bir
+     text layer'da "Can not set enabled on this property because
+     canSetEnabled is false" ile reddedildi (DEVLOG 2026-08-11 (6)) — tool
+     tarafı (parametre marshalling, hata yükseltme) sağlam çalıştı, ama
+     `panel/jsx/commands/style.jsx`'in dayandığı "her layer'da 9 stil grubu
+     zaten disabled child olarak var, `.enabled=true` yeterli" varsayımı bu
+     AE 26.3 kurulumunda/projede doğrulanamadı — kod upstream `aftr`'den
+     geldi, bu fork'ta hiç canlı test edilmemişti. Kök neden araştırması
+     (renderer'ı Advanced 3D dışına almayı denemek) AE'yi ~10 dakika
+     kilitledi (aşağıya bkz.), o yüzden yarım bırakıldı — ayrı bir oturumda,
+     daha temkinli (olası uzun/riskli AE çağrılarını izole bir test
+     projesinde) ele alınmalı. `removeLayersByPrefix` sorunsuz geçti.
 4. **Tier 4a — parametresiz/az parametreli getter'lar (13 komut, düşük
    öncelik):** `ping`, `getProjectInfo`, `listComps`, `undo`, `redo`,
    `purge`, `getSelection`, `getAppInfo`, `getEnvironment`, `listPlugins`,
@@ -390,5 +421,9 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
 sonnet`) — Haiku'ya düşürme değerlendirildi, yanlış şemanın gerçek tool
 çağrılarını sessizce bozma riski nedeniyle vazgeçildi.
 
-**Şu an:** Tier 1 + Tier 2 (38/38) bitti (yukarıda ✅). Tier 3/4a/4b bu iş
-kapsamının dışında bırakıldı, ayrı bir oturumda ele alınacak.
+**Şu an:** Tier 1 + Tier 2 (38/38) ve Tier 3 (26/26) bitti (yukarıda ✅,
+DEVLOG 2026-08-11 (5)/(6)) — toplam 64 komut top-level `ae_*` tool oldu ve
+canlı AE'de tek tek doğrulandı. Tek açık uç: `addLayerStyle`'ın altındaki
+AE yeteneği (yukarıdaki not) — tool doğru kurulu ama capability'nin kendisi
+şüpheli, ayrı bir oturumda ele alınmalı. Tier 4a/4b bu iş kapsamının
+dışında bırakıldı, ayrı bir oturumda ele alınacak.

@@ -77,6 +77,35 @@ AEB.findCompByName = function (name) {
   return null;
 };
 
+// --- project items (footage/comp/folder, by id or name) --------------------
+// Generic lookup for the { itemId, itemName } / { folderId, folderName } pair
+// that shows up across addFootageLayer, replaceSource, moveToFolder,
+// setProxy, renameItem, deleteItem. Uses AEB.numericLike on the id the same
+// way findCompById does — without it, an id delivered as a numeric-looking
+// string ("5" instead of 5) fails the `it.id === idVal` strict-equality
+// check silently (reports "not found" instead of resolving); this is the
+// exact class of bug documented at findCompById/resolveLayer, just not yet
+// applied here (found while promoting the project-item commands to typed
+// top-level MCP tools, docs/ROADMAP.md "MCP tool şema tamamlama" Tier 3).
+// `idField`/`nameField` let callers reuse this for both item{Id,Name} and
+// folder{Id,Name}; `filterFn(item)` narrows the scan (e.g. FolderItem only).
+AEB.findProjectItemBy = function (p, idField, nameField, filterFn) {
+  var proj = app.project;
+  var numId = (p[idField] !== undefined && p[idField] !== null) ? AEB.numericLike(p[idField]) : null;
+  var name = p[nameField];
+  for (var i = 1; i <= proj.numItems; i++) {
+    var it = proj.item(i);
+    if (filterFn && !filterFn(it)) continue;
+    if (numId !== null && it.id === numId) return it;
+    if (name && it.name === name) return it;
+  }
+  return null;
+};
+
+AEB.findProjectItem = function (p) {
+  return AEB.findProjectItemBy(p, "itemId", "itemName");
+};
+
 // Resolve a comp from params: accepts { compId } or { compName } or { comp }.
 AEB.requireComp = function (p) {
   var c = null;
