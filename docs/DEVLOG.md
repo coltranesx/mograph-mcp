@@ -12,6 +12,23 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-11 (7)
+- **Tier 3'ün panel değişiklikleri (host.jsx/project.jsx/layer.jsx —
+  `findProjectItem` bug fix) dağıtıldı ve canlıda doğrulandı.** `npm run
+  build:jsx && npm run deploy:panel` çalıştırıldı, AE tam kapatılıp
+  yeniden açıldı, panel yeniden bağlandı (`ae_status` → connected).
+  Smoke test: `createFolder` → `renameItem` (isimle) → `deleteItem`
+  (isimle) zinciri, düzeltilen lookup path'i uçtan uca çalıştırdı, hepsi
+  `ok:true`. Controller de daha önce restart edilmişti, yeni 96 tool'luk
+  `CORE` set'ini serviyor.
+- **Kalan tek açık iş: `addLayerStyle` capability sorunu** (bkz. (6) ve
+  ROADMAP "Tier 3" notu) — bir sonraki oturumda ayrı ele alınacak.
+  **Dikkat:** kök neden araştırması sırasında (renderer'ı Advanced 3D
+  dışına almayı denemek) AE'nin ana thread'i ~10 dakika kilitlenmişti;
+  kendi kendine toparlandı, veri kaybı olmadı, ama bu yaklaşım tekrar
+  denenecekse izole/kaydedilmemiş bir test projesinde, sabırla beklemeye
+  hazır olarak yapılmalı.
+
 ## 2026-08-11 (6)
 - **MCP tool şema tamamlama — Tier 3 bitti (26/26), canlı AE'de doğrulandı.**
   Kalan 8 komuta şema yazıldı ve `CORE`'a eklendi: `getCompTime`,
