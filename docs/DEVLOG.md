@@ -12,6 +12,30 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-22
+- **Controller'ın launchd auto-start servisi durduruldu ve devre dışı bırakıldı.**
+  `com.coltranesx.mograph-mcp.controller` (`~/Library/LaunchAgents/com.coltranesx.mograph-mcp.controller.plist`,
+  `RunAtLoad: true`, `KeepAlive: true`) her Mac girişinde otomatik başlayıp
+  `Mograph Controller.app`'ı (`server.js`, port 8787) arka planda sürekli
+  ayakta tutuyordu — MCP bağlantısı hiç açılmasa bile. Fark ediliş nedeni:
+  weasyeditv2 projesinde port çakışması araştırılırken (`lsof`) bu sürecin
+  günlerdir (o an 2 gündür) çalıştığı görüldü.
+  - **Durduruldu:**
+    ```bash
+    launchctl bootout gui/$(id -u)/com.coltranesx.mograph-mcp.controller
+    launchctl disable gui/$(id -u)/com.coltranesx.mograph-mcp.controller
+    ```
+  - **Doğrulama:** `lsof -nP -iTCP:8787 -sTCP:LISTEN` boş döndü;
+    `launchctl print-disabled gui/$(id -u) | grep mograph` →
+    `"com.coltranesx.mograph-mcp.controller" => disabled`.
+  - **Tekrar etkinleştirmek gerekirse** (AE MCP kullanılacaksa):
+    ```bash
+    launchctl enable gui/$(id -u)/com.coltranesx.mograph-mcp.controller
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.coltranesx.mograph-mcp.controller.plist
+    ```
+    Tek seferlik/geçici kullanım için servisi tekrar etkinleştirmeden
+    doğrudan `Mograph Controller.app`'ı elle açmak da yeterli.
+
 ## 2026-08-11 (7)
 - **Tier 3'ün panel değişiklikleri (host.jsx/project.jsx/layer.jsx —
   `findProjectItem` bug fix) dağıtıldı ve canlıda doğrulandı.** `npm run
