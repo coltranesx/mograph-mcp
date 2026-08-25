@@ -53,6 +53,12 @@ const CORE = new Set([
   // Tier 4a — parametresiz/az parametreli getter'lar (same roadmap item, 2026-08-25)
   'undo', 'redo', 'purge', 'getSelection', 'getAppInfo', 'getEnvironment',
   'listPlugins', 'lumetriParams', 'setActiveComp', 'setCompTime',
+
+  // Tier 4b — niş/riskli, tasarımı bir Opus incelemesinden geçti (same
+  // roadmap item, 2026-08-25). `keystroke` bilinçli olarak dışarıda
+  // bırakıldı — OS-seviyesinde AE'nin veri modeliyle sınırlı değil, ayrı
+  // bir karar gerektiriyor (bkz. docs/ROADMAP.md).
+  'executeMenuCommand', 'findMenuCommand', 'quitApp', 'batch',
 ]);
 
 const META_TOOLS = [

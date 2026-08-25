@@ -69,6 +69,14 @@ COMMANDS.quitApp = function (p) {
   var proj = app.project;
   var save = (p && p.save !== undefined) ? p.save : true;
   if ((proj.numItems > 0 || proj.file) && save) _saveOrThrow(p);
+  // Unlike closeProject, this used to skip proj.close() and call app.quit()
+  // directly — harmless when save saved the project (nothing left dirty),
+  // but with save:false the project was still dirty and app.quit() itself
+  // (unlike proj.close(), it takes no CloseOptions) prompted AE's native
+  // save-changes dialog anyway, freezing the bridge exactly as this
+  // function's header comment says it never does. Closing first — same
+  // as closeProject — leaves nothing dirty for app.quit() to ask about.
+  proj.close(CloseOptions.DO_NOT_SAVE_CHANGES);
   app.quit();
   return { ok: true };
 };

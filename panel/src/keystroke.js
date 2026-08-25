@@ -5,6 +5,9 @@
 // activating the AE window); macOS uses osascript System Events.
 //
 // SendKeys syntax: ^=Ctrl %=Alt +=Shift, named keys in braces e.g. {F9} {ENTER}.
+// On macOS ^/%/+ map literally to Control/Option/Shift (not Cmd) — AE's own
+// mac shortcuts are almost all Cmd-based, so the structured { key, cmd? }
+// form is what you want there, not a SendKeys "^" string.
 
 (function () {
   'use strict';
@@ -43,6 +46,80 @@
     return pre + '{' + String(k).toUpperCase() + '}';
   }
 
+  // macOS virtual keycodes for names System Events' "keystroke" can't type
+  // directly (function keys, navigation, whitespace/control keys).
+  var MAC_KEY_CODES = {
+    RETURN: 36, ENTER: 76, TAB: 48, SPACE: 49, DELETE: 51, BACKSPACE: 51,
+    ESCAPE: 53, ESC: 53, HOME: 115, END: 119, PAGEUP: 116, PAGEDOWN: 121,
+    LEFT: 123, RIGHT: 124, DOWN: 125, UP: 126,
+    F1: 122, F2: 120, F3: 99, F4: 118, F5: 96, F6: 97, F7: 98, F8: 100,
+    F9: 101, F10: 109, F11: 103, F12: 111, F13: 105, F14: 107, F15: 113,
+    F16: 106, F17: 64, F18: 79, F19: 80, F20: 90,
+  };
+
+  function macModifiers(p) {
+    var mods = [];
+    if (p.ctrl) mods.push('control down');
+    if (p.alt) mods.push('option down');
+    if (p.shift) mods.push('shift down');
+    if (p.cmd) mods.push('command down');
+    return mods;
+  }
+
+  function escapeAppleScriptString(t) {
+    return String(t).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
+
+  // Parse a SendKeys-syntax string (^%+ prefixes, {NAME} for named keys) the
+  // same way buildKeys() does, but into { code|text, mods } for AppleScript
+  // instead of a SendKeys string — so { keys:"^s" } / { keys:"{F9}" } behave
+  // consistently on both platforms.
+  function parseSendKeysForMac(raw) {
+    var s = String(raw);
+    var mods = [];
+    var i = 0;
+    while (i < s.length && '^%+'.indexOf(s.charAt(i)) !== -1) {
+      if (s.charAt(i) === '^') mods.push('control down');
+      if (s.charAt(i) === '%') mods.push('option down');
+      if (s.charAt(i) === '+') mods.push('shift down');
+      i++;
+    }
+    var rest = s.slice(i);
+    var m = /^\{([^}]+)\}$/.exec(rest);
+    if (m) {
+      var code = MAC_KEY_CODES[m[1].toUpperCase()];
+      if (code !== undefined) return { code: code, mods: mods };
+      return { text: m[1], mods: mods };
+    }
+    return { text: rest, mods: mods };
+  }
+
+  // Build the "keystroke ..."/"key code ..." AppleScript statement (without
+  // the surrounding "tell application System Events to") for
+  // { keys } | { text } | { key, ctrl?, alt?, shift?, cmd? }.
+  //
+  // Previously this branch ignored modifiers/named-keys entirely and just
+  // typed p.text/p.key as literal characters — e.g. { key:'F9', ctrl:true }
+  // typed the string "F9" instead of pressing Ctrl+F9, and { keys:'^s' }
+  // typed nothing (p.text/p.key were both undefined). Fixed to actually
+  // apply modifiers and resolve named keys to their macOS virtual keycode.
+  function buildMacCommand(p) {
+    if (p.text !== undefined) {
+      return 'keystroke "' + escapeAppleScriptString(p.text) + '"';
+    }
+    var parsed;
+    if (p.keys) {
+      parsed = parseSendKeysForMac(p.keys);
+    } else {
+      var k = String(p.key || '');
+      var code = MAC_KEY_CODES[k.toUpperCase()];
+      parsed = (code !== undefined) ? { code: code, mods: macModifiers(p) } : { text: k, mods: macModifiers(p) };
+    }
+    var using = parsed.mods.length ? ' using {' + parsed.mods.join(', ') + '}' : '';
+    if (parsed.code !== undefined) return 'key code ' + parsed.code + using;
+    return 'keystroke "' + escapeAppleScriptString(parsed.text) + '"' + using;
+  }
+
   function done(sendEnvelope, env, ok, info) {
     var out = { id: env.id, type: 'result', ok: ok };
     if (ok) out.result = { sent: info };
@@ -72,10 +149,12 @@
       child.on('close', function (code) { done(sendEnvelope, env, code === 0, code === 0 ? keys : ('exit ' + code)); });
       child.on('error', function (e) { done(sendEnvelope, env, false, e.message); });
     } else {
-      var literal = (p.text !== undefined) ? p.text : (p.key || '');
-      var script = 'tell application "Adobe After Effects 2026" to activate\ndelay 0.12\ntell application "System Events" to keystroke "' + String(literal).replace(/"/g, '\\"') + '"';
+      var macCmd = buildMacCommand(p);
+      var script = 'tell application "Adobe After Effects 2026" to activate\ndelay 0.12\ntell application "System Events" to ' + macCmd;
       var mc = cp.spawn('osascript', ['-e', script]);
-      mc.on('close', function (code) { done(sendEnvelope, env, code === 0, code === 0 ? keys : ('exit ' + code)); });
+      var stderr = '';
+      mc.stderr.on('data', function (d) { stderr += d.toString(); });
+      mc.on('close', function (code) { done(sendEnvelope, env, code === 0, code === 0 ? keys : ('exit ' + code + (stderr ? ': ' + stderr.trim() : ''))); });
       mc.on('error', function (e) { done(sendEnvelope, env, false, e.message); });
     }
   }

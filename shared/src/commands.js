@@ -555,14 +555,17 @@ Object.assign(COMMANDS, {
       width: { type: 'integer' }, height: { type: 'integer' }, duration: { type: 'number' }, frameRate: { type: 'number' } }),
 
   // app / menu / project
-  executeMenuCommand: withDesc('Run any AE menu command. { commandId | commandName }', []),
-  findMenuCommand: withDesc('Look up a menu command id by name. { commandName }', ['commandName']),
+  executeMenuCommand: withDesc('Run any AE menu command. { commandId | commandName }. CAUTION: some menu commands open a modal dialog (e.g. "Composition Settings...", "Save As...") which freezes the bridge until a human dismisses it in the AE UI - prefer a dedicated command (setCompSettings, saveProject, ...) when one exists.', [],
+    { commandId: { type: 'integer' }, commandName: { type: 'string' } }),
+  findMenuCommand: withDesc('Look up a menu command id by name. { commandName }', ['commandName'],
+    { commandName: { type: 'string' } }),
   saveProject: withDesc('Save the project. { path? }', [], { path: { type: 'string' } }),
   openProject: withDesc('Open a project file, replacing whatever is currently open. Never triggers AE\'s save-changes dialog: the current project is saved (or discarded) BEFORE the native open call. { path, save? (default true - save current project first if it has a file; throws if it has unsaved content and no file) }', ['path'],
     { path: { type: 'string' }, save: { type: 'boolean' } }),
   closeProject: withDesc('Close the current project (back to a blank Untitled project). Never triggers a dialog. { save? (default true - save first via its own file; throws if never saved) }', [],
     { save: { type: 'boolean' } }),
-  quitApp: withDesc('Quit After Effects. Never triggers the save-changes dialog (saves first by default). The panel connection drops as part of quitting - the controller resolves the call as a DISCONNECTED error, which for this command means success, not failure. { save? (default true) }', []),
+  quitApp: withDesc('Quit After Effects. Never triggers the save-changes dialog (saves first by default). The panel connection drops as part of quitting - the controller resolves the call as a DISCONNECTED error, which for this command means success, not failure. { save? (default true) }', [],
+    { save: { type: 'boolean' } }),
   undo: withDesc('Edit > Undo.', []),
   redo: withDesc('Edit > Redo.', []),
   purge: withDesc('Purge caches. { target?: all|undo|snapshot|image }', [],
@@ -904,7 +907,7 @@ Object.assign(COMMANDS, {
     { itemId: { type: 'integer' }, itemName: { type: 'string' } }),
 
   // OS keystroke layer (panel-side)
-  keystroke: withDesc('Send OS keystrokes to AE. { keys } (SendKeys, e.g. "^s") | { text } | { key, ctrl?, alt?, shift? }', []),
+  keystroke: withDesc('Send OS keystrokes to AE. { keys } (SendKeys, e.g. "^s") | { text } | { key, ctrl?, alt?, shift?, cmd? (macOS Command key — AE\'s own mac shortcuts are almost all Cmd-based) }', []),
 
   // discovery (read-only "what's installed")
   listFonts: withDesc('Enumerate installed fonts (postScriptName authoritative; family/style derived). { filter?, limit? }', [],
@@ -924,7 +927,9 @@ Object.assign(COMMANDS, {
   lumetriParams: withDesc('List the friendly Lumetri param names the bridge supports.', []),
 
   // orchestration-grade tooling
-  batch: withDesc('Run many commands in ONE round-trip + ONE undo group. { commands:[{command,params}], undoName?, stopOnError? }', ['commands']),
+  batch: withDesc('Run many commands in ONE round-trip + ONE undo group. { commands:[{command,params}], undoName?, stopOnError? }. CAUTION: a `quitApp` inside the list ends the AE process mid-batch — the undo group never closes and any results after it are lost.', ['commands'],
+    { commands: { type: 'array', items: { type: 'object', properties: { command: { type: 'string' }, params: { type: 'object' } }, required: ['command'] } },
+      undoName: { type: 'string' }, stopOnError: { type: 'boolean' } }),
   getCompTime: withDesc('Read comp playhead/work-area/frame info. { compId }', ['compId'],
     { compId: { type: 'integer' } }),
   duplicateComp: withDesc('Duplicate a comp. { compId, name? }', ['compId'],
