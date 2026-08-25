@@ -12,6 +12,54 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-25 (3)
+- **`addLayerStyle` `canSetEnabled:false` — kök neden araştırması, hipotez
+  YANLIŞ çıktı, fix yok.** Önceki hipotez: `layer.property("ADBE Layer
+  Styles")` master grubu UI'dan hiç kullanılmamışsa `enabled:false` durur
+  ve bu, alt stil gruplarının (`dropShadow/enabled` vb.) `canSetEnabled`
+  değerini `false`'a çekiyor olabilir — düzeltme `styles.enabled=true`
+  önce set edilsin şeklinde düşünülmüştü. İzole, kaydedilmemiş bir test
+  comp'ta (`__debug_layerstyle_test`, tek solid layer) canlı AE'de
+  (26.3x87) `runJSX` ile salt-okunur + tek seferlik yazma denemesiyle
+  doğrulandı:
+  - `styles.enabled = false`, **`styles.canSetEnabled` de `false`** —
+    master grubun kendisi de scriptle açılamıyor
+    (`styles.enabled = true` → aynı "canSetEnabled is false" hatası).
+    Yani önerilen fix (`styles.enabled=true` sonra `styleGroup.enabled=
+    true`) çalışmayacaktı; hipotez yanlış.
+  - İkinci, daha temkinli deneme: AE'nin Layer Styles alt-menüsü ExtendScript
+    property atamasıyla değil, `app.executeCommand(menuId)` ile UI menü
+    komutu tetiklenerek mi açılıyor sorusu test edildi.
+    `app.findMenuCommandId("Drop Shadow")` → `9000` (ve
+    Inner/Outer/Inner Glow/Bevel/Satin/Color Overlay/Gradient Overlay
+    sırayla `9001`-`9007`; `Pattern Overlay` `0` = bulunamadı, `Stroke`
+    `2452` = muhtemelen aynı isimli başka bir menü öğesiyle çakışıyor).
+    Test layer'ı `selected=true` yapıp `app.executeCommand(9000)`
+    çalıştırıldı — hata atmadı ama hiçbir şey değişmedi: ne
+    `ADBE Layer Styles` grubunun `enabled`/`canSetEnabled`'ı değişti, ne de
+    `ADBE Effect Parade`'e bir efekt eklendi. `app.isMenuCommandEnabled`
+    bu AE sürümünün ExtendScript `app` nesnesinde yok, o yüzden komutun
+    gerçekten "tıklanabilir" olup olmadığı script'ten doğrulanamadı — muhtemel
+    neden, menü komutunun script'ten değil aktif/odaklı Timeline panelinden
+    tetiklenmeyi beklemesi.
+  - Bu ikinci deneme de tek seferlik, hızlı, geri alınabilirdi (izole test
+    comp'ta, `deleteLayer`/`comp.remove()` ile hemen temizlendi) ama yine
+    sonuçsuz kaldı. Buradan sonrası (panel odağını script'ten zorlamak,
+    `activeViewer`/UI otomasyonu ile menüyü gerçekten tıklatmak vb.) daha
+    spekülatif ve potansiyel olarak kırılgan/riskli bir "dene-gör" sınıfına
+    giriyor — bilinçli olarak durduruldu, karar Korhan'a bırakıldı.
+  - Test comp temizlendi (`comp.remove()`), controller dev-mode
+    (`AE_BRIDGE_ALLOW_DEV=1`, sadece bu araştırma için geçici açıldı) kapatılıp
+    normal modda yeniden başlatıldı. `style.jsx`'te kod değişikliği YAPILMADI
+    — mevcut `addLayerStyle` implementasyonu aynen duruyor, hâlâ canlıda
+    reddediliyor. `npm test` çalıştırılmadı (kod değişikliği olmadığı için
+    gerek görülmedi).
+  - **Açık kalan gerçek soru:** AE'nin Layer Styles'ı scriptten açmanın
+    desteklenen bir yolu var mı (belki farklı bir API/versiyon davranışı,
+    belki panel odağı script içinden `app.activeViewer`/benzeri ile
+    ayarlanabilir), yoksa bu ExtendScript'in bilinen bir sınırlaması mı —
+    doğrulanmadı, uydurulmadı.
+
 ## 2026-08-25 (2)
 - **`keystroke` CORE'a terfi ettirildi — MCP tool şema tamamlama tamamen
   bitti (82/82 komut top-level `ae_*` tool).** Önceki oturumda bilinçli

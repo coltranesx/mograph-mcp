@@ -483,7 +483,16 @@ tamamlama işi tamamen kapandı.** İki açık uç kalıyor, ikisi de tool/şema
 tarafı değil, AE capability'sinin kendisiyle ilgili, ayrı bir oturumda ele
 alınmalı:
 - `addLayerStyle`'ın altındaki AE yeteneği — layer style grupları
-  `canSetEnabled:false` ile reddediyor (Tier 3 notu), kök neden
-  araştırması bir kez AE'yi kilitlemişti, temkinli tekrar gerekiyor.
+  `canSetEnabled:false` ile reddediyor (Tier 3 notu). 2026-08-25'te temkinli
+  bir tekrar yapıldı (DEVLOG 2026-08-25 (3)): "master grup enabled:false
+  olduğu için alt grup kilitleniyor" hipotezi YANLIŞ çıktı — master grubun
+  kendisi de `canSetEnabled:false`. `app.executeCommand` ile Layer Styles
+  menü komutunu (`findMenuCommandId` → 9000-9007 Drop Shadow..Gradient
+  Overlay için) tetikleme denemesi de hatasız ama etkisiz kaldı (muhtemelen
+  panel odağı gerektiriyor). Kod değişikliği yapılmadı, capability hâlâ
+  açık; sıradaki adım muhtemelen panel/viewer odağını script'ten
+  ayarlamayı denemek ya da bunu AE'nin scriptlenemeyen bir sınırlaması
+  olarak kabul edip komutu kaldırmak/uyarıyla bırakmak — ikisi de temkinli
+  planlama ister, tek başına tekrar "dene-gör" turuna girilmedi.
 - `redo`'nun bu AE sürümünde state'i geri getirmemesi (Tier 4a notu) —
   `app.jsx` değişikliği + rebuild/redeploy + AE restart gerektiriyor.
