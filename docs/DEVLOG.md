@@ -12,6 +12,40 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-25 (4)
+- **`redo` (`app.jsx`, `app.executeCommand(17)`) kök neden araştırması —
+  ID bulunamadı, fix yok.** İzole, kaydedilmemiş bir test comp'ta
+  (`redo_bug_test`, tek solid layer) canlı AE'de (26.3x87) uçtan uca
+  doğrulandı: Opacity 100→50 (`setLayerProperty`) → `undo` (id 16) → 100'e
+  dönüyor (beklenen, zaten kanıtlıydı) → `redo` (id 17) → `{ok:true}`
+  dönüyor ama Opacity 100'de kalıyor, 50'ye dönmüyor (bilinen bug teyit
+  edildi).
+  - `app.findMenuCommandId("Redo")` → `0` (bulunamadı), redo mevcutken de
+    (undo sonrası) aynı sonuç — AE'nin dinamik "Redo <İşlem Adı>" etiketi
+    literal `"Redo"` ile eşleşmiyor; `"Redo Opacity"` denemesi de `0`.
+  - Karşılaştırma için `app.findMenuCommandId("Undo")` → `2371` döndü —
+    yani AE 26.3'te en azından bazı Edit-menü komutları için dinamik/farklı
+    bir ID aralığı var, ama bu `undo` (id 16) çalışıyor olgusuyla çelişmiyor
+    çünkü sabit `executeCommand(16)` zaten adı ne olursa olsun "bir adım
+    geri al"ı tetikliyor (menü etiketinden bağımsız, olasılıkla eski/kalıcı
+    bir sabit komut ID'si). `redo` için eşdeğer sabit ID'nin 17 olmadığı
+    kanıtlandı.
+  - Aday ID taraması (talimatta istenen sınır dahilinde, her biri ayrı,
+    tek seferlik `executeMenuCommand` çağrısı + öncesinde
+    `setLayerProperty(50)`→`undo`→100 ile temiz state): **15, 18, 19, 20,
+    2372** (son biri, `findMenuCommandId("Undo")`'nun döndürdüğü 2371'e
+    komşu olduğu için eklendi) — **hiçbiri** Opacity'yi 50'ye
+    döndürmedi, hepsi sessizce etkisiz kaldı (hata yok, state değişmedi).
+  - Talimata uyularak buradan sonrası (daha geniş ID taraması, script
+    içinde döngü) YAPILMADI — spekülatif "dene-gör" sınıfına giriyor, karar
+    Korhan'a bırakıldı. Test comp temizlendi (`deleteItem`). `app.jsx`'te
+    kod değişikliği yok, `COMMANDS.redo` hâlâ `executeCommand(17)` —
+    yani hâlâ etkisiz, bilerek dokunulmadı.
+  - **Açık kalan gerçek soru:** AE 26.3'te "Redo" işlevine karşılık gelen
+    doğru `executeCommand` ID'si ne (ya da script üzerinden tetiklenen
+    `undo`'nun redo stack'ini normal kullanıcı undo'sundan farklı
+    temizlediği/yönettiği bir olasılık var mı) — doğrulanmadı, uydurulmadı.
+
 ## 2026-08-25 (3)
 - **`addLayerStyle` `canSetEnabled:false` — kök neden araştırması, hipotez
   YANLIŞ çıktı, fix yok.** Önceki hipotez: `layer.property("ADBE Layer

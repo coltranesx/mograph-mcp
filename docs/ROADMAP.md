@@ -495,4 +495,16 @@ alınmalı:
   olarak kabul edip komutu kaldırmak/uyarıyla bırakmak — ikisi de temkinli
   planlama ister, tek başına tekrar "dene-gör" turuna girilmedi.
 - `redo`'nun bu AE sürümünde state'i geri getirmemesi (Tier 4a notu) —
-  `app.jsx` değişikliği + rebuild/redeploy + AE restart gerektiriyor.
+  2026-08-25'te ayrı bir oturumda kök neden araştırması yapıldı (DEVLOG
+  2026-08-25 (4)): `app.findMenuCommandId("Redo")` → `0` (bulunamadı,
+  dinamik etiket literal eşleşmiyor); karşılaştırma için
+  `findMenuCommandId("Undo")` → `2371` (yani `undo`'nun çalışan sabit ID'si
+  16 dinamik aralıktan bağımsız bir eski/kalıcı sabit — bu `redo` için
+  eşdeğerinin de sabit bir ID olması gerektiğini düşündürüyor, ama hangisi
+  belirlenemedi). Aday ID taraması (15, 18, 19, 20, 2372 — her biri ayrı,
+  temiz state ile tek seferlik denendi) **hiçbir sonuç vermedi**, hepsi
+  sessizce etkisiz. Doğru ID bulunamadı; `app.jsx`'e dokunulmadı,
+  `COMMANDS.redo` hâlâ `executeCommand(17)` ve hâlâ etkisiz. Bir sonraki
+  adım (daha geniş/otomatik ID taraması, ya da `redo`'yu şimdilik "bilinen
+  kırık" olarak işaretleyip komuttan bir uyarı/hata döndürmek) Korhan'ın
+  kararına kalıyor.
