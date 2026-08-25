@@ -906,8 +906,17 @@ Object.assign(COMMANDS, {
     'recursively along with it (confirmed live 2026-08-11) — there is no "move children out first" step.', [],
     { itemId: { type: 'integer' }, itemName: { type: 'string' } }),
 
-  // OS keystroke layer (panel-side)
-  keystroke: withDesc('Send OS keystrokes to AE. { keys } (SendKeys, e.g. "^s") | { text } | { key, ctrl?, alt?, shift?, cmd? (macOS Command key — AE\'s own mac shortcuts are almost all Cmd-based) }', []),
+  // OS keystroke layer (panel-side). CAUTION: this leaves AE's own object
+  // model — it's a synthetic OS-level key event delivered to whatever window
+  // has focus when it fires. If AE isn't frontmost at that instant (a dialog,
+  // notification, or the user's own click stole focus), the keys go to a
+  // different application instead, and the effect isn't undoable via AE's
+  // undo stack. Prefer executeMenuCommand/setLayerProperty/etc. when an
+  // AE-scoped command exists; reach for this only for raw key combos that
+  // have no AE scripting API or menu entry.
+  keystroke: withDesc('Send OS keystrokes to AE. { keys } (SendKeys, e.g. "^s") | { text } | { key, ctrl?, alt?, shift?, cmd? (macOS Command key — AE\'s own mac shortcuts are almost all Cmd-based) }. CAUTION: this is a synthetic OS-level key event, not an AE API call — it goes to whichever window has focus when it fires (AE is activated first, but a stolen focus mid-flight sends it elsewhere) and its effect is not covered by AE\'s undo.', [],
+    { keys: { type: 'string' }, text: { type: 'string' }, key: { type: 'string' },
+      ctrl: { type: 'boolean' }, alt: { type: 'boolean' }, shift: { type: 'boolean' }, cmd: { type: 'boolean' } }),
 
   // discovery (read-only "what's installed")
   listFonts: withDesc('Enumerate installed fonts (postScriptName authoritative; family/style derived). { filter?, limit? }', [],

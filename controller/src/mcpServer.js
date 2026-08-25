@@ -55,10 +55,12 @@ const CORE = new Set([
   'listPlugins', 'lumetriParams', 'setActiveComp', 'setCompTime',
 
   // Tier 4b — niş/riskli, tasarımı bir Opus incelemesinden geçti (same
-  // roadmap item, 2026-08-25). `keystroke` bilinçli olarak dışarıda
-  // bırakıldı — OS-seviyesinde AE'nin veri modeliyle sınırlı değil, ayrı
-  // bir karar gerektiriyor (bkz. docs/ROADMAP.md).
-  'executeMenuCommand', 'findMenuCommand', 'quitApp', 'batch',
+  // roadmap item, 2026-08-25). `keystroke` terfi kararı ayrı bir oturuma
+  // bırakılmıştı (OS-seviyesinde AE'nin veri modeliyle sınırlı değil);
+  // 2026-08-25'te bilinçli olarak CORE'a alındı — risk diğer 4 komuttan
+  // niteliksel olarak farklı olsa da bu tek-kullanıcı prodüksiyon aracında
+  // blast radius kullanıcının kendi oturumuyla sınırlı (bkz. docs/ROADMAP.md).
+  'executeMenuCommand', 'findMenuCommand', 'quitApp', 'batch', 'keystroke',
 ]);
 
 const META_TOOLS = [

@@ -457,7 +457,7 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
      `panel/src/main.js`'de önden yakalanıyor); tek not: batch içinde
      `quitApp` çağrılırsa `endUndoGroup`/`results` uçar, description'a
      not düşüldü (engellenmedi).
-   - **`keystroke`** — macOS dalındaki bug (modifier/named-key bilgisini
+   - ~~**`keystroke`** — macOS dalındaki bug (modifier/named-key bilgisini
      yok sayıp literal metin yazıyordu) düzeltildi VE canlı doğrulandı
      (bkz. DEVLOG 2026-08-25: Cmd+A/Cmd+Shift+A select/deselect,
      `{key:'ESCAPE'}` named-key testi). CORE'a terfi kararı hâlâ ayrı
@@ -465,21 +465,25 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
      risk sınıfının (AE'nin veri modeliyle sınırlı değil, activate
      başarısız olursa başka bir uygulamaya gidebilir) diğer 4 komuttan
      niteliksel farkı CORE'a terfiyi mi yoksa `ae_command`-only kalmayı mı
-     gerektirdiği — bu bir sonraki oturumda karara bağlanacak.
+     gerektirdiği — bu bir sonraki oturumda karara bağlanacak.~~ ✅ bitti
+     (DEVLOG 2026-08-25 (2)) — **CORE'a terfi kararı verildi**: blast
+     radius bu tek-kullanıcı prodüksiyon aracında kullanıcının kendi
+     oturumuyla sınırlı, diğer 81 komutla tutarlılık ağır bastı. Gerçek
+     `inputSchema` + CAUTION notu eklendi, canlıda `ae_keystroke`
+     top-level tool'u üzerinden doğrudan doğrulandı (Cmd+A/Cmd+Shift+A).
 
 **Model:** hepsi Sonnet'te (`ae-mcp-expert` frontmatter zaten `model:
 sonnet`) — Haiku'ya düşürme değerlendirildi, yanlış şemanın gerçek tool
 çağrılarını sessizce bozma riski nedeniyle vazgeçildi.
 
-**Şu an:** Tier 1 + Tier 2 (38/38), Tier 3 (26/26) ve Tier 4a (13/13) bitti
-(yukarıda ✅, DEVLOG 2026-08-11 (5)/(6), 2026-08-25) — toplam 77 komut
-top-level `ae_*` tool oldu ve canlı AE'de tek tek doğrulandı. İki açık uç:
-`addLayerStyle`'ın altındaki AE yeteneği (yukarıdaki not) ve `redo`'nun bu
-AE sürümünde state'i geri getirmemesi (Tier 4a notu) — ikisi de tool/şema
-tarafı doğru kurulu, capability'nin kendisi şüpheli/bozuk, ayrı bir
-oturumda ele alınmalı. **Tier 4b tamamlandı** — `quitApp`,
-`executeMenuCommand`, `findMenuCommand`, `batch` CORE'a terfi etti ve
-canlı doğrulandı (toplam 81 komut top-level `ae_*` tool); `keystroke` mac
-bug'ı düzeltilip canlı doğrulandı ama bilinçli olarak `ae_command`-only
-bırakıldı (OS-seviyesi risk sınıfı farkı). Şu an açık uçlar sadece:
-`addLayerStyle`, `redo`, ve `keystroke`'un CORE terfi kararı.
+**Şu an:** Tier 1 + Tier 2 (38/38), Tier 3 (26/26), Tier 4a (13/13) ve
+Tier 4b (5/5, `keystroke` dahil) bitti — **toplam 82/82 komut top-level
+`ae_*` tool oldu ve canlı AE'de tek tek doğrulandı. MCP tool şema
+tamamlama işi tamamen kapandı.** İki açık uç kalıyor, ikisi de tool/şema
+tarafı değil, AE capability'sinin kendisiyle ilgili, ayrı bir oturumda ele
+alınmalı:
+- `addLayerStyle`'ın altındaki AE yeteneği — layer style grupları
+  `canSetEnabled:false` ile reddediyor (Tier 3 notu), kök neden
+  araştırması bir kez AE'yi kilitlemişti, temkinli tekrar gerekiyor.
+- `redo`'nun bu AE sürümünde state'i geri getirmemesi (Tier 4a notu) —
+  `app.jsx` değişikliği + rebuild/redeploy + AE restart gerektiriyor.

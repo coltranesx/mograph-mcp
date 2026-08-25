@@ -12,6 +12,35 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-25 (2)
+- **`keystroke` CORE'a terfi ettirildi — MCP tool şema tamamlama tamamen
+  bitti (82/82 komut top-level `ae_*` tool).** Önceki oturumda bilinçli
+  olarak ayrı bırakılan karar (bkz. ROADMAP): risk sınıfı diğer Tier 4b
+  komutlarından farklı — AE'nin obje modelinin dışına çıkıp OS seviyesinde
+  sentetik tuş vuruşu gönderiyor, odak AE'de değilse başka bir uygulamaya
+  gidebilir, etkisi AE `undo`'suyla geri alınamaz. Korhan'la kriterleri
+  konuşulduktan sonra (blast radius'un bu tek-kullanıcı prodüksiyon
+  aracında kullanıcının kendi oturumuyla sınırlı olması, diğer 81 komutla
+  tutarlılık) **CORE'a alınmasına karar verildi.**
+  `shared/src/commands.js`'teki `keystroke` girişine gerçek `inputSchema`
+  (`keys`/`text`/`key`/`ctrl`/`alt`/`shift`/`cmd`, hepsi string/boolean)
+  ve yukarıdaki riski özetleyen bir CAUTION notu eklendi;
+  `controller/src/mcpServer.js`'in `CORE` Set'ine eklendi. `npm test`:
+  226/226.
+  - **Canlı doğrulandı** (26.3x87, geçici `__keystroke_core_probe` comp +
+    2 null layer, iş bitince `deleteItem` + `closeProject{save:false}` ile
+    temizlendi). `setActiveComp` sonrası `{key:'a', cmd:true}` → Cmd+A
+    (1→2 layer seçili), `{key:'a', cmd:true, shift:true}` → Cmd+Shift+A
+    (2→0 layer) — top-level `ae_keystroke` tool'u üzerinden (önceki
+    doğrulama `ae_command` dispatcher'ıyla yapılmıştı, bu kez doğrudan).
+  - Controller bu doğrulama için `npm run controller` ile manuel
+    başlatıldı (`service:restart` değil) — 2026-08-22'de bilinçli kapatılan
+    launchd auto-start'a bu kez dokunulmadı, `print-disabled` işlem
+    sonunda hâlâ `disabled` olarak teyit edildi. Tier 4a/4b'deki yan etkiyi
+    (her `service:restart`'ın auto-start'ı farkında olmadan yeniden
+    etkinleştirmesi) önlemenin yolu netleşti: şema değişikliğini devreye
+    almak için `service:restart` yerine düz `npm run controller` yeterli.
+
 ## 2026-08-25
 - **MCP tool şema tamamlama: Tier 4a (10 komut, kalan 3 zaten CORE'daydı)
   bitti.** `undo`, `redo`, `purge`, `getSelection`, `getAppInfo`,
