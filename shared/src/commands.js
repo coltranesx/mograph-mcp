@@ -565,10 +565,19 @@ Object.assign(COMMANDS, {
   quitApp: withDesc('Quit After Effects. Never triggers the save-changes dialog (saves first by default). The panel connection drops as part of quitting - the controller resolves the call as a DISCONNECTED error, which for this command means success, not failure. { save? (default true) }', []),
   undo: withDesc('Edit > Undo.', []),
   redo: withDesc('Edit > Redo.', []),
-  purge: withDesc('Purge caches. { target?: all|undo|snapshot|image }', []),
-  setActiveComp: withDesc('Open a comp in the viewer. { compId|compName }', ['compId']),
+  purge: withDesc('Purge caches. { target?: all|undo|snapshot|image }', [],
+    { target: { type: 'string' } }),
+  // compName is accepted by AEB.requireComp (host.jsx) but this registry-level
+  // validate only enforces compId, same as every other compId-bearing command
+  // here (getCompDetails, getCompTime, alignLayer, ...) — see this file's
+  // header: the registry gates obviously-malformed calls, the JSX layer is
+  // the thorough one. A compName-only call reaches AE fine via ae_command;
+  // it just won't pass this registry's requireFields.
+  setActiveComp: withDesc('Open a comp in the viewer. { compId|compName }', ['compId'],
+    { compId: { type: 'integer' }, compName: { type: 'string' } }),
   getSelection: withDesc('Get the active comp + selected layers.', []),
-  setCompTime: withDesc('Move the comp playhead. { compId, time }', ['compId', 'time']),
+  setCompTime: withDesc('Move the comp playhead. { compId, time }', ['compId', 'time'],
+    { compId: { type: 'integer' }, time: { type: 'number' } }),
   getAppInfo: withDesc('App + project facts.', []),
 
   // executor (HLD)
@@ -906,7 +915,8 @@ Object.assign(COMMANDS, {
   introspectEffect: withDesc('Add an effect (by display name or matchName) and dump its full parameter tree (name + matchName + valueType + default). The way to wire any third-party plugin. { name | names[], depth? }', [],
     { name: { type: 'string' }, names: { type: 'array', items: { type: 'string' } }, depth: { type: 'integer' } }),
   getEnvironment: withDesc('AE version/build, OS, ExtendScript, font count, project + memory info.', []),
-  listPlugins: withDesc('Best-effort list of installed plugins (.aex/.plugin) by scanning install dirs. { dirs? }', []),
+  listPlugins: withDesc('Best-effort list of installed plugins (.aex/.plugin) by scanning install dirs. { dirs? }', [],
+    { dirs: { type: 'array', items: { type: 'string' } } }),
 
   // friendly Lumetri grading (adds Lumetri if missing; sets params by name)
   applyLumetri: withDesc('Grade a layer with Lumetri by friendly name. { compId, layer, settings:{ saturation, temperature, tint, exposure, contrast, highlights, shadows, whites, blacks, vibrance, sharpen, vignette, ... }, time? }. NOTE: vignette\'s native range is -5..5, not -100..100 — out-of-range values land in the response\'s `skipped` list with the AE error, not a silent no-op.', ['compId'],

@@ -12,6 +12,49 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-08-25
+- **MCP tool şema tamamlama: Tier 4a (10 komut, kalan 3 zaten CORE'daydı)
+  bitti.** `undo`, `redo`, `purge`, `getSelection`, `getAppInfo`,
+  `getEnvironment`, `listPlugins`, `lumetriParams`, `setActiveComp`,
+  `setCompTime` `controller/src/mcpServer.js`'in `CORE` Set'ine eklendi;
+  `shared/src/commands.js`'te gerçek argümanı olanlara (`purge.target`,
+  `listPlugins.dirs`, `setActiveComp.compId/compName`,
+  `setCompTime.compId/time`) `schema` eklendi, tamamen parametresiz
+  olanlar (`undo`/`redo`/`getSelection`/`getAppInfo`/`getEnvironment`/
+  `lumetriParams`) `listRenderQueue`/`clearRenderQueue`'nun zaten
+  kullandığı desenle şemasız bırakıldı — `withDesc`'in 3. argümanı yoksa
+  mcpServer.js'teki permissive fallback zaten doğru davranıyor.
+  `npm test`: 226/226. 13 komutun (yeni 10 + `ping`/`getProjectInfo`/
+  `listComps`) 13'ü de canlı AE'de (26.3x87, "Untitled" proje, geçici
+  `tier4a-test` comp üzerinden) `/command` REST üzerinden tek tek
+  doğrulandı; iş bitince `closeProject{save:false}` ile proje temiz
+  Untitled'a döndürüldü.
+  - **Gerçek bug bulundu, bu işin kapsamı dışında bırakıldı:** `redo`
+    (`panel/jsx/commands/app.jsx`, `app.executeCommand(17)`) bu AE
+    sürümünde hiçbir şeyi geri getirmiyor. `undo` (`executeCommand(16)`)
+    hem layer ekleme/silmede hem `setLayerProperty` (Opacity 100→50)
+    üzerinde tutarlı ve doğru çalışıyor (state gerçekten geri alınıyor);
+    `undo`'dan hemen sonra çağrılan `redo` ise `{ok:true}` dönüyor ama
+    projede hiçbir şey değişmiyor (opacity 50 kalması gerekirken 100'de
+    kalıyor) — 3 saniyeye kadar gecikme de sonucu değiştirmiyor. Kod
+    `Initial commit`'ten (upstream `aftr`) geliyor, bu fork'ta hiç canlı
+    test edilmemişti. Kök neden netleşmedi (bu AE build'inde
+    `executeCommand(17)`'nin artık Redo'ya karşılık gelmemesi ihtimali
+    var — `app.findMenuCommandId("Redo")` da undo sonrası bile 0
+    (bulunamadı) döndü, ama Edit menüsündeki Redo/Undo etiketleri dinamik
+    olduğundan bu testin kendisi de güvenilir değil). Düzeltmek
+    `app.jsx` değişikliği + `build:jsx`/`deploy:panel` + AE yeniden başlatma
+    gerektirir; ROADMAP'e not düşüldü, ayrı bir oturumun işi.
+  - **Yan not (görev kapsamı dışı, düzeltildi):** `npm run service:restart`
+    çalıştırmak, 2026-08-22'de bilinçli olarak devre dışı bırakılan
+    launchd auto-start servisini (`com.coltranesx.mograph-mcp.controller`)
+    farkında olmadan tekrar `enabled` durumuna getirdi (`launchctl
+    kickstart` her nasılsa disabled bayrağını da kaldırıyor). İş bitince
+    aynı 2026-08-22 tarifiyle (`bootout` + `disable`) tekrar devre dışı
+    bırakıldı ve doğrulandı (`print-disabled` → disabled, port 8787 boş).
+    Auto-start hâlâ istenmiyor; her oturumda controller'ı elle başlatmak
+    gerekiyor.
+
 ## 2026-08-22
 - **Controller'ın launchd auto-start servisi durduruldu ve devre dışı bırakıldı.**
   `com.coltranesx.mograph-mcp.controller` (`~/Library/LaunchAgents/com.coltranesx.mograph-mcp.controller.plist`,

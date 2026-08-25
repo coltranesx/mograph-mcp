@@ -49,6 +49,10 @@ const CORE = new Set([
   'enableTimeRemap', 'replaceSource',
   // layer style / bulk cleanup
   'addLayerStyle', 'removeLayersByPrefix',
+
+  // Tier 4a — parametresiz/az parametreli getter'lar (same roadmap item, 2026-08-25)
+  'undo', 'redo', 'purge', 'getSelection', 'getAppInfo', 'getEnvironment',
+  'listPlugins', 'lumetriParams', 'setActiveComp', 'setCompTime',
 ]);
 
 const META_TOOLS = [

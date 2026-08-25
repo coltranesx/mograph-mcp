@@ -406,12 +406,31 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
      kilitledi (aşağıya bkz.), o yüzden yarım bırakıldı — ayrı bir oturumda,
      daha temkinli (olası uzun/riskli AE çağrılarını izole bir test
      projesinde) ele alınmalı. `removeLayersByPrefix` sorunsuz geçti.
-4. **Tier 4a — parametresiz/az parametreli getter'lar (13 komut, düşük
+4. ~~**Tier 4a — parametresiz/az parametreli getter'lar (13 komut, düşük
    öncelik):** `ping`, `getProjectInfo`, `listComps`, `undo`, `redo`,
    `purge`, `getSelection`, `getAppInfo`, `getEnvironment`, `listPlugins`,
-   `lumetriParams`, `setActiveComp`, `setCompTime`. `schema: null` burada
-   zaten doğru (gerçek argüman yok) — gap sayılmaz, istenirse hızlıca
-   yapılır.
+   `lumetriParams`, `setActiveComp`, `setCompTime`.~~ ✅ bitti (DEVLOG
+   2026-08-25) — kalan 10 komut (`ping`/`getProjectInfo`/`listComps` zaten
+   CORE'daydı) `CORE`'a terfi ettirildi; gerçek argümanı olanlara
+   (`purge.target`, `listPlugins.dirs`, `setActiveComp.compId/compName`,
+   `setCompTime.compId/time`) `schema` eklendi, tamamen parametresiz
+   olanlar (`undo`, `redo`, `getSelection`, `getAppInfo`, `getEnvironment`,
+   `lumetriParams`) mevcut `listRenderQueue`/`clearRenderQueue` deseniyle
+   şemasız bırakıldı. `npm test`: 226/226. 13 komutun 13'ü de canlı AE'de
+   (26.3x87) `/command` üzerinden doğrulandı. **Bir tane gerçek bug
+   bulundu, bu işin kapsamı dışında bırakıldı:** `redo` (`app.jsx`,
+   `app.executeCommand(17)`) bu AE sürümünde hiçbir şeyi geri getirmiyor —
+   `undo` (`executeCommand(16)`) hem layer silme/ekleme hem
+   `setLayerProperty` (Opacity) üzerinde tutarlı çalışıp state'i doğru
+   geri alırken, `undo` sonrası `redo` çağrısı `{ok:true}` dönüyor ama
+   projede hiçbir değişiklik yapmıyor (opacity 50 → undo → 100 → redo →
+   100 kalıyor, 50'ye dönmüyor); 3 saniyeye kadar gecikme de fark
+   etmiyor. Kod `Initial commit`'ten (upstream `aftr`) geliyor, bu
+   fork'ta hiç canlı doğrulanmamıştı. Kök neden netleşmedi (executeCommand
+   ID'si bu build'de redo'ya karşılık gelmiyor olabilir, ya da AE script
+   üzerinden tetiklenen undo'nun redo stack'ini farklı işlemesi olabilir);
+   düzeltmek `panel/jsx/commands/app.jsx` değişikliği + rebuild/redeploy +
+   AE restart gerektirir, ayrı bir oturumun işi.
 5. **Tier 4b — niş/riskli (5 komut, flatten etmeden önce ayrı tasarım
    ister):** `quitApp` (yanlışlıkla AE'yi kapatabilir), `executeMenuCommand`
    / `findMenuCommand` (serbest metin, geniş yüzey), `keystroke` (OS-level),
@@ -421,9 +440,11 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
 sonnet`) — Haiku'ya düşürme değerlendirildi, yanlış şemanın gerçek tool
 çağrılarını sessizce bozma riski nedeniyle vazgeçildi.
 
-**Şu an:** Tier 1 + Tier 2 (38/38) ve Tier 3 (26/26) bitti (yukarıda ✅,
-DEVLOG 2026-08-11 (5)/(6)) — toplam 64 komut top-level `ae_*` tool oldu ve
-canlı AE'de tek tek doğrulandı. Tek açık uç: `addLayerStyle`'ın altındaki
-AE yeteneği (yukarıdaki not) — tool doğru kurulu ama capability'nin kendisi
-şüpheli, ayrı bir oturumda ele alınmalı. Tier 4a/4b bu iş kapsamının
-dışında bırakıldı, ayrı bir oturumda ele alınacak.
+**Şu an:** Tier 1 + Tier 2 (38/38), Tier 3 (26/26) ve Tier 4a (13/13) bitti
+(yukarıda ✅, DEVLOG 2026-08-11 (5)/(6), 2026-08-25) — toplam 77 komut
+top-level `ae_*` tool oldu ve canlı AE'de tek tek doğrulandı. İki açık uç:
+`addLayerStyle`'ın altındaki AE yeteneği (yukarıdaki not) ve `redo`'nun bu
+AE sürümünde state'i geri getirmemesi (Tier 4a notu) — ikisi de tool/şema
+tarafı doğru kurulu, capability'nin kendisi şüpheli/bozuk, ayrı bir
+oturumda ele alınmalı. Tier 4b bu iş kapsamının dışında bırakıldı, ayrı
+bir oturumda ele alınacak.
