@@ -431,10 +431,41 @@ terfi ettirmek (bkz. kök-nedene-inen-çözüm prensibi, CLAUDE.md). 4 kademe,
    üzerinden tetiklenen undo'nun redo stack'ini farklı işlemesi olabilir);
    düzeltmek `panel/jsx/commands/app.jsx` değişikliği + rebuild/redeploy +
    AE restart gerektirir, ayrı bir oturumun işi.
-5. **Tier 4b — niş/riskli (5 komut, flatten etmeden önce ayrı tasarım
-   ister):** `quitApp` (yanlışlıkla AE'yi kapatabilir), `executeMenuCommand`
-   / `findMenuCommand` (serbest metin, geniş yüzey), `keystroke` (OS-level),
-   `batch` (meta-komut, kendi şeması ayrı).
+5. **Tier 4b — niş/riskli (5 komut).** Bir Opus mimarlık incelemesi
+   (2026-08-25, DEVLOG) yapıldı, kararlar:
+   - ~~`quitApp` → CORE, `{save?:boolean}`.~~ ✅ bitti — canlı doğrulandı
+     (`save:false`, AE gerçekten kapandı, controller `DISCONNECTED`'i
+     `{ok:true}` olarak çözdü). **Yol boyunca gerçek bug bulundu ve
+     düzeltildi:** `save:false` yolunda `app.quit()`'ten önce
+     `proj.close(CloseOptions.DO_NOT_SAVE_CHANGES)` çağrılmıyordu, bu da
+     dosyanın kendi "asla save dialog'u tetiklemez" iddiasının aksine
+     native dialog'u açıyordu (Korhan'ın kendi gözlemiyle bulundu, elle
+     kapatmak zorunda kaldı). `closeProject`'in zaten yaptığı `proj.close`
+     çağrısı eklendi, ikinci canlı denemede (kasıtlı dirty proje ile)
+     dialog çıkmadığı doğrulandı — bkz. DEVLOG 2026-08-25.
+   - ~~`executeMenuCommand` → CORE, `{commandId?:integer,
+     commandName?:string}`.~~ ✅ bitti — canlı doğrulandı ("Deselect All"),
+     description'a dialog-açan komutlar için uyarı eklendi (engellenmedi).
+   - ~~`findMenuCommand` → CORE, `{commandName:string}`.~~ ✅ bitti — canlı
+     doğrulandı (`"Deselect All"` → `commandId:2004`).
+   - ~~`batch` → CORE, `commands:[{command,params}]` şeması (`params`
+     tipsiz `object` kalıyor).~~ ✅ bitti — canlı doğrulandı: iki
+     `setLayerProperty` tek çağrıda yapıldı, TEK `undo` ikisini de geri
+     aldı (1-undo-group vaadi doğru, gerçek bug çıkmadı). Alt-komut
+     whitelist/blacklist gereksiz bulundu (yapısal olarak imkânsız:
+     `keystroke`/`render`/`listPlugins` JSX dispatch'ine hiç girmiyor,
+     `panel/src/main.js`'de önden yakalanıyor); tek not: batch içinde
+     `quitApp` çağrılırsa `endUndoGroup`/`results` uçar, description'a
+     not düşüldü (engellenmedi).
+   - **`keystroke`** — macOS dalındaki bug (modifier/named-key bilgisini
+     yok sayıp literal metin yazıyordu) düzeltildi VE canlı doğrulandı
+     (bkz. DEVLOG 2026-08-25: Cmd+A/Cmd+Shift+A select/deselect,
+     `{key:'ESCAPE'}` named-key testi). CORE'a terfi kararı hâlâ ayrı
+     bırakıldı — bug artık gerekçe değil, geri kalan soru OS-seviyesi
+     risk sınıfının (AE'nin veri modeliyle sınırlı değil, activate
+     başarısız olursa başka bir uygulamaya gidebilir) diğer 4 komuttan
+     niteliksel farkı CORE'a terfiyi mi yoksa `ae_command`-only kalmayı mı
+     gerektirdiği — bu bir sonraki oturumda karara bağlanacak.
 
 **Model:** hepsi Sonnet'te (`ae-mcp-expert` frontmatter zaten `model:
 sonnet`) — Haiku'ya düşürme değerlendirildi, yanlış şemanın gerçek tool
@@ -446,5 +477,9 @@ top-level `ae_*` tool oldu ve canlı AE'de tek tek doğrulandı. İki açık uç
 `addLayerStyle`'ın altındaki AE yeteneği (yukarıdaki not) ve `redo`'nun bu
 AE sürümünde state'i geri getirmemesi (Tier 4a notu) — ikisi de tool/şema
 tarafı doğru kurulu, capability'nin kendisi şüpheli/bozuk, ayrı bir
-oturumda ele alınmalı. Tier 4b bu iş kapsamının dışında bırakıldı, ayrı
-bir oturumda ele alınacak.
+oturumda ele alınmalı. **Tier 4b tamamlandı** — `quitApp`,
+`executeMenuCommand`, `findMenuCommand`, `batch` CORE'a terfi etti ve
+canlı doğrulandı (toplam 81 komut top-level `ae_*` tool); `keystroke` mac
+bug'ı düzeltilip canlı doğrulandı ama bilinçli olarak `ae_command`-only
+bırakıldı (OS-seviyesi risk sınıfı farkı). Şu an açık uçlar sadece:
+`addLayerStyle`, `redo`, ve `keystroke`'un CORE terfi kararı.

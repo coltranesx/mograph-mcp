@@ -54,6 +54,76 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
     bırakıldı ve doğrulandı (`print-disabled` → disabled, port 8787 boş).
     Auto-start hâlâ istenmiyor; her oturumda controller'ı elle başlatmak
     gerekiyor.
+- **`keystroke`'un macOS dalındaki sessiz bug'ı düzeltildi.** Tier 4b
+  (`quitApp`, `executeMenuCommand`, `findMenuCommand`, `keystroke`, `batch`)
+  CORE'a terfi kararı öncesi bir Opus mimarlık incelemesi istendi
+  (`architect` ajanı, model override); 4/5'i sorunsuz terfi edilebilir
+  bulundu ama `keystroke` için gerçek bir bug ortaya çıktı, terfi ayrı
+  bir oturuma bırakıldı. `panel/src/keystroke.js`'in mac dalı (`osascript`
+  System Events) `buildKeys()`'in ürettiği modifier/named-key bilgisini
+  tamamen yok sayıp `p.text`/`p.key`'i olduğu gibi `keystroke "..."`
+  komutuna literal string olarak veriyordu — `{key:'F9', ctrl:true}`
+  Ctrl+F9 basmak yerine ekrana "F9" yazıyordu, `{keys:'^s'}` ise
+  `p.text`/`p.key` ikisi de tanımsız olduğundan hiçbir şey yazmıyordu.
+  Sessiz yanlış davranış, eksik özellikten kötü (Opus'un notu) — bu
+  yüzden CORE terfisi değil, önce bu düzeltildi. `buildMacCommand()` +
+  `parseSendKeysForMac()` + `MAC_KEY_CODES` tablosu eklendi: modifier'lar
+  artık `using {control down, ...}` ile gerçekten uygulanıyor, isimli
+  tuşlar (`F1-F20`, `RETURN`, `TAB`, ok tuşları, ...) `key code`'a
+  çözülüyor. Ayrıca yeni bir `cmd?` modifier'ı eklendi (mac Command
+  tuşu) — AE'nin kendi mac kısayolları neredeyse hepsi Cmd tabanlı,
+  önceki `ctrl/alt/shift` üçlüsü bunu hiç ifade edemiyordu, düzeltmeyi
+  gerçekten kullanışlı kılmak için gerekliydi. `^`/`%`/`+` SendKeys
+  önekleri mac'te bilinçli olarak Control/Option/Shift'e (Cmd'ye değil)
+  eşleniyor — dosya başına bunun neden kafa karıştırıcı olabileceği not
+  edildi. `npm test`: 226/226 (bu dosya JSX/simulator test yüzeyinin
+  dışında, Node/OS kodu, önceden de test edilmiyordu).
+  - **Canlı doğrulandı** (26.3x87, geçici `__keystroke_probe` comp + 2 null
+    layer, iş bitince silindi). İlk denemede `osascript` `exit 1` verdi;
+    hata mesajına stderr eklendi (`mc.stderr` yakalanıp `done()`'a
+    iletiliyor, önceden sadece "exit 1" görünüyordu), panel + AE tam
+    yeniden başlatılınca ikinci denemede sorunsuz çalıştı — ilk hatanın
+    kök nedeni netleşmedi, tekrarlanmadı. `{key:'a', cmd:true}` → Cmd+A
+    (select all, 1→2 layer seçili), `{key:'a', cmd:true, shift:true}` →
+    Cmd+Shift+A (deselect all, 2→0 layer), `{key:'ESCAPE'}` → `key code
+    53` hatasız çalıştı. Modifier ve named-key çözümü ikisi de doğrulandı.
+    `keystroke`'un CORE terfi kararı hâlâ ayrı — bug artık gerekçe değil,
+    geri kalan soru OS-seviyesi risk sınıfının CORE'a uygun olup olmadığı.
+  - **Diğer 4 komut CORE'a terfi edildi ve canlı doğrulandı** (aynı Opus
+    incelemesindeki şemalarla — `controller/src/mcpServer.js` CORE Set +
+    `shared/src/commands.js`'te `withDesc`'e 3. argüman): `executeMenuCommand`
+    ("Deselect All" ile test edildi, seçim gerçekten kalktı),
+    `findMenuCommand` (`"Deselect All"` → `commandId:2004`, doğru çözüldü),
+    `batch` (iki `setLayerProperty` tek çağrıda yapıldı, TEK `undo` ikisini
+    de geri aldı — Opus'un "canlı doğrulanmalı" dediği 1-undo-group vaadi
+    doğrulandı, gerçek bir bug çıkmadı), `quitApp` (`save:false` ile
+    çağrıldı, AE gerçekten kapandı — controller `DISCONNECTED`'i
+    dokümante edildiği gibi `{ok:true}` olarak çözdü). `npm test`:
+    226/226. `npm run service:restart` çalıştırıldı (schema değişikliği
+    devreye girsin diye) — bu, 2026-08-22'de bilinçli kapatılan launchd
+    auto-start'ı yine farkında olmadan `enabled` yaptı (aynı yan etki,
+    Tier 4a'da da görülmüştü); test bitince tekrar `bootout`+`disable`
+    ile devre dışı bırakılacak.
+  - **`quitApp` canlı testi sırasında gerçek bir bug bulundu ve düzeltildi
+    (Korhan'ın kendi gözlemiyle — save dialog'unu elle kapattı).**
+    `panel/jsx/commands/app.jsx`'teki `quitApp`, dosyanın kendi başlık
+    yorumunun ("closeProject/openProject/quitApp never rely on AE's own
+    save-changes dialog... always pass CloseOptions.DO_NOT_SAVE_CHANGES")
+    iddia ettiği deseni takip ETMİYORDU: `closeProject`/`openProject`
+    `proj.close(CloseOptions.DO_NOT_SAVE_CHANGES)` çağırırken `quitApp`
+    doğrudan `app.quit()`'e gidiyordu — ki `app.quit()`'in `closeProject`
+    gibi bir "discard" seçeneği yok. `save:true` (varsayılan) yolunda
+    fark edilmemişti çünkü `_saveOrThrow` projeyi zaten kaydedip dirty
+    flag'i temizliyordu; ama `save:false` (kasıtlı discard) verildiğinde
+    proje dirty kalıyor ve `app.quit()` AE'nin native "Save changes?"
+    dialog'unu açıyordu — bridge kilitleniyor, insan müdahalesi (Don't
+    Save'e tıklamak) gerekiyordu. Fix: `app.quit()`'ten önce `proj.close
+    (CloseOptions.DO_NOT_SAVE_CHANGES)` eklendi (closeProject'in zaten
+    yaptığı şey) — artık `save:false` yolu da hiçbir dialog açmadan
+    kapanıyor. `npm test`: 226/226. Canlı doğrulandı: kasıtlı dirty proje
+    (`__quitapp_probe` comp'u) + `quitApp{save:false}` → dialog YOK,
+    sessiz kapanış (kullanıcı teyit etti). AE zaten kapalıyken deploy
+    edildiği için ekstra bir restart döngüsü gerekmedi.
 
 ## 2026-08-22
 - **Controller'ın launchd auto-start servisi durduruldu ve devre dışı bırakıldı.**
