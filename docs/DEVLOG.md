@@ -13,6 +13,65 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 ---
 
 ## 2026-09-07
+- **Bug: `ae_render` (`startFrame`/`endFrame` ile) her karesi aynı olan
+  bir video üretiyordu — sanki sadece ilk kare render edilip N kez
+  kopyalanmış gibi; aynı comp/aralık `ae_render_and_download` ile doğru
+  (zaman içinde değişen) render veriyordu.** ffprobe kare-hash
+  karşılaştırmasıyla doğrulanmıştı: 51 karelik bir render'da tüm kareler
+  aynı hash'e sahipti.
+  - **Kök neden — `panel/src/render.js:75-113` (render öncesi kaydetme
+    eksikliği), `controller/src/media.js:189-197` (aynı eksikliğin
+    `ae_render_and_download` tarafında zaten kapatılmış olması):**
+    render aslında AE'nin Render Queue/RQItem mekanizmasını KULLANMIYOR —
+    `panel/jsx/commands/renderqueue.jsx:1-2` ve `panel/src/render.js:1-8`
+    yorumlarında da açık: `rqItem.render()` senkron/modal olduğu, bridge'i
+    kilitlediği için gerçek render tamamen `aerender` (After Effects'in
+    komut satırı render aracı) ile, ayrı bir process olarak yapılıyor
+    (`panel/src/render.js:104-151`, `-project/-comp/-output/-s/-e`
+    argümanlarıyla). `-s`/`-e` (startFrame/endFrame) argümanları doğru
+    iletiliyordu (`shared/src/commands.js:143-163` validate; `panel/jsx/
+    commands/render.jsx:14-36` `__prepareRender`) — bahsedilen RQItem.
+    timeSpanStart/timeSpanDuration hipotezi bu kod tabanında geçerli
+    değildi, çünkü o API hiç çağrılmıyor.
+    Asıl sorun: **`aerender` ayrı bir process olarak projeyi DİSKTEN
+    açıyor — çalışan AE örneğinin bellek içindeki canlı state'iyle hiçbir
+    bağlantısı yok.** `panel/jsx/commands/render.jsx:14-36`'daki
+    `__prepareRender`, `projectSaved` alanını sadece "projeye hiç dosya
+    atanmış mı" diye kontrol ediyordu (`projectPath ? true : false`) —
+    "diskteki dosya güncel mi" diye değil. `controller/src/media.js`'teki
+    `ae_render_and_download` yolu (`startRender()`, satır 189-191) render
+    komutunu göndermeden ÖNCE her seferinde `saveProject` çağırarak bu
+    boşluğu zaten kapatıyordu (proje daha önce hiç kaydedilmediyse
+    `assets/_session.aep`'e fallback ile). Ama `ae_render` / `ae_command
+    render` (`controller/src/mcpServer.js:129-141`, genel `backend.execute`
+    dispatch'i) hiçbir zaman bu adımı atmıyordu — sadece `aeClient.
+    sendCommand('render', ...)`'a gidiyordu. Sonuç: proje ilk kaydedildikten
+    SONRA (ör. keyframe eklendikten sonra) tekrar kaydedilmeden `ae_render`
+    çağrılırsa, `aerender` diskteki BAYAT (henüz animasyonsuz/statik)
+    projeyi render ediyor — bu da tam olarak gözlenen semptomu üretiyor:
+    istenen aralığın her karesi aynı (o bayat statik state'in donuk hâli).
+  - **Fix — `panel/src/render.js`:** `render()` artık `__prepareRender`'dan
+    hemen sonra, `aerender`'ı spawn etmeden ÖNCE koşulsuz olarak
+    `__saveProject` çağırıyor (mevcut dosyaya taze bir save; hiç
+    kaydedilmemişse aynı `PROJECT_UNSAVED` hatasını üretiyor). Bu, HER İKİ
+    çağrı yolunun da (ae_render, ae_render_and_download) fiilen aynı tek
+    fiziksel render implementasyonundan geçtiği tespit edildikten sonra,
+    düzeltmeyi o tek boğaz noktasına (choke point) taşımanın sonucu — artık
+    `media.js`'in kendi ön-save adımını unutması ya da gelecekte üçüncü bir
+    çağıran eklenmesi hiçbir zaman aynı bug'ı tekrar açamaz. `media.js`'teki
+    mevcut çift-saveProject (bare + `_session.aep` fallback) bilinçli olarak
+    dokunulmadan bırakıldı: "hiç kaydedilmemiş proje" durumunda ilk kez bir
+    dosya yolu kurma kolaylığı sağlıyor, bu fix'in kapsamı dışında ayrı ve
+    değerli bir davranış.
+  - **Test:** `npm test` (226/226 yeşil, hiçbir şey bozulmadı). `panel/src/
+    render.js` CEP-only olduğu için mevcut test altyapısı
+    (`controller/shared/simulator`) bu dosyayı hiç kapsamıyor — bu zaten
+    2026-08-09 (13) girdisinde not edilmiş bilinen bir boşluk; bu fix de
+    aynı boşluğa giriyor, otomatik regresyon testi yok. Gerçek AE
+    üzerinden canlı doğrulama bu oturumda yapılamadı (controller/panel
+    canlı değildi) — kod seviyesinde dikkatli inceleme + iki yolun tam
+    diff'i ile sınırlı kaldı; canlı bir sonraki render denemesinde
+    ffprobe kare-hash karşılaştırmasıyla doğrulanmalı.
 - **`batch`'in "1 trip, 1 undo" tasarımı + AE 26.3'teki bozuk `redo`'nun
   birleşimi, büyük bir toplu kurulumu tek Cmd+Z ile sildi — kurtarma yolu
   diskten son kayda dönmek oldu; ayrıca `ae_status.project`'in bayat

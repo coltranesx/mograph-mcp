@@ -80,17 +80,39 @@
       }
       var info = prep.result;
 
-      if (!info.projectSaved) {
-        sendEnvelope({
-          id: env.id,
-          type: 'result',
-          ok: false,
-          error: 'Project must be saved before rendering (aerender needs a file on disk)',
-          code: 'PROJECT_UNSAVED',
-        });
-        return;
-      }
+      // Force a fresh save right here, immediately before spawning aerender.
+      // aerender.exe is a SEPARATE process — it opens the .aep file FROM DISK
+      // and has no connection to this running AE instance's live memory. If
+      // the project was saved once but then edited (keyframes/layers/props
+      // added afterward) without a save in between, `info.projectSaved` above
+      // would still read true (it only checks "has a file ever been
+      // assigned", not "is that file current") and aerender would silently
+      // render the STALE on-disk state — e.g. a comp saved before any
+      // keyframes existed renders as a static frame repeated across the
+      // whole requested range, which is exactly what was observed: a
+      // startFrame/endFrame render came back with every frame identical.
+      // __saveProject (panel/jsx/commands/render.jsx) re-saves to the
+      // existing file, or throws if the project has literally never been
+      // saved — same failure this replaces, just now also catching the
+      // "saved once, edited since" case.
+      bridge.callHost('__saveProject', {}).then(function (saved) {
+        if (!saved.ok) {
+          sendEnvelope({
+            id: env.id,
+            type: 'result',
+            ok: false,
+            error: saved.error || 'Project must be saved before rendering (aerender needs a file on disk)',
+            code: 'PROJECT_UNSAVED',
+          });
+          return;
+        }
+        if (saved.result && saved.result.path) info.projectPath = saved.result.path;
+        renderAfterSave(env, sendEnvelope, sendEvent, log, info);
+      });
+    });
+  }
 
+  function renderAfterSave(env, sendEnvelope, sendEvent, log, info) {
       var jobId = 'render_' + info.compId + '_' + (new Date()).getTime();
 
       // Respond immediately — non-blocking contract.
@@ -178,7 +200,6 @@
           tail: (code === 0) ? undefined : outputTail,
         });
       });
-    });
   }
 
   window.renderHandler = { render: render, getAerenderPath: getAerenderPath };
