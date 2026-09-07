@@ -548,6 +548,40 @@ Object.assign(COMMANDS, {
       inType: { type: 'string' }, outType: { type: 'string' } }),
   removeKeyframes: withDesc('Clear all keyframes on a property.', ['compId', 'property'],
     { compId: { type: 'integer' }, property: PROPERTY_SCHEMA }),
+  getEase: withDesc('Read one keyframe\'s time/value/real temporal ease (speed+influence per dimension, from keyInTemporalEase/keyOutTemporalEase)/interpolation type — not an approximation from sampling the curve. { compId, layer, property, keyIndex (1-based) }', ['compId', 'property', 'keyIndex'],
+    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA, keyIndex: { type: 'integer' } }),
+  copyKeyframes: withDesc(
+    'Copy ALL keyframes (time+value+real temporal ease+interpolation type — an exact copy, not a resampled approximation) from one property to ONE target property. Clears the target\'s existing keyframes on that property first; does not touch anything else on the target layer. ' +
+    '{ sourceCompId, sourceLayer, sourceProperty, targetCompId, targetLayer, targetProperty? (defaults to sourceProperty) }',
+    ['sourceCompId', 'sourceLayer', 'sourceProperty', 'targetCompId', 'targetLayer'],
+    {
+      sourceCompId: { type: 'integer' }, sourceLayer: { anyOf: [{ type: 'string' }, { type: 'integer' }] },
+      sourceProperty: PROPERTY_SCHEMA,
+      targetCompId: { type: 'integer' }, targetLayer: { anyOf: [{ type: 'string' }, { type: 'integer' }] },
+      targetProperty: PROPERTY_SCHEMA,
+    }),
+  copyKeyframesBatch: withDesc(
+    'Same as copyKeyframes but fans one source out to many targets in a single call/undo step (batched for performance). ' +
+    '{ sourceCompId, sourceLayer, sourceProperty, targets: [{ compId, layer, property? (defaults to sourceProperty) }, ...], stopOnError? }. ' +
+    'A bad target is collected as { ok:false, error } in the returned targets[] and the rest still run, unless stopOnError is true.',
+    ['sourceCompId', 'sourceLayer', 'sourceProperty', 'targets'],
+    {
+      sourceCompId: { type: 'integer' }, sourceLayer: { anyOf: [{ type: 'string' }, { type: 'integer' }] },
+      sourceProperty: PROPERTY_SCHEMA,
+      targets: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            compId: { type: 'integer' },
+            layer: { anyOf: [{ type: 'string' }, { type: 'integer' }] },
+            property: PROPERTY_SCHEMA,
+          },
+        },
+      },
+      stopOnError: { type: 'boolean' },
+      undoName: { type: 'string' },
+    }),
   setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, expression: { type: 'string' } }),
   removeExpression: withDesc('Remove an expression. { compId, layer, property }', ['compId', 'property'],

@@ -12,6 +12,64 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-09-07 (2)
+- **Yeni kalıcı yetenek: gerçek keyframe/ease kopyalama (`copyKeyframes`,
+  `copyKeyframesBatch`, `getEase`).** Daha önce birden fazla oturumda tespit
+  edilmişti (bu devlog'da iki kez not düşülmüştü, ör. 2026-08-08 (7)'nin CSS
+  cubic-bezier → AE temporal ease çevirimi bahsi): `getProperty` keyframe
+  zaman/değerini okuyor ama gerçek temporal ease'i
+  (`property.keyInTemporalEase(i)`/`keyOutTemporalEase(i)`, her biri
+  `speed`+`influence` içeren `KeyframeEase` dizileri döndürür) hiçbir komut
+  okumuyor/yazmıyordu. Bir animasyonu başka bir layer'a "aynen" taşımak
+  istendiğinde tek yol comp'u birkaç zamana götürüp ara değerleri örnekleyip
+  eğriyi tahmin etmekti — gerçek copy/paste değil, yaklaşık bir yeniden
+  üretim.
+  - **`panel/jsx/commands/keyframe.jsx`:** `_kfSnapshot(prop)` bir property'nin
+    TÜM keyframe'lerini (zaman + değer + `keyIn/OutTemporalEase` +
+    `keyIn/OutInterpolationType`) okuyor; `_kfApply(prop, keys)` bunu bir
+    hedef property'ye REPLACE olarak (önce `removeKey` ile temizleyip)
+    `setValuesAtTimes` + `setInterpolationTypeAtKey` + `setTemporalEaseAtKey`
+    ile birebir yeniden kuruyor. `getEase` tek bir keyframe'in ease/interp/
+    değerini bağımsız okuyabiliyor (ileride başka işler için de lazım
+    olacağı öngörülmüştü). `copyKeyframes` tek kaynak → tek hedef;
+    `copyKeyframesBatch` tek kaynak → `targets: [{compId, layer, property?}]`
+    dizisi, tek undo adımında (performans için batch'lenmiş) — hatalı bir
+    hedef `advanced.jsx`'in `batch` komutuyla aynı sözleşmeyle
+    `{ok:false, error}` olarak toplanıyor, `stopOnError` verilmedikçe diğer
+    hedefler yine de işleniyor.
+  - **`shared/src/commands.js`:** üç komut da `withDesc` + tam şema ile
+    eklendi (`sourceLayer`/`targetLayer`/`targets[].layer` `anyOf
+    string|integer`) — bu oturumun hemen üstündeki girdide (aynı gün, ilk
+    kayıt) tam bu sınıf hatanın (`layer` alanının description'da belgelenip
+    şemada deklare edilmemesi, strict function-calling istemcilerinde
+    parametrenin sessizce düşmesi) düzeltildiğini görüp aynı hatayı yeni
+    komutlarda tekrarlamamak için bilinçli.
+  - **`controller/src/mcpServer.js`:** üçü de `CORE` setine eklendi →
+    `ae_getEase`, `ae_copyKeyframes`, `ae_copyKeyframesBatch` artık ayrı
+    MCP tool'ları.
+  - **`simulator/src/mockAeDom.js` + `jsxRunner.js`:** bu API'ler simülatörde
+    hiç mock'lanmamıştı (`KeyframeEase`/`KeyframeInterpolationType` global
+    olarak tanımlı değildi, `MockProperty`'de `keyTime`/`removeKey`/
+    `setInterpolationTypeAtKey`/`setTemporalEaseAtKey`/`keyIn·OutTemporalEase`
+    yoktu) — yani `setEase`/`setInterpolation`/`removeKeyframes` gibi var
+    olan komutlar da hiçbir zaman simülatörde egzersiz edilmemiş, sadece
+    canlıda test edilmişti. Kök nedene inip `MockProperty`'yi bu API'lerle
+    gerçekten dolduruldu (yeni key'ler AE'nin scriptlenmiş varsayılanı olan
+    LINEAR/ease-yok ile başlıyor) — hem yeni komutları hem de bu önceden
+    kör olan komutları test edilebilir hale getirdi (yan kazanç, ayrı bir
+    hack değil).
+  - **Test:** `npm test` — yeni 8 simulator testi
+    (`simulator/test/mockAeDom.test.js`, "keyframe copy" describe bloğu:
+    ease'in gerçekten okunup yazıldığını farklı comp/layer'a kopyalayarak,
+    replace-not-merge davranışını, `targetProperty` override'ını, boş
+    kaynağın reddini, batch'in çoklu hedefte ve kısmi hata durumunda
+    davranışını doğruluyor) + 6 yeni `shared/test/commands.test.js`
+    registry-seviyesi validate testi eklendi. Toplam 240/240 yeşil.
+  - **Kapsam notu:** roving keyframe/`keyContinuous`/`keyAutoBezier`/
+    spatial tangent kopyalama bilinçli olarak KAPSAM DIŞI bırakıldı — bu
+    oturumun ihtiyacı (Scale gibi non-spatial property) için gereksizdi;
+    ihtiyaç çıkarsa aynı `_kfSnapshot`/`_kfApply` çifti genişletilebilir.
+
 ## 2026-09-07
 - **Bug: `ae_setLayerProperty` ve `ae_setKeyframes` MCP tool'ları, çağrıda
   `layer` parametresi geçilmesine rağmen "layer reference (layer/

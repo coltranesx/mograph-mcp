@@ -7,6 +7,25 @@
 // The simulator's jsxRunner loads the real bundled JSX and executes dispatch()
 // against this mock DOM, so the same code paths that run in AE run here.
 
+// Real AE's KeyframeInterpolationType enum (identity only, like
+// PropertyValueType below — nothing here compares against raw numbers).
+const KeyframeInterpolationType = { LINEAR: 'LINEAR', BEZIER: 'BEZIER', HOLD: 'HOLD' };
+globalThis.KeyframeInterpolationType = KeyframeInterpolationType;
+
+// Real AE's KeyframeEase: a plain {speed, influence} pair, one per property
+// dimension, returned by keyInTemporalEase/keyOutTemporalEase and accepted
+// by setTemporalEaseAtKey. Added alongside real ease/interpolation support
+// on MockProperty below so copyKeyframes/getEase (panel/jsx/commands/
+// keyframe.jsx) can be exercised headlessly instead of only live in AE —
+// this API was entirely unmocked before (docs/DEVLOG.md).
+class KeyframeEase {
+  constructor(speed, influence) {
+    this.speed = speed;
+    this.influence = influence;
+  }
+}
+globalThis.KeyframeEase = KeyframeEase;
+
 // ---------------------------------------------------------------------------
 // Property value holder — simulates AE property objects (Position, Opacity, etc.)
 // ---------------------------------------------------------------------------
@@ -17,19 +36,68 @@ class MockProperty {
   }
   get value() { return this._value; }
   setValue(v) { this._value = v; }
-  setValueAtTime(_t, v) {
+  setValueAtTime(t, v) {
     this._value = v;
     this._keys = (this._keys || 0) + 1;
     this._keyValues = this._keyValues || [];
     this._keyValues[this._keys - 1] = v;
+    this._keyTimes = this._keyTimes || [];
+    this._keyTimes[this._keys - 1] = t;
+    this._ensureKeyDefaults(this._keys - 1);
   }
-  setValuesAtTimes(_times, values) {
+  setValuesAtTimes(times, values) {
     this._keyValues = values.slice();
+    this._keyTimes = times.slice();
     this._keys = values.length;
     this._value = values[values.length - 1];
+    this._inInterp = [];
+    this._outInterp = [];
+    this._inEase = [];
+    this._outEase = [];
+    for (let i = 0; i < this._keys; i++) this._ensureKeyDefaults(i);
+  }
+  // New keys default to LINEAR/no-custom-ease, matching what a freshly
+  // scripted (non-easyEase) AE keyframe reports before anything calls
+  // setInterpolationTypeAtKey/setTemporalEaseAtKey on it.
+  _ensureKeyDefaults(i) {
+    this._inInterp = this._inInterp || [];
+    this._outInterp = this._outInterp || [];
+    this._inEase = this._inEase || [];
+    this._outEase = this._outEase || [];
+    if (this._inInterp[i] === undefined) this._inInterp[i] = KeyframeInterpolationType.LINEAR;
+    if (this._outInterp[i] === undefined) this._outInterp[i] = KeyframeInterpolationType.LINEAR;
+    if (this._inEase[i] === undefined) this._inEase[i] = [new KeyframeEase(0, 0)];
+    if (this._outEase[i] === undefined) this._outEase[i] = [new KeyframeEase(0, 0)];
   }
   keyValue(index) { return (this._keyValues && this._keyValues[index - 1]) || null; }
+  keyTime(index) { return (this._keyTimes && this._keyTimes[index - 1]); }
   get numKeys() { return this._keys || 0; }
+  removeKey(index) {
+    const i = index - 1;
+    if (!this._keys || i < 0 || i >= this._keys) return;
+    this._keyValues.splice(i, 1);
+    this._keyTimes.splice(i, 1);
+    if (this._inInterp) this._inInterp.splice(i, 1);
+    if (this._outInterp) this._outInterp.splice(i, 1);
+    if (this._inEase) this._inEase.splice(i, 1);
+    if (this._outEase) this._outEase.splice(i, 1);
+    this._keys -= 1;
+    this._value = this._keyValues[this._keys - 1];
+  }
+  setInterpolationTypeAtKey(index, inType, outType) {
+    this._ensureKeyDefaults(index - 1);
+    this._inInterp[index - 1] = inType;
+    this._outInterp[index - 1] = outType;
+  }
+  keyInInterpolationType(index) { return this._inInterp && this._inInterp[index - 1]; }
+  keyOutInterpolationType(index) { return this._outInterp && this._outInterp[index - 1]; }
+  setTemporalEaseAtKey(index, inEase, outEase) {
+    this._ensureKeyDefaults(index - 1);
+    this._inEase[index - 1] = inEase;
+    this._outEase[index - 1] = outEase;
+  }
+  keyInTemporalEase(index) { return (this._inEase && this._inEase[index - 1]) || [new KeyframeEase(0, 0)]; }
+  keyOutTemporalEase(index) { return (this._outEase && this._outEase[index - 1]) || [new KeyframeEase(0, 0)]; }
   set expression(e) { this._expr = e; }
   get expression() { return this._expr || ''; }
   get expressionEnabled() { return !!this._expr; }
@@ -630,6 +698,8 @@ export function createMockAeDom() {
     CompItem: MockCompItem,
     Shape,
     PropertyValueType,
+    KeyframeInterpolationType,
+    KeyframeEase,
     reset() { mockApp.reset(); },
   };
 }

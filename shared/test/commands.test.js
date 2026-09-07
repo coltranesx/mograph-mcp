@@ -137,6 +137,53 @@ describe('validateCommand', () => {
     assert.match(r.error, /outputPath/);
   });
 
+  describe('copyKeyframes / copyKeyframesBatch / getEase (registry-level validation)', () => {
+    it('validates copyKeyframes with all required fields', () => {
+      const r = validateCommand('copyKeyframes', {
+        sourceCompId: 81, sourceLayer: 'bg-box', sourceProperty: 'scale',
+        targetCompId: 93, targetLayer: 'bg-box-1',
+      });
+      assert.equal(r.ok, true);
+    });
+
+    it('rejects copyKeyframes missing targetLayer', () => {
+      const r = validateCommand('copyKeyframes', {
+        sourceCompId: 81, sourceLayer: 'bg-box', sourceProperty: 'scale',
+        targetCompId: 93,
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /targetLayer/);
+    });
+
+    it('validates copyKeyframesBatch with a targets[] array', () => {
+      const r = validateCommand('copyKeyframesBatch', {
+        sourceCompId: 81, sourceLayer: 'bg-box', sourceProperty: 'scale',
+        targets: [{ compId: 93, layer: 'bg-box-1' }, { compId: 105, layer: 'bg-box-1' }],
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.targets.length, 2);
+    });
+
+    it('rejects copyKeyframesBatch without targets', () => {
+      const r = validateCommand('copyKeyframesBatch', {
+        sourceCompId: 81, sourceLayer: 'bg-box', sourceProperty: 'scale',
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /targets/);
+    });
+
+    it('validates getEase with compId/property/keyIndex', () => {
+      const r = validateCommand('getEase', { compId: 81, layer: 'bg-box', property: 'scale', keyIndex: 1 });
+      assert.equal(r.ok, true);
+    });
+
+    it('rejects getEase without keyIndex', () => {
+      const r = validateCommand('getEase', { compId: 81, layer: 'bg-box', property: 'scale' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /keyIndex/);
+    });
+  });
+
   it('blocks dev commands when allowDev is false', () => {
     const r = validateCommand('runJSX', { script: 'app.version' }, { allowDev: false });
     assert.equal(r.ok, false);

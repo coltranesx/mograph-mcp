@@ -829,6 +829,194 @@ describe('JSX Runner + Mock AE DOM', () => {
     });
   });
 
+  describe('keyframe copy (getEase / copyKeyframes / copyKeyframesBatch)', () => {
+    // Builds a source layer with 2 Scale keyframes carrying DIFFERENT,
+    // non-default temporal ease on each side of each key — so a passing
+    // test can only mean the real ease was read/written, not a coincidence
+    // (e.g. both keys happening to share AE's default 0/33.33).
+    function makeSource(runner, compName, layerName) {
+      const comp = runner.dispatch('createComp', { name: compName });
+      const compId = comp.result.compId;
+      runner.dispatch('addSolid', { compId, name: layerName });
+      runner.dispatch('setKeyframes', {
+        compId, layer: layerName, property: 'scale',
+        times: [0.16, 0.68], values: [[0, 100, 100], [100, 100, 100]],
+      });
+      runner.dispatch('setEase', {
+        compId, layer: layerName, property: 'scale', keyIndex: 1,
+        inInfluence: 20, outInfluence: 75, inSpeed: 0, outSpeed: 5,
+      });
+      runner.dispatch('setEase', {
+        compId, layer: layerName, property: 'scale', keyIndex: 2,
+        inInfluence: 60, outInfluence: 40, inSpeed: 3, outSpeed: 0,
+      });
+      return compId;
+    }
+
+    it('getEase reads back real speed/influence per key, not defaults', () => {
+      const compId = makeSource(runner, 'GE1', 'Src');
+      const r1 = runner.dispatch('getEase', { compId, layer: 'Src', property: 'scale', keyIndex: 1 });
+      assert.equal(r1.ok, true);
+      assert.equal(r1.result.time, 0.16);
+      assert.deepEqual(r1.result.value, [0, 100, 100]);
+      assert.equal(r1.result.inEase[0].influence, 20);
+      assert.equal(r1.result.outEase[0].influence, 75);
+      assert.equal(r1.result.outEase[0].speed, 5);
+
+      const r2 = runner.dispatch('getEase', { compId, layer: 'Src', property: 'scale', keyIndex: 2 });
+      assert.equal(r2.result.inEase[0].influence, 60);
+      assert.equal(r2.result.inEase[0].speed, 3);
+    });
+
+    it('getEase rejects an out-of-range keyIndex', () => {
+      const compId = makeSource(runner, 'GE2', 'Src');
+      const r = runner.dispatch('getEase', { compId, layer: 'Src', property: 'scale', keyIndex: 99 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /out of range/i);
+    });
+
+    it('copyKeyframes reproduces time+value+ease exactly on a different comp/layer', () => {
+      const srcCompId = makeSource(runner, 'CK-Src', 'Src');
+      const tgtComp = runner.dispatch('createComp', { name: 'CK-Tgt' });
+      const tgtCompId = tgtComp.result.compId;
+      runner.dispatch('addSolid', { compId: tgtCompId, name: 'bg-box-1' });
+      // Target's own Position must survive untouched by the Scale-only copy.
+      runner.dispatch('setLayerProperty', {
+        compId: tgtCompId, layer: 'bg-box-1', property: 'position', value: [321, 654],
+      });
+
+      const r = runner.dispatch('copyKeyframes', {
+        sourceCompId: srcCompId, sourceLayer: 'Src', sourceProperty: 'scale',
+        targetCompId: tgtCompId, targetLayer: 'bg-box-1',
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.numKeys, 2);
+
+      const tgtProp = runner.dispatch('getProperty', { compId: tgtCompId, layer: 'bg-box-1', property: 'scale' });
+      assert.equal(tgtProp.result.numKeys, 2);
+      assert.equal(tgtProp.result.keys[0].time, 0.16);
+      assert.deepEqual(tgtProp.result.keys[0].value, [0, 100, 100]);
+      assert.equal(tgtProp.result.keys[1].time, 0.68);
+      assert.deepEqual(tgtProp.result.keys[1].value, [100, 100, 100]);
+
+      const srcEase1 = runner.dispatch('getEase', { compId: srcCompId, layer: 'Src', property: 'scale', keyIndex: 1 });
+      const tgtEase1 = runner.dispatch('getEase', { compId: tgtCompId, layer: 'bg-box-1', property: 'scale', keyIndex: 1 });
+      assert.deepEqual(tgtEase1.result.inEase, srcEase1.result.inEase);
+      assert.deepEqual(tgtEase1.result.outEase, srcEase1.result.outEase);
+      const srcEase2 = runner.dispatch('getEase', { compId: srcCompId, layer: 'Src', property: 'scale', keyIndex: 2 });
+      const tgtEase2 = runner.dispatch('getEase', { compId: tgtCompId, layer: 'bg-box-1', property: 'scale', keyIndex: 2 });
+      assert.deepEqual(tgtEase2.result.inEase, srcEase2.result.inEase);
+      assert.deepEqual(tgtEase2.result.outEase, srcEase2.result.outEase);
+
+      // Untouched: the target's own Position is unaffected by copying Scale.
+      const tgtPos = runner.dispatch('getProperty', { compId: tgtCompId, layer: 'bg-box-1', property: 'position' });
+      assert.deepEqual(tgtPos.result.value, [321, 654]);
+    });
+
+    it('copyKeyframes replaces (not merges) any pre-existing target keyframes', () => {
+      const srcCompId = makeSource(runner, 'CK-Rep-Src', 'Src');
+      const tgtComp = runner.dispatch('createComp', { name: 'CK-Rep-Tgt' });
+      const tgtCompId = tgtComp.result.compId;
+      runner.dispatch('addSolid', { compId: tgtCompId, name: 'T' });
+      // Pre-existing junk keyframes the copy should wipe out.
+      runner.dispatch('setKeyframes', {
+        compId: tgtCompId, layer: 'T', property: 'scale',
+        times: [0, 1, 2], values: [[1, 1, 1], [2, 2, 2], [3, 3, 3]],
+      });
+
+      runner.dispatch('copyKeyframes', {
+        sourceCompId: srcCompId, sourceLayer: 'Src', sourceProperty: 'scale',
+        targetCompId: tgtCompId, targetLayer: 'T',
+      });
+
+      const tgtProp = runner.dispatch('getProperty', { compId: tgtCompId, layer: 'T', property: 'scale' });
+      assert.equal(tgtProp.result.numKeys, 2);
+      assert.equal(tgtProp.result.keys[0].time, 0.16);
+    });
+
+    it('copyKeyframes supports targetProperty overriding sourceProperty', () => {
+      const srcCompId = makeSource(runner, 'CK-TP-Src', 'Src');
+      const tgtComp = runner.dispatch('createComp', { name: 'CK-TP-Tgt' });
+      const tgtCompId = tgtComp.result.compId;
+      runner.dispatch('addSolid', { compId: tgtCompId, name: 'T' });
+
+      const r = runner.dispatch('copyKeyframes', {
+        sourceCompId: srcCompId, sourceLayer: 'Src', sourceProperty: 'scale',
+        targetCompId: tgtCompId, targetLayer: 'T', targetProperty: 'position',
+      });
+      assert.equal(r.ok, true);
+      const tgtPos = runner.dispatch('getProperty', { compId: tgtCompId, layer: 'T', property: 'position' });
+      assert.equal(tgtPos.result.numKeys, 2);
+    });
+
+    it('copyKeyframes fails clearly when the source property has no keyframes', () => {
+      const comp = runner.dispatch('createComp', { name: 'CK-Empty' });
+      const compId = comp.result.compId;
+      runner.dispatch('addSolid', { compId, name: 'A' });
+      runner.dispatch('addSolid', { compId, name: 'B' });
+      const r = runner.dispatch('copyKeyframes', {
+        sourceCompId: compId, sourceLayer: 'A', sourceProperty: 'scale',
+        targetCompId: compId, targetLayer: 'B',
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /no keyframes/i);
+    });
+
+    it('copyKeyframesBatch fans one source out to multiple targets across comps in one call', () => {
+      const srcCompId = makeSource(runner, 'CKB-Src', 'Src');
+      const tgtComp1 = runner.dispatch('createComp', { name: 'CKB-Tgt1' });
+      const tgtComp2 = runner.dispatch('createComp', { name: 'CKB-Tgt2' });
+      const t1 = tgtComp1.result.compId, t2 = tgtComp2.result.compId;
+      runner.dispatch('addSolid', { compId: t1, name: 'bg-box-1' });
+      runner.dispatch('addSolid', { compId: t2, name: 'bg-box-1' });
+      runner.dispatch('addSolid', { compId: t2, name: 'bg-box-2' });
+
+      const r = runner.dispatch('copyKeyframesBatch', {
+        sourceCompId: srcCompId, sourceLayer: 'Src', sourceProperty: 'scale',
+        targets: [
+          { compId: t1, layer: 'bg-box-1' },
+          { compId: t2, layer: 'bg-box-1' },
+          { compId: t2, layer: 'bg-box-2' },
+        ],
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.count, 3);
+      assert.equal(r.result.succeeded, 3);
+      assert.equal(r.result.failed, 0);
+
+      for (const [compId, layer] of [[t1, 'bg-box-1'], [t2, 'bg-box-1'], [t2, 'bg-box-2']]) {
+        const prop = runner.dispatch('getProperty', { compId, layer, property: 'scale' });
+        assert.equal(prop.result.numKeys, 2, `${layer}@${compId} should have 2 keys`);
+        assert.equal(prop.result.keys[0].time, 0.16);
+        assert.deepEqual(prop.result.keys[1].value, [100, 100, 100]);
+      }
+    });
+
+    it('copyKeyframesBatch collects a bad target as ok:false and still completes the rest', () => {
+      const srcCompId = makeSource(runner, 'CKB-Err-Src', 'Src');
+      const tgtComp = runner.dispatch('createComp', { name: 'CKB-Err-Tgt' });
+      const tgtCompId = tgtComp.result.compId;
+      runner.dispatch('addSolid', { compId: tgtCompId, name: 'bg-box-1' });
+
+      const r = runner.dispatch('copyKeyframesBatch', {
+        sourceCompId: srcCompId, sourceLayer: 'Src', sourceProperty: 'scale',
+        targets: [
+          { compId: tgtCompId, layer: 'NoSuchLayer' },
+          { compId: tgtCompId, layer: 'bg-box-1' },
+        ],
+      });
+      assert.equal(r.ok, true); // the batch call itself succeeds
+      assert.equal(r.result.count, 2);
+      assert.equal(r.result.succeeded, 1);
+      assert.equal(r.result.failed, 1);
+      assert.equal(r.result.targets[0].ok, false);
+      assert.equal(r.result.targets[1].ok, true);
+
+      const prop = runner.dispatch('getProperty', { compId: tgtCompId, layer: 'bg-box-1', property: 'scale' });
+      assert.equal(prop.result.numKeys, 2);
+    });
+  });
+
   describe('addShapeOperator', () => {
     const ROOT = ['ADBE Root Vectors Group'];
 
