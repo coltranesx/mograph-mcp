@@ -13,6 +13,142 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 ---
 
 ## 2026-09-07
+- **Bug: `ae_setLayerProperty` ve `ae_setKeyframes` MCP tool'ları, çağrıda
+  `layer` parametresi geçilmesine rağmen "layer reference (layer/
+  layerIndex/layerName) is required" hatasıyla başarısız oluyordu.** Aynı
+  komut, `ae_command` escape-hatch'i üzerinden (`params` içine `layer`
+  koyarak) sorunsuz çalışıyordu — bu da AE tarafındaki (`panel/jsx`)
+  handler mantığının zaten doğru olduğunu, sorunun ondan önceki bir
+  aşamada olduğunu gösteriyordu.
+  - **Kök neden — `shared/src/commands.js`:** `setLayerProperty`
+    (satır ~124-141, eski hali) ve `setKeyframes` (satır ~539-540, eski
+    hali) komutlarının `schema` map'i (`controller/src/mcpServer.js:88-94`
+    `buildTools()` tarafından `ae_<name>` tool'unun `inputSchema.
+    properties`'ine dönüştürülüyor) `layer`/`layerIndex`/`layerName`
+    alanlarından HİÇBİRİNİ deklare etmiyordu — halbuki `description`
+    metninde `{ compId, layer, property, value }` diye belgeleniyordu.
+    AE-side handler (`panel/jsx/host.jsx:142-147` `AEB.requireLayer`,
+    `panel/jsx/host.jsx:124-125` `AEB.resolveLayer`) parametreyi doğru
+    şekilde arıyordu (`p.layer` / `p.layerName` / `p.layerIndex`) — sorun
+    parametrenin oraya hiç ulaşmamasıydı. `ae_command`'ın çalışmasının
+    nedeni: onun `inputSchema`'sı `{ command, params }` şeklinde ve
+    `params` tipsiz/opak bir `object` (`controller/src/mcpServer.js:69`)
+    — içindeki anahtarlar deklare edilmediği için hiçbir şema bunları
+    süzemiyor. Ama doğrudan `ae_setLayerProperty`/`ae_setKeyframes`
+    tool'larında `layer` üst-seviye bir alan ve şemada yoksa, şemayı katı
+    şekilde uygulayan (structured/strict function-calling; JSON şemanın
+    `additionalProperties:true` olması burada işe yaramıyor, bkz.
+    `shared/src/commands.js`'in yeni `LAYER_REF_SCHEMA` yorum bloğu) bir
+    MCP istemcisi tarafında model bu alanı hiç üretemiyor/argüman sessizce
+    düşüyor — komutun kendi `validate()`'i (`requireFields`, `{...p}`
+    spread eder) parametre zaten elinde olsaydı hiçbir şeyi süzmüyor,
+    yani asıl darboğaz gerçekten şema eksikliğiydi, ikinci bir yerde
+    tekrar filtrelenmiyor.
+  - **Fix — `shared/src/commands.js`:** Ortak bir `LAYER_REF_SCHEMA`
+    (satır 24-38) eklendi — `layer` (string|integer anyOf), `layerName`
+    (string), `layerIndex` (integer); `AEB.requireLayer`'ın üç-yönlü
+    kontratıyla birebir. `setLayerProperty`'nin şemasına (satır 148) ve
+    `setKeyframes`'in şemasına (satır 540) `...LAYER_REF_SCHEMA` spread
+    edildi. `COMMANDS`'ın ana object literal'i (satır ~40'tan başlıyor)
+    içinde `setLayerProperty` bu sabiti kullandığı için `LAYER_REF_SCHEMA`
+    bilinçli olarak `COMMANDS` tanımından ÖNCE (import'lardan hemen sonra)
+    tanımlandı — modül top-level'da ilk denemede sabiti `COMMANDS` object
+    literal'inin GERİSİNE (PROPERTY_SCHEMA/VALUE_SCHEMA'nın yanına)
+    koymuştum, bu TDZ (temporal dead zone) ReferenceError'a yol açıyordu;
+    `npm test` bunu hemen yakaladı.
+  - **Kapsam notu:** Bu ikisi kullanıcı tarafından bildirilen kırık
+    tool'lardı ve sadece onlar düzeltildi — ama aynı desende (description
+    `{ compId, layer, ... }` diyor, schema `layer` deklare etmiyor) ~40
+    başka CORE komut daha var: `trimLayer`, `moveLayer`, `duplicateLayer`,
+    `deleteLayer`, `setKeyframe` (tekil), `setEase`, `setInterpolation`,
+    `setExpression`, `removeExpression`, `enableExpression`, `addEffect`,
+    `setEffectParam`, `listEffects`, `addExpressionControl`, `addMask`,
+    `addRectMask`, `setMaskProperty`, `setTextDocument`, `addTextAnimator`,
+    `applyTextPreset`, `measureText`, `addLayerStyle`, `getProperty`,
+    `getLayerDetails`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`,
+    `addLayerMarker`, `setTimeStretch`, `enableTimeRemap`, `replaceSource`,
+    `applyLumetri`, `alignLayer`, `alignAnchor`, `glitchEffect`,
+    `cinematicGrade`, `neonGlow`, `deepGlow`, `shadowStudio`, `setParent`,
+    `addShapeOperator`, `addResponsiveBox` — hepsi teorik olarak aynı
+    şemadan-düşme riskini taşıyor, hangi MCP istemcisinin ne kadar katı
+    (strict) function-calling şeması uyguladığına bağlı olarak fiilen
+    tetiklenip tetiklenmeyeceği değişir. Bilinçli olarak bu oturumda
+    genişletilmedi (istenen kapsam sadece bildirilen iki tool'du) —
+    `LAYER_REF_SCHEMA` artık paylaşılan bir sabit olduğu için geri kalanına
+    uygulamak her biri için tek satırlık bir `...LAYER_REF_SCHEMA` eklemek
+    kadar ucuz; bir sonraki oturumda toplu geçilebilir.
+  - **Test:** `npm test` — 226/226 yeşil (iki ayrı koşuda doğrulandı; ilk
+    koşuda `controller/test/mcp.test.js`'teki stdio init testi bir kez
+    timeout'la başarısız oldu, değişiklik olmadan da tekrarlanabilir
+    olduğu doğrulanmadan önce şüpheliydi — `git stash` ile değişikliksiz
+    tekrar koşulduğunda tek seferde 226/226 geçti, değişiklikli iki ayrı
+    tekrar koşuda da 226/226 geçti; yani flaky bir test, bu fix'le
+    ilgisiz). `node -e` ile `buildTools()` çıktısı da doğrulandı: `ae_
+    setLayerProperty` ve `ae_setKeyframes`'in `inputSchema.properties`'i
+    artık `layer`/`layerName`/`layerIndex`'i içeriyor. Gerçek AE
+    üzerinden canlı çağrı bu oturumda yapılmadı (istek bunu kapsamıyordu;
+    controller/panel'in bu oturumda ayakta olduğu da doğrulanmadı) —
+    canlı doğrulama önerilir.
+
+- **Takip: yukarıdaki girdide "bir sonraki oturumda toplu geçilebilir" denen
+  ~40 CORE komut da bu oturumda düzeltildi.** Aynı desen — `description`
+  `{ compId, layer, ... }` diye belgeliyor ama `schema` map'i `layer`/
+  `layerName`/`layerIndex`'ten hiçbirini deklare etmiyordu — `shared/src/
+  commands.js`'te tek tek denetlendi (bir node script'iyle: her komutun
+  `description`'ında layer-referans dili olup olmadığı ve `schema`
+  anahtarlarında `layer`/`layerName`/`layerIndex` bulunup bulunmadığı
+  otomatik karşılaştırıldı — 40 tekrar elle taramak yerine).
+  - **Düzeltilen 40 komut** (hepsine `...LAYER_REF_SCHEMA` eklendi):
+    `setParent`, `trimLayer`, `moveLayer`, `duplicateLayer`, `deleteLayer`,
+    `setKeyframe`, `setEase`, `setInterpolation`, `setExpression`,
+    `removeExpression`, `enableExpression`, `addEffect`, `setEffectParam`,
+    `listEffects`, `addExpressionControl`, `addMask`, `addRectMask`,
+    `setMaskProperty`, `setTextDocument`, `addTextAnimator`,
+    `applyTextPreset`, `measureText`, `addLayerStyle`, `getProperty`,
+    `getLayerDetails`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`,
+    `addLayerMarker`, `setTimeStretch`, `enableTimeRemap`, `replaceSource`,
+    `applyLumetri`, `alignLayer`, `alignAnchor`, `glitchEffect`,
+    `cinematicGrade`, `neonGlow`, `deepGlow`, `shadowStudio`,
+    `addShapeOperator` — orijinal girdideki liste ile birebir aynı çıktı,
+    ekleme/çıkarma olmadı.
+  - **Bilinçli atlanan tek aday: `addResponsiveBox`** (orijinal listede
+    zaten yoktu ama otomatik taramada "description'da `layer|layerIndex|
+    layerName` geçiyor" diye false-positive yakalandı) — incelendiğinde bu
+    ifadenin orada bir layer referans ALANI olarak değil, `fitTo`
+    parametresinin kabul ettiği DEĞER TÜRLERİNİ (layer adı ya da index'i)
+    açıklayan bir cümle olduğu görüldü; `fitTo` zaten kendi
+    `anyOf:[string,number]` şemasıyla tam deklare edilmiş durumda ve komut
+    başka bir layer'a değil, tamamen `fitTo` referanslı hedefe göre çalışıyor
+    — `layer`/`layerName`/`layerIndex` alanları hiç yok, eklemek yanlış
+    olurdu. Aynı otomatik taramada `addSolid`/`addTextLayer`/`addNull`/
+    `addAdjustmentLayer`/`addShape`/`addPathShape`/`applyWordReveal`/
+    `applyCharScale`/`sequenceLayers` da "description'da layer geçiyor" diye
+    işaretlendi ama hepsi ya yeni bir layer YARATIYOR (`layerIndex` dönüş
+    değeri olarak, referans olarak değil) ya da kendi `layers[]` dizi
+    alanını zaten doğru şekilde deklare etmiş (`sequenceLayers`) — hiçbiri
+    dokunulmadı.
+  - **Kapsam dışı bırakılan, fark edilen ayrı iki eksik (bu görevin
+    kapsamında değil, ayrı bug):** `setExpression`'ın şeması `property`
+    alanını hiç deklare etmiyor (sadece `expression`); `setEffectParam`'ın
+    şeması `effect` alanını hiç deklare etmiyor (sadece `param`/`value`/
+    `time`) — ikisi de bu oturumda `layer` ile birlikte düzeltildi ama
+    `property`/`effect` alanları ayrı, bu görevin kapsamı dışında bırakıldı;
+    aynı şema-eksikliği ailesinden, ayrı bir oturumda ele alınmalı.
+  - **Doğrulama:** `npm test` — 226/226 yeşil. `npm run lint` (eslint +
+    `lint:jsx`) temiz. Şema anahtarlarında çift `...LAYER_REF_SCHEMA`
+    eklenmediği bir node script'iyle teyit edildi (`Object.keys` üzerinde
+    tekrar sayımı — sıfır çift). `controller/src/mcpServer.js`'in
+    `buildTools({mode:'core'})` çıktısı canlı çalıştırılarak `ae_trimLayer`,
+    `ae_addEffect`, `ae_measureText`, `ae_addShapeOperator`, `ae_setParent`,
+    `ae_addTextAnimator`, `ae_alignAnchor`'ın `inputSchema.properties`'inde
+    artık `layer`/`layerName`/`layerIndex` göründüğü doğrulandı. Gerçek AE
+    üzerinden canlı çağrı bu oturumda yapılmadı — bir önceki fix'in aynı
+    kalıbı zaten canlı ihtiyaçtan doğduğu için (`ae_setLayerProperty`),
+    riskin aynı türden olduğu değerlendirildi; yine de bir sonraki canlı
+    oturumda bu 40 tool'dan en az birkaçı (`ae_trimLayer`, `ae_setParent`
+    gibi sık kullanılanlar) gerçek bir MCP istemcisiyle uçtan uca
+    denenmeli.
+
 - **Bug: `ae_render` (`startFrame`/`endFrame` ile) her karesi aynı olan
   bir video üretiyordu — sanki sadece ilk kare render edilip N kez
   kopyalanmış gibi; aynı comp/aralık `ae_render_and_download` ile doğru
