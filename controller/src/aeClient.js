@@ -40,6 +40,25 @@ export class AeClient extends EventEmitter {
     return { ...this._status, pending: this._pending.size };
   }
 
+  /**
+   * Like `status`, but asks the panel for a fresh getProjectInfo first (when
+   * connected) so `.project` reflects the current project instead of the
+   * value captured once from the panel's connect-time 'ready' event. That
+   * cached value never updates on its own — openProject/saveProject/comp
+   * edits don't re-emit 'ready' — so long-lived sessions showed a stale (or
+   * "Untitled") project name indefinitely. See docs/DEVLOG.md 2026-09-07.
+   * Never throws: on timeout/disconnect this just falls back to the cache.
+   */
+  async getFreshStatus() {
+    if (this.isConnected()) {
+      const res = await this.sendCommand('getProjectInfo', {}, { timeoutMs: 5000 });
+      if (res.ok && res.result && typeof res.result.name === 'string') {
+        this._status = { ...this._status, project: res.result.name };
+      }
+    }
+    return this.status;
+  }
+
   isConnected() {
     return this._ws !== null && this._ws.readyState === 1; // OPEN
   }

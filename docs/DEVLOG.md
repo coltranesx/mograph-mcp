@@ -12,6 +12,63 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-09-07
+- **`batch`'in "1 trip, 1 undo" tasarımı + AE 26.3'teki bozuk `redo`'nun
+  birleşimi, büyük bir toplu kurulumu tek Cmd+Z ile sildi — kurtarma yolu
+  diskten son kayda dönmek oldu; ayrıca `ae_status.project`'in bayat
+  cache olduğu bug'ı bulundu ve düzeltildi.**
+  - **Olay:** Bu oturumda `ae_command batch` üzerinden 14 comp + footage
+    import'tan oluşan tek bir kurulum gönderildi. `batch`, mimarisi gereği
+    (`panel/jsx/commands/batch.jsx`, tek `AEB.undo(...)` sarmalı) bütün
+    sıralı işlemi **tek** undo-group'a sarıyor — yani AE tarafında bu koca
+    kurulum, kullanıcı gözünden "bir adım" olarak görünüyor. Kullanıcı
+    GUI'den bilmeden tek bir Cmd+Z yaptığında, 14 comp + import'un tamamı
+    tek seferde geri alındı. Bu bir bağlantı kopması ya da hata değil —
+    `batch`'in "1 network trip, 1 undo group" tasarımının doğrudan, beklenen
+    sonucu; ama kullanıcı tarafında sürpriz oldu çünkü GUI'de tek Cmd+Z'nin
+    bu kadar geniş bir işlemi sileceği görünür değil.
+  - Kurtarma normalde basit olurdu (`redo`) ama 2026-08-25 (4) girdisinde
+    kayıtlı, bu AE sürümünde (26.3x87) zaten kök nedeni bulunamamış `redo`
+    bug'ı burada da tekrar etti — `redo` `{ok:true}` döndü ama state geri
+    gelmedi. Kalıcı fix hâlâ yok (bkz. o girdi), sadece tekrar teyit edildi.
+    Undo geri alınamayınca **tek çalışan kurtarma yolu diskteki son
+    kaydedilmiş `.aep`'i yeniden açmak** oldu — proje son
+    `ae_saveProject` sonrası hiç kaydedilmemişti, o yüzden kayıp minimumda
+    kaldı ama tesadüfti.
+  - **Öneri (disiplin, kod değişikliği değil):** Büyük `batch` kurulumlarından
+    hemen sonra `ae_saveProject` çağrılmalı — `redo` güvenilmez olduğu
+    sürece diskteki son kayıt tek güvenlik ağı. `batch`'i N ayrı undo-group'a
+    bölmek de düşünüldü ama bu, `batch`'in var oluş amacını (tek network
+    trip'te atomik kurulum) bozar; onun yerine iş akışı disiplini tercih
+    edildi.
+  - **Ayrı ama bu oturumda fark edilen ikinci bug — `ae_status.project`
+    bayat cache, kök nedene inen fix uygulandı.** `controller/src/
+    aeClient.js`'te `_status.project`, panelden gelen `'ready'` event'inde
+    (`panel/src/main.js` `ws.onopen` → `probeEnvironment()`) **sadece bir
+    kez**, WebSocket ilk bağlandığında set ediliyordu; sonrasında
+    `openProject`/`saveProject`/comp değişiklikleri hiç bu alanı
+    güncellemiyordu — `server.js`'teki `ae_status`/`/api/status` handler'ı
+    da bu cache'lenmiş değeri doğrudan döndürüyordu. Sonuç: uzun süren
+    oturumlarda `ae_status` gerçek dışı/bayat proje adı (ör. "Untitled")
+    gösterebiliyordu, tam da yukarıdaki gibi bir olaydan sonra durumu
+    teyit etmeye çalışırken güven kırıcı.
+    - **Fix:** `AeClient`'a `getFreshStatus()` eklendi — panel bağlıysa
+      `getProjectInfo` komutunu (zaten her çağrıda `app.project`'i taze
+      okuyan, cache'siz — `panel/jsx/commands/project.jsx`) 5s timeout'la
+      çalıştırıp sonucu `_status.project`'e yazıyor, sonra `status`
+      getter'ını döndürüyor; panel bağlı değilse veya komut başarısız
+      olursa sessizce cache'e düşüyor (asla throw etmiyor, mevcut
+      `sendCommand` sözleşmesiyle tutarlı). `server.js`'teki hem
+      `GET /api/status` hem `mcpBackend.status()` (→ MCP `ae_status` tool'u)
+      artık `aeClient.status` yerine `await aeClient.getFreshStatus()`
+      çağırıyor. Senkron `status` getter'ı ve mevcut `'ready'` event
+      davranışı olduğu gibi bırakıldı (testler ona bağlıydı,
+      `controller/test/aeClient.test.js`), yeni metot sadece HTTP/MCP
+      status yolunu taze sorguya çeviriyor.
+    - `npm test`: 226/226 geçti. Canlı proje üzerinde yalnızca salt-okunur
+      `ae_status`/`getProjectInfo` çağrılarıyla teyit edilmesi planlanıyor
+      (Motion-Graphics-14-Comps.aep'e hiçbir yazma işlemi yapılmadı).
+
 ## 2026-08-25 (4)
 - **`redo` (`app.jsx`, `app.executeCommand(17)`) kök neden araştırması —
   ID bulunamadı, fix yok.** İzole, kaydedilmemiş bir test comp'ta

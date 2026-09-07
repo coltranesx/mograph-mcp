@@ -50,10 +50,10 @@ app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, uptime: process.uptime() }));
 
-app.get('/api/status', (_req, res) =>
+app.get('/api/status', async (_req, res) =>
   res.json({
     ok: true,
-    status: aeClient.status,
+    status: await aeClient.getFreshStatus(),
     agents: agentHub.clientCount,
     config: { wsUrl: cfg.wsUrl, allowDev: cfg.allowDev, commandTimeoutMs: cfg.commandTimeoutMs },
   }),
@@ -86,7 +86,7 @@ const media = mountMedia(app, { aeClient, cfg });
 // ---------------------------------------------------------------------------
 const mcpBackend = {
   execute: (command, params) => aeClient.sendCommand(command, params || {}, { allowDev: cfg.allowDev }),
-  status: async () => ({ ok: true, status: aeClient.status, agents: agentHub.clientCount, config: { allowDev: cfg.allowDev, commandTimeoutMs: cfg.commandTimeoutMs } }),
+  status: async () => ({ ok: true, status: await aeClient.getFreshStatus(), agents: agentHub.clientCount, config: { allowDev: cfg.allowDev, commandTimeoutMs: cfg.commandTimeoutMs } }),
   mediaInfo: async () => media.info(),
   mediaList: async () => media.list(),
   mediaFetch: async (args) => media.fetchVideo(args),
