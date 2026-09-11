@@ -5,7 +5,7 @@
   Port must not conflict with other CEP panels.
 -->
 <ExtensionList>
-  <Extension Id="com.ae-bridge.panel.main">
+  <Extension Id="com.coltranesx.mograph-mcp.panel.main">
     <HostList>
       <Host Name="AEFT" Port="39729"/>
     </HostList>

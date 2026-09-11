@@ -43,7 +43,7 @@ const CORE = new Set([
   // markers
   'addCompMarker', 'addLayerMarker',
   // project items / folders / footage-comp
-  'getProjectItems', 'listTextStyles', 'compFromFootage', 'createFolder',
+  'getProjectItems', 'listTextStyles', 'compFromFootage', 'importLayeredComp', 'createFolder',
   'moveToFolder', 'setProxy', 'renameItem', 'deleteItem',
   // comp/layer time
   'getCompTime', 'duplicateComp', 'sequenceLayers', 'setTimeStretch',

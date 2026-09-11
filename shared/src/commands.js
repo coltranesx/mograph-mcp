@@ -602,6 +602,8 @@ Object.assign(COMMANDS, {
   // footage
   importFootage: withDesc('Import a media file. { path, name?, sequence? }', ['path'],
     { path: { type: 'string' }, name: { type: 'string' }, sequence: { type: 'boolean' } }),
+  importLayeredComp: withDesc('Import a layered AI/PSD file as a Composition with every source layer kept separate - the native Import dialog\'s "Composition + Merged Layers + Document Size", without opening it. Creates a "<name> Layers" folder of per-layer footage plus a matching composition named after the file. Comp duration/frameRate are AE defaults, not derived from the file - follow up with setCompSettings to pin them. { path, name? }', ['path'],
+    { path: { type: 'string' }, name: { type: 'string' } }),
   compFromFootage: withDesc('Import a file and build a matching comp pinned to t=0. Comp size/duration/frameRate come from the footage when it has them; { width?, height?, duration?, frameRate? } are fallbacks for footage that lacks one (e.g. a still image has no duration/frameRate). { path, name?, baseLayerName?, width?, height?, duration?, frameRate? }', ['path'],
     { path: { type: 'string' }, name: { type: 'string' }, baseLayerName: { type: 'string' },
       width: { type: 'integer' }, height: { type: 'integer' }, duration: { type: 'number' }, frameRate: { type: 'number' } }),

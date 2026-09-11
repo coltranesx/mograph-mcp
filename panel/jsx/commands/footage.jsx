@@ -21,6 +21,29 @@ COMMANDS.importFootage = function (p) {
   });
 };
 
+// Import a layered AI/PSD file as a Composition with every source layer kept
+// separate — the native Import dialog's "Import As: Composition, Layer
+// Options: Merged Layers, Footage Dimensions: Document Size" — without
+// opening that dialog. ImportAsType.COMP is the scripting equivalent: AE
+// creates a "<name> Layers" folder of per-layer footage (each sized to the
+// full document) plus a matching composition, named after the file. Comp
+// duration/frameRate come from AE's current defaults, not the AI file (AI
+// has neither) — follow up with setCompSettings to pin them if they matter.
+COMMANDS.importLayeredComp = function (p) {
+  AEB.assert(p.path, "path is required");
+  var f = new File(p.path);
+  AEB.assert(f.exists, "file does not exist: " + p.path);
+  return AEB.undo("mograph-mcp: importLayeredComp", function () {
+    var io = new ImportOptions(f);
+    io.importAs = ImportAsType.COMP;
+    var item = app.project.importFile(io);
+    if (p.name) item.name = p.name;
+    var info = _itemInfo(item);
+    try { info.numLayers = item.numLayers; } catch (e) {}
+    return info;
+  });
+};
+
 // Import footage and build a comp that matches it 1:1, base layer pinned to t=0.
 COMMANDS.compFromFootage = function (p) {
   AEB.assert(p.path, "path is required");

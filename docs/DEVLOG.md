@@ -12,6 +12,49 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-09-11
+- **Yeni kalıcı yetenek: `importLayeredComp` — katmanlı AI/PSD'yi dialog'suz
+  "Composition + Merged Layers + Document Size" ile import etme.** Signavio
+  video projesinde 49 sayfalık bir Illustrator dosyası (`page-01.ai` ...
+  `page-49.ai`) elle, native Import dialog'undan ("Import As: Composition",
+  "Layer Options: Merged Layers", "Footage Dimensions: Document Size") tek
+  tek AE'ye alınıyordu — her dosyanın tüm AI layer'larını ayrı AE layer'ı
+  olarak, doküman boyutunda, otomatik bir "<isim> Layers" klasörüne getiren
+  davranış. Var olan `importFootage`/`compFromFootage` bunu karşılamıyor:
+  ikisi de `ImportOptions` üzerinde `importAs` set etmiyor, sonuç tek
+  düzleştirilmiş footage/layer oluyor (canlı test: `compFromFootage` ile
+  `Page02.ai` import edilince tek layer + 30fps varsayılan çıktı, sonra
+  temizlendi). Web'de doğrulandı (ae-scripting.docsforadobe.dev
+  `ImportOptions`, Adobe Community #58466): `ImportOptions.importAs =
+  ImportAsType.COMP` tam olarak bu native dialog davranışını dialog açmadan
+  veriyor — API'nin eksik değil, mevcut komutların bunu kullanmıyor
+  olmasıydı.
+  - **`panel/jsx/commands/footage.jsx`:** `COMMANDS.importLayeredComp`
+    eklendi — `io.importAs = ImportAsType.COMP` ile `importFile`, `{path,
+    name?}`. Comp süre/fps dosyadan gelmiyor (AI'da yok), AE'nin son
+    kullanılan comp ayarlarına düşüyor — kritik değerler için `setCompSettings`
+    ile üzerine yazılmalı.
+  - **`shared/src/commands.js` / `controller/src/mcpServer.js`:** şema +
+    CORE listesine eklendi (`compFromFootage`'ın yanına).
+  - Canlı doğrulama: `Signavio26_Page03.ai` → tek komutla `Signavio26_Page03
+    Layers` klasörü + 6 ayrı footage + `Signavio26_Page03` compi
+    (3840x2160/25fps/10s/bg siyah), elle yapılmış `Page01` ile birebir
+    aynı yapı. Ardından kalan 47 dosya (`Page02`, `Page04`-`Page49`) `batch`
+    ile 3 parçada (16/16/15, tek command timeout'una girmemek için) tek
+    seferde işlendi, 47/47 başarılı.
+  - **Yan bulgu, ayrıca düzeltildi: `panel/.debug`'daki debug-port
+    extension id'si yanlıştı.** Upstream fork'tan kalma `com.ae-bridge.
+    panel.main` yazıyordu, gerçek extension id `manifest.xml`'de
+    `com.coltranesx.mograph-mcp.panel.main` — bu yüzden `tools/hot.mjs`
+    (CDP hot-reload) hiçbir zaman debug port'u bulamıyordu (sessizce
+    "no debug port" ile başarısız oluyordu, ne zamandır kırık olduğu
+    bilinmiyor). Hem repo'daki hem deploy edilmiş kopyada (`~/Library/
+    Application Support/Adobe/CEP/extensions/com.coltranesx.mograph-mcp.
+    panel/.debug`) id düzeltildi. CEP debug port'u extension başlatılırken
+    kaydettiği için mevcut çalışan panel bunu geriye dönük almadı — panel
+    bir kere kapatılıp açıldı, sonrasında `hot.mjs` çalıştı. Artık kalıcı
+    olarak çalışması gerekiyor.
+
 ## 2026-09-07 (2)
 - **Yeni kalıcı yetenek: gerçek keyframe/ease kopyalama (`copyKeyframes`,
   `copyKeyframesBatch`, `getEase`).** Daha önce birden fazla oturumda tespit
