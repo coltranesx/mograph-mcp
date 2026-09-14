@@ -38,6 +38,25 @@ const LAYER_REF_SCHEMA = {
   layerIndex: { type: 'integer' },
 };
 
+// Reusable schema fragments for the property/value pair that shows up across
+// keyframe + introspection commands (setKeyframe, setEase, setInterpolation,
+// removeKeyframes, getProperty, ...). `property` may be a friendly transform
+// name (string) OR an array property-path (e.g. a SHAPE-typed path, see
+// AEB.resolveProperty, host.jsx) — anyOf keeps the array branch typed so it
+// survives the MCP tool's inputSchema the same way addShape's array fields do
+// (see this file's header comment). `value` is genuinely polymorphic
+// (number/string/boolean for scalar props, [x,y]/[x,y,z] for spatial ones,
+// and a { vertices[], inTangents?, outTangents?, closed? } object for
+// SHAPE-typed properties, see AEB.toShape).
+// Declared up here (not next to withDesc below) so it's already initialized
+// by the time the COMMANDS object literal below references it — a `const`
+// declared after that literal would be in its temporal dead zone at the
+// point of use and throw at module load.
+const PROPERTY_SCHEMA = { anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] };
+const VALUE_SCHEMA = {
+  anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }, { type: 'object' }],
+};
+
 export const COMMANDS = {
   ping: {
     description: 'Liveness check. Returns { pong, ae } (AE version when run in-host).',
@@ -145,7 +164,7 @@ export const COMMANDS = {
     // enabled/shy/solo/threeDLayer) — anyOf keeps the array branch typed so
     // array-valued calls survive the MCP tool's inputSchema (see file header).
     schema: {
-      compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: { type: 'string' },
+      compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA,
       value: { anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }] },
     },
     // requireFields (defined below, but hoisted — it's a function
@@ -208,20 +227,8 @@ function requireFields(p, names) {
 // doesn't silently mangle array-valued params.
 const withDesc = (description, required, schema) => ({ description, schema, validate: (p) => requireFields(p, required) });
 
-// Reusable schema fragments for the property/value pair that shows up across
-// keyframe + introspection commands (setKeyframe, setEase, setInterpolation,
-// removeKeyframes, getProperty, ...). `property` may be a friendly transform
-// name (string) OR an array property-path (e.g. a SHAPE-typed path, see
-// AEB.resolveProperty, host.jsx) — anyOf keeps the array branch typed so it
-// survives the MCP tool's inputSchema the same way addShape's array fields do
-// (see this file's header comment). `value` is genuinely polymorphic
-// (number/string/boolean for scalar props, [x,y]/[x,y,z] for spatial ones,
-// and a { vertices[], inTangents?, outTangents?, closed? } object for
-// SHAPE-typed properties, see AEB.toShape).
-const PROPERTY_SCHEMA = { anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] };
-const VALUE_SCHEMA = {
-  anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }, { type: 'object' }],
-};
+// (PROPERTY_SCHEMA / VALUE_SCHEMA now declared up near LAYER_REF_SCHEMA,
+// before the first COMMANDS object literal — see the comment there.)
 
 // Shape operators (Trim Paths, Repeater, ...) live inside a shape layer's
 // vector-group tree as PropertyGroup children, added via addProperty(matchName)
@@ -583,7 +590,7 @@ Object.assign(COMMANDS, {
       undoName: { type: 'string' },
     }),
   setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression'],
-    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, expression: { type: 'string' } }),
+    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA, expression: { type: 'string' } }),
   removeExpression: withDesc('Remove an expression. { compId, layer, property }', ['compId', 'property'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA }),
   enableExpression: withDesc('Enable/disable an expression. { compId, layer, property, enabled? (default true) }', ['compId', 'property'],
