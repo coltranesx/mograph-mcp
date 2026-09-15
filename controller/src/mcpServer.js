@@ -33,7 +33,7 @@ const CORE = new Set([
   // Tier 2 — vitrin/farklılaştırıcı (same roadmap item)
   'applyWordReveal', 'applyCharScale', 'applyLowerThird', 'fireEffect', 'smokeEffect',
   'glitchEffect', 'cinematicGrade', 'neonGlow', 'addShapeOperator', 'addPathShape',
-  'addResponsiveBox', 'addCamera', 'addLight',
+  'addResponsiveBox', 'addCamera', 'addLight', 'setAllStrokeLineCaps',
 
   // Tier 3 — ikincil yardımcılar (same roadmap item, 2026-08-11)
   // expression controls / effect introspection

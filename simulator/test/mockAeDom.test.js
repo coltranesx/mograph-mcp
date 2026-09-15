@@ -1117,4 +1117,115 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.match(r.error, /not a property on trim/i);
     });
   });
+
+  describe('setAllStrokeLineCaps', () => {
+    // Manually nests vector Groups past what addShape() builds on its own,
+    // simulating a "Paste SVG ... N" letterform layer whose stroke sits an
+    // arbitrary number of Group levels deep — the exact scenario this
+    // command exists for (docs/ROADMAP.md 2026-09-15).
+    function nestGroupWithStroke(contents, depth) {
+      let curContents = contents;
+      for (let i = 0; i < depth; i++) {
+        const g = curContents.addProperty('ADBE Vector Group');
+        curContents = g.property('ADBE Vectors Group');
+      }
+      return curContents.addProperty('ADBE Vector Graphic - Stroke');
+    }
+
+    it('updates a shallow stroke (addShape\'s own single Group) on one explicit layer', () => {
+      const comp = runner.dispatch('createComp', { name: 'CapShallow' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0] });
+      const root = runner.dom.app.project.item(1).layer(1).property('ADBE Root Vectors Group');
+      const stroke = root.property(1).property('ADBE Vectors Group').property('ADBE Vector Graphic - Stroke');
+      assert.equal(stroke.property('ADBE Vector Stroke Line Cap').value, 1); // butt, addShape default
+
+      const r = runner.dispatch('setAllStrokeLineCaps', { compId, layer: 1, lineCap: 'round' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.strokesUpdated, 1);
+      assert.equal(stroke.property('ADBE Vector Stroke Line Cap').value, 2); // round
+    });
+
+    it('finds a stroke nested 3 Groups deep (recursive walk)', () => {
+      const comp = runner.dispatch('createComp', { name: 'CapDeep' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle', name: 'Paste SVG 17N 2' });
+      const root = runner.dom.app.project.item(1).layer(1).property('ADBE Root Vectors Group');
+      const contents = root.property(1).property('ADBE Vectors Group');
+      const deepStroke = nestGroupWithStroke(contents, 3);
+
+      const r = runner.dispatch('setAllStrokeLineCaps', { compId, layer: 1, lineCap: 'round' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.strokesUpdated, 1);
+      assert.equal(deepStroke.property('ADBE Vector Stroke Line Cap').value, 2);
+    });
+
+    it('nameContains filter only touches matching layers, others left alone', () => {
+      const comp = runner.dispatch('createComp', { name: 'CapFilter' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0], name: 'Paste SVG 1 2' });
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0], name: 'circle small' });
+      // AE adds new layers at the top (index 1) — look layers up by NAME
+      // rather than assuming index order, since that's an implementation
+      // detail of MockLayers.addShape (see its "unshift" comment), not
+      // something this test should depend on.
+      const comp1 = runner.dom.app.project.item(1);
+      const svgLayer = comp1.layer('Paste SVG 1 2');
+      const circleLayer = comp1.layer('circle small');
+      const svgStroke = svgLayer.property('ADBE Root Vectors Group').property(1)
+        .property('ADBE Vectors Group').property('ADBE Vector Graphic - Stroke');
+      const circleStroke = circleLayer.property('ADBE Root Vectors Group').property(1)
+        .property('ADBE Vectors Group').property('ADBE Vector Graphic - Stroke');
+
+      const r = runner.dispatch('setAllStrokeLineCaps', { compId, nameContains: 'Paste SVG', lineCap: 'round' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.strokesUpdated, 1);
+      assert.equal(r.result.layers.length, 1);
+      assert.equal(r.result.layers[0].layer, 'Paste SVG 1 2');
+      assert.equal(svgStroke.property('ADBE Vector Stroke Line Cap').value, 2); // round — matched
+      assert.equal(circleStroke.property('ADBE Vector Stroke Line Cap').value, 1); // butt — untouched
+    });
+
+    it('an explicit layers[] array resolves each ref (name or index)', () => {
+      const comp = runner.dispatch('createComp', { name: 'CapLayersArray' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0], name: 'Ring A' });
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0], name: 'Ring B' });
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0], name: 'Ring C' });
+      // AE adds new layers at the top: after these 3 addShape calls, index 1
+      // is 'Ring C' (added last) — mix a by-name ref with a by-index ref
+      // that resolve to two DIFFERENT layers to exercise both branches of
+      // AEB.resolveLayer.
+      const comp1 = runner.dom.app.project.item(1);
+      assert.equal(comp1.layer(1).name, 'Ring C');
+
+      const r = runner.dispatch('setAllStrokeLineCaps', { compId, layers: ['Ring A', 1], lineCap: 'projecting' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.strokesUpdated, 2);
+      const names = r.result.layers.map((l) => l.layer).sort();
+      assert.deepEqual(names, ['Ring A', 'Ring C']);
+    });
+
+    it('skips layers with no vector content (text/solid) without erroring, when run comp-wide', () => {
+      const comp = runner.dispatch('createComp', { name: 'CapMixed' });
+      const compId = comp.result.compId;
+      runner.dispatch('addTextLayer', { compId, text: 'Hi' });
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0], name: 'ShapeOne' });
+
+      const r = runner.dispatch('setAllStrokeLineCaps', { compId, lineCap: 'round' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.strokesUpdated, 1);
+      assert.equal(r.result.layers.length, 1);
+      assert.equal(r.result.layers[0].layer, 'ShapeOne');
+    });
+
+    it('rejects an invalid lineCap value', () => {
+      const comp = runner.dispatch('createComp', { name: 'CapBad' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'ellipse', strokeColor: [0, 0, 0] });
+      const r = runner.dispatch('setAllStrokeLineCaps', { compId, layer: 1, lineCap: 'square' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /lineCap must be one of/i);
+    });
+  });
 });

@@ -508,3 +508,41 @@ alınmalı:
   adım (daha geniş/otomatik ID taraması, ya da `redo`'yu şimdilik "bilinen
   kırık" olarak işaretleyip komuttan bir uyarı/hata döndürmek) Korhan'ın
   kararına kalıyor.
+
+## `setAllStrokeLineCaps` — recursive vector-tree stroke bulma ✅ bitti (2026-09-15)
+
+Tetikleyici: "Signavio26_Page03_1" (compId 1750, 156 layer) içindeki tüm
+"Paste SVG ..." harf-path layer'larının stroke Line Cap'ini Round yapma
+ihtiyacı — her layer farklı derinlikte nested "Group N" içeriyordu (bazısı
+tek Group, "Paste SVG 17N 2" gibi bazıları 3 ayrı Group), yani sabit bir
+property path tüm layer'lar için işe yaramıyordu. Dışarıdan (host dışından)
+her stroke'u `getLayerDetails`+`setLayerProperty` ile tek tek keşfedip
+düzeltmek onlarca round-trip gerektirirdi.
+
+Çözüm: `panel/jsx/commands/layer.jsx`'e genel bir recursive walker eklendi
+(`_findPropertyGroupsByMatchName`) — bir layer'ın vector content ağacını
+(Contents → nested Groups/Repeater'lar, sınırsız derinlik) matchName'e göre
+tarayıp eşleşen property group'ları buluyor; strokes-özel kullanım
+`STROKE_GROUP_MATCHNAMES` (`ADBE Vector Graphic - Stroke` + `G-Stroke`,
+ikisi de aynı Line Cap sub-matchName'i paylaşıyor) ile `setAllStrokeLineCaps`
+komutu. Hedef layer seçimi en spesifikten genele: `layers[]` > tekil
+`layer`/`layerName`/`layerIndex` > `nameContains` (isimde alt-dize) >
+varsayılan (comp'taki tüm layer'lar); vector içeriği olmayan layer'lar
+(text/av/null/vb.) sessizce atlanıyor — karışık bir layer seti üzerinde
+güvenle çağrılabilir.
+
+Şema/validate: `shared/src/commands.js`. CORE MCP tool listesi:
+`controller/src/mcpServer.js` (`ae_setAllStrokeLineCaps`). Testler:
+`simulator/test/mockAeDom.test.js` (nested-Group recursion, `nameContains`
+filtresi, `layers[]` karışık ref listesi, vector-siz layer'ların atlanması,
+geçersiz `lineCap` reddi) ve `shared/test/commands.test.js` (pre-socket
+validate).
+
+Canlıda doğrulandı (Signavio26_Page03_1, compId 1750): `nameContains:
+"Paste SVG"` ile 34 layer, toplam **66 stroke** Round Cap'e çevrildi (bir
+layer'da — "Paste SVG 17N 2" — 3 ayrı nested Group'un 3 ayrı stroke'u dahil,
+tümü tek çağrıda bulundu). "circle ..." layer'ları (fill-only ellipse, hiç
+Stroke group'u yok) ve "Layer 03 Ring ..." layer'ları (tip `av`, footage —
+vector content'i hiç yok) `nameContains` filtresiyle zaten kapsam dışı
+kaldı; ikisinde de içerik/property yapısı gereği dokunulacak bir şey
+olmadığı ayrıca doğrulandı.

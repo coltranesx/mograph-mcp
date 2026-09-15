@@ -620,6 +620,90 @@ COMMANDS.enableTimeRemap = function (p) {
   });
 };
 
+// Recursively finds every property group whose matchName is in `matchNames`,
+// anywhere under `root` (nested Groups/Repeaters at any depth). Does not
+// recurse into a matched group's own children (a Stroke/G-Stroke's
+// sub-properties, e.g. Dashes/Taper, are never themselves another Stroke —
+// a harmless shallow-stop optimization). Generic on purpose: not tied to
+// strokes specifically, reusable for any future "find X anywhere in the
+// vector tree" need — see setAllStrokeLineCaps below for the first caller.
+function _findPropertyGroupsByMatchName(root, matchNames, out) {
+  out = out || [];
+  if (!root || root.numProperties === undefined) return out;
+  for (var i = 1; i <= root.numProperties; i++) {
+    var child;
+    try { child = root.property(i); } catch (e) { continue; }
+    if (!child) continue;
+    var isTarget = false;
+    for (var m = 0; m < matchNames.length; m++) {
+      if (child.matchName === matchNames[m]) { isTarget = true; break; }
+    }
+    if (isTarget) { out.push(child); continue; }
+    if (child.numProperties !== undefined && child.numProperties > 0) {
+      _findPropertyGroupsByMatchName(child, matchNames, out);
+    }
+  }
+  return out;
+}
+
+// Both the plain Stroke and the gradient G-Stroke share the same "ADBE
+// Vector Stroke Line Cap" sub-matchName (confirmed live 2026-08-10, see
+// _applyStrokeStyle above) — "every stroke" means both.
+var STROKE_GROUP_MATCHNAMES = ["ADBE Vector Graphic - Stroke", "ADBE Vector Graphic - G-Stroke"];
+
+// Sets Line Cap on every stroke found anywhere in a shape layer's vector
+// content tree, recursively — added because a layer's exact stroke property
+// path is often NOT known/fixed in advance (e.g. pasted/imported SVG letter
+// paths, each nested a different number of "Group N" levels deep; discovering
+// and setting each one individually from outside the host would take one
+// round-trip per stroke). Target layer selection, most-specific first:
+//   - p.layers (array of layer/layerName/layerIndex refs) — explicit set
+//   - a single layer/layerName/layerIndex (AEB.requireLayer contract)
+//   - p.nameContains — every layer in the comp whose name contains this
+//     substring (case-sensitive, like removeLayersByPrefix's indexOf check)
+//   - default: every layer in the comp
+// Layers with no "ADBE Root Vectors Group" (text/av/camera/light/null/
+// adjustment layers) are skipped silently — this is meant to be safely
+// callable over a mixed layer set, not just shape layers.
+COMMANDS.setAllStrokeLineCaps = function (p) {
+  var comp = AEB.requireComp(p);
+  var cap = LINE_CAPS[String(p.lineCap).toLowerCase()];
+  AEB.assert(cap, "lineCap must be one of: butt, round, projecting");
+
+  var targets = [];
+  if (p.layers && p.layers.length) {
+    for (var li = 0; li < p.layers.length; li++) targets.push(AEB.resolveLayer(comp, p.layers[li]));
+  } else if (p.layer !== undefined || p.layerName !== undefined || p.layerIndex !== undefined) {
+    targets.push(AEB.requireLayer(comp, p));
+  } else if (p.nameContains) {
+    for (var i = 1; i <= comp.numLayers; i++) {
+      var L = comp.layer(i);
+      if (String(L.name).indexOf(p.nameContains) !== -1) targets.push(L);
+    }
+  } else {
+    for (var j = 1; j <= comp.numLayers; j++) targets.push(comp.layer(j));
+  }
+
+  return AEB.undo("mograph-mcp: setAllStrokeLineCaps", function () {
+    var updated = 0;
+    var perLayer = [];
+    for (var t = 0; t < targets.length; t++) {
+      var layer = targets[t];
+      var root;
+      try { root = layer.property("ADBE Root Vectors Group"); } catch (e) { root = null; }
+      if (!root) continue;
+      var strokes = _findPropertyGroupsByMatchName(root, STROKE_GROUP_MATCHNAMES, []);
+      if (!strokes.length) continue;
+      for (var s = 0; s < strokes.length; s++) {
+        strokes[s].property("ADBE Vector Stroke Line Cap").setValue(cap);
+      }
+      updated += strokes.length;
+      perLayer.push({ layer: layer.name, strokesUpdated: strokes.length });
+    }
+    return { ok: true, lineCap: String(p.lineCap).toLowerCase(), strokesUpdated: updated, layers: perLayer };
+  });
+};
+
 COMMANDS.replaceSource = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);

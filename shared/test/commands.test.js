@@ -646,6 +646,42 @@ describe('validateCommand', () => {
       assert.match(r.error, /params/);
     });
   });
+
+  describe('setAllStrokeLineCaps (pre-socket)', () => {
+    it('accepts compId + lineCap with no layer filter (defaults to whole comp)', () => {
+      const r = validateCommand('setAllStrokeLineCaps', { compId: 1, lineCap: 'round' });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.lineCap, 'round');
+    });
+
+    it('accepts a nameContains filter', () => {
+      const r = validateCommand('setAllStrokeLineCaps', {
+        compId: 1, lineCap: 'round', nameContains: 'Paste SVG',
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.nameContains, 'Paste SVG');
+    });
+
+    it('accepts an explicit layers[] array', () => {
+      const r = validateCommand('setAllStrokeLineCaps', {
+        compId: 1, lineCap: 'round', layers: ['Ring A', 3],
+      });
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.params.layers, ['Ring A', 3]);
+    });
+
+    it('rejects an invalid lineCap value', () => {
+      const r = validateCommand('setAllStrokeLineCaps', { compId: 1, lineCap: 'square' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /lineCap must be one of/);
+    });
+
+    it('rejects without compId/lineCap', () => {
+      const r = validateCommand('setAllStrokeLineCaps', { compId: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /lineCap/);
+    });
+  });
 });
 
 describe('commandList', () => {

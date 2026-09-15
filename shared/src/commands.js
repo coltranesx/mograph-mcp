@@ -649,6 +649,36 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, spec: { type: 'object' }, segment: { type: 'object' } }),
   removeLayersByPrefix: withDesc('Remove all layers whose name starts with prefix. { compId, prefix }', ['compId', 'prefix'],
     { compId: { type: 'integer' }, prefix: { type: 'string' } }),
+  setAllStrokeLineCaps: {
+    description:
+      'Set "Line Cap" (butt|round|projecting) on EVERY stroke (ADBE Vector Graphic - Stroke and G-Stroke) found ' +
+      'anywhere in a shape layer\'s vector content tree — recursively, through nested Groups/Repeaters at any depth. ' +
+      'Built for layers whose exact stroke property path is not known/fixed in advance (e.g. pasted/imported SVG ' +
+      'letter paths, each nested a different number of "Group N" levels deep) — avoids one getLayerDetails+' +
+      'setLayerProperty round-trip per stroke. Target layer selection, most specific first: layers[] (array of ' +
+      'layer/layerName/layerIndex refs) > a single layer/layerName/layerIndex > nameContains (substring match ' +
+      'against layer name, case-sensitive) > default: every layer in the comp. Layers with no vector content ' +
+      '(text/av/camera/light/null/adjustment) are skipped silently — safe to call over a mixed layer set. ' +
+      '{ compId, lineCap (butt|round|projecting), layer?, layerName?, layerIndex?, layers?, nameContains? }. ' +
+      'Returns { ok, lineCap, strokesUpdated, layers:[{layer,strokesUpdated}] }.',
+    schema: {
+      compId: { type: 'integer' }, lineCap: { type: 'string' },
+      ...LAYER_REF_SCHEMA,
+      layers: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'integer' }] } },
+      nameContains: { type: 'string' },
+    },
+    validate(p) {
+      const base = requireFields(p, ['compId', 'lineCap']);
+      const LINE_CAPS = ['butt', 'round', 'projecting'];
+      if (!LINE_CAPS.includes(String(p.lineCap).toLowerCase())) {
+        throw new ValidationError(`lineCap must be one of: ${LINE_CAPS.join(', ')}`);
+      }
+      if (p.layers !== undefined) {
+        base.layers = v.optionalArray(p, 'layers');
+      }
+      return base;
+    },
+  },
 });
 
 // v3 — masks, text, styles, introspection, render queue, comp/layer/project ops,
