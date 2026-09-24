@@ -31,7 +31,24 @@ globalThis.KeyframeEase = KeyframeEase;
 // ---------------------------------------------------------------------------
 class MockProperty {
   constructor(name, initialValue) {
+    // matchName mirrors MockVectorGroup's own pattern just below (name
+    // defaults to matchName at construction, then `.name` alone is free to
+    // be renamed independently — see addShapeOperator's `added.name = p.name`,
+    // layer.jsx). Every real AE Property has a distinct, immutable
+    // matchName (confirmed live: getProperty on a real stroke's Color
+    // reports name:"Color", matchName:"ADBE Vector Stroke Color", 2026-09-15)
+    // — this class previously had no matchName field at all, which was fine
+    // as long as nothing read it, but listShapeContents (introspect.jsx)
+    // needs it to tell a caller which matchName a discovered child actually
+    // has. All of this file's own call sites already pass the real
+    // matchName as `name` for vector auto-children (VECTOR_AUTO_CHILDREN
+    // below), so this is a correctness fix, not a behavior change, for
+    // every one of those; Transform properties (Position/Scale/...) get a
+    // matchName equal to their friendly name, which is imprecise (real AE's
+    // is "ADBE Position" etc.) but was never asserted on and isn't touched
+    // by any Transform-facing command today.
     this.name = name;
+    this.matchName = name;
     this._value = initialValue;
   }
   get value() { return this._value; }
@@ -410,6 +427,7 @@ class MockLayer {
     this.index = index;
     this.name = opts.name || `Layer ${index}`;
     this.enabled = true;
+    this.selected = false;
     this.startTime = 0;
     this.inPoint = 0;
     this.outPoint = comp ? comp.duration : 0;
@@ -537,6 +555,8 @@ class MockCompItem {
 
   get numLayers() { return this.layers._items.length; }
   set numLayers(_v) { /* ignore — computed */ }
+
+  get selectedLayers() { return this.layers._items.filter((l) => l.selected); }
 
   layer(indexOrName) {
     if (typeof indexOrName === 'number') {

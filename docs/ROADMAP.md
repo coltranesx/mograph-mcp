@@ -546,3 +546,133 @@ Stroke group'u yok) ve "Layer 03 Ring ..." layer'ları (tip `av`, footage —
 vector content'i hiç yok) `nameContains` filtresiyle zaten kapsam dışı
 kaldı; ikisinde de içerik/property yapısı gereği dokunulacak bir şey
 olmadığı ayrıca doğrulandı.
+
+## `selectLayer` — Timeline seçim kontrolü ✅ bitti (2026-09-15)
+
+Tetikleyici: AI-layer footage layer'ını (vector footage, `ADBE Root Vectors
+Group` yok, `addShapeOperator` "target vector group not found" veriyor)
+native shape layer'a çevirmek için AE'nin tek yolu Layer > "Create Shapes
+from Vector Layer" menü komutu — ama bu komut her zaman o an Timeline'da
+SEÇİLİ olan layer üzerinde çalışıyor, ve `Layer.selected`'ı set edecek
+hiçbir komut yoktu (bkz. DEVLOG 2026-09-15 için tam kök-neden analizi:
+`Layer.selected` bir Property değil, düz top-level boolean attribute).
+
+`panel/jsx/commands/layer.jsx`'e `selectLayer` eklendi (`{ compId,
+layer|layerName|layerIndex, clearOthers? (default true) }`, var olan
+~40 layer-ref komutuyla aynı `LAYER_REF_SCHEMA` sözleşmesi). Şema/validate:
+`shared/src/commands.js`. CORE MCP tool: `controller/src/mcpServer.js`
+(`ae_selectLayer`). Simülatörde `MockLayer.selected` / `MockCompItem.
+selectedLayers` daha önce hiç mock'lanmamıştı — eklendi (yan etki:
+`getSelection` artık simülatörde de gerçekten egzersiz edilebiliyor).
+Testler: `simulator/test/mockAeDom.test.js` + `shared/test/commands.test.js`
+(toplam 8 yeni test), `npm test` → 259/259 yeşil.
+
+Canlıda doğrulandı (AE 26.5x89, geçici `mograph-mcp_selectLayer_TEMP` compi,
+gerçek proje/comp'a dokunulmadan): `ae_selectLayer` hem varsayılan
+`clearOthers` (tek seçime geçiş) hem `clearOthers:false` (çoklu seçim
+birikmesi) ile `ae_getSelection` üzerinden doğrulandı. `ae_findMenuCommand
+({commandName:"Create Shapes from Vector Layer"})` → `commandId: 3973`
+(AE 26.5x89, EN yerelleştirme) — bu ID artık bilinen/doğrulanmış.
+
+**Kalan iş (bilinçli olarak ertelendi):** projede gerçekten "spare/unused"
+AI vector footage yok (580 proje item'ının tamamı Page01-Page49'a ait) —
+bu yüzden `selectLayer` → `executeMenuCommand(3973)` → sonucu native shape
+layer olarak doğrulama ("Create Shapes from Vector Layer"ın tam uçtan-uca
+smoke testi) henüz canlı yapılmadı. Korhan gerçek bir AI-footage layer'ını
+bu akışla çevirmek istediğinde, kendi seçtiği layer üzerinde tek seferlik
+doğrulanmalı.
+
+## `listShapeContents` — shape Contents ağacında property-path keşfi ✅ bitti (2026-09-15)
+
+Tetikleyici: `selectLayer` + "Create Shapes from Vector Layer" ile çevrilen
+(veya elle `addShapeOperator`'la genişletilen) bir shape layer'ın `Contents`
+ağacındaki PropertyGroup isimlerini AE kendi atıyor (`"Group 1"`,
+`"Stroke 1"` gibi) — bunlar önceden tahmin edilemez, ama `getProperty`/
+`setLayerProperty`/`setKeyframes`'in `property` array-path'i tam olarak bu
+isimleri (veya matchName'lerini) gerektiriyor. `getLayerDetails{deep:true}`
+zaten var olan bir genel-amaçlı derin ağaç dökücüydü ve bu soruyu
+cevaplayabiliyordu (canlı doğrulamada bilfiil kullanıldı — DEVLOG
+2026-09-15), ama `addShapeOperator`'ın `group` parametresiyle aynı
+property-path-array sözleşmesiyle TEK seviye ("bu grubun hemen içinde ne
+var, hangisi yürünebilir group hangisi leaf") cevap veren hedefli bir komut
+yoktu.
+
+`panel/jsx/commands/introspect.jsx`'e `listShapeContents` eklendi (`{
+compId, layer|layerName|layerIndex, group? (default ["ADBE Root Vectors
+Group"], addShapeOperator ile aynı sözleşme) }`) — her çocuk `{ index, name,
+matchName, isGroup }` + leaf ise `value`/`expression?`, group ise
+`numProperties`. Şema/validate: `shared/src/commands.js`. CORE MCP tool:
+`controller/src/mcpServer.js` (`ae_listShapeContents`). Yan bulgu ve
+düzeltme: `simulator/src/mockAeDom.js`'in `MockProperty` sınıfında hiç
+`matchName` alanı yoktu (sadece `name`) — `MockVectorGroup`'un zaten
+kullandığı desen (`matchName` inşada sabitlenir, `name` sonradan
+yeniden atanabilir) `MockProperty`'ye de taşındı, kök nedene inen bir
+düzeltme (geçici yama değil). Ayrıca `tools/hot.mjs`'te rebrand'den kalma
+ölü bir CDP-hedef regex'i (`com.ae-bridge.panel`, upstream'in eski ID'si)
+bulunup fork'un gerçek ID'siyle (`com.coltranesx.mograph-mcp.panel`)
+düzeltildi. Testler: `shared/test/commands.test.js` + `simulator/test/
+mockAeDom.test.js` (toplam 9 yeni test), `npm test` → 268/268 yeşil.
+
+Canlıda doğrulandı (AE 26.5x89, gerçek proje `Sİgnavio2026_V02.aep`, gerçek
+`Signavio26_Page07_1` (compId 2089) veya layer'larına dokunulmadan,
+salt-okunur): gerçek `Layer 06 Line 1 Outlines 2` layer'ının stroke
+Color'ına giden path `["Contents", "Group 1", "Contents", "Stroke 1",
+"Color"]` (matchName eşdeğeri: `["ADBE Root Vectors Group", "ADBE Vector
+Group", "ADBE Vectors Group", "ADBE Vector Graphic - Stroke", "ADBE Vector
+Stroke Color"]`) `getProperty` ile doğrulandı (`[1,1,1,1]`, beyaz,
+değiştirilmedi). Panel deploy edilip AE kapat/aç yerine `node tools/
+hot.mjs` (CDP üzerinden imza bozulmadan bellek-içi reload) ile güncellendi
+— controller zaten `com.coltranesx.mograph-mcp.controller` LaunchAgent'ı
+üzerinden ayaktaydı (bu repo'nun üst-seviye notlarındaki "henüz LaunchAgent
+yok" artık güncel değil). Atılabilir `mograph-mcp_listShapeContents_TEMP`
+compinde (stroke+fill'li bir ellipse) hem başarı hem iki hata yolu (leaf'i
+group gibi listeletmek, çözülemeyen path) uçtan uca doğrulandı, sonra comp
+silindi.
+
+## `addPathToLayer` — mevcut shape layer'a sibling vector group ekleme ✅ bitti (2026-09-24)
+
+Tetikleyici: harf stroke-centerline'larını elle path olarak trace ederken
+(Signavio "01_W" harfi) `addPathShape`'in HER ZAMAN yeni bir shape layer
+yaratması — canlıda doğrulandı: var olan bir shape layer seçiliyken tekrar
+çağrıldığında hedef layer'ın kendi Contents'i değişmeden ayrı bir layer
+daha çıkıyor. Referans yapı (comp 1750 "Signavio26_Page03_1") bir harfin
+TÜM stroke-segment path'lerini sibling `ADBE Vector Group`'lar olarak TEK
+layer'ın Contents'inde topluyordu, bunu üretecek bir komut yoktu.
+
+`panel/jsx/commands/layer.jsx`'te Path/Fill/Stroke stack'i kuran kod
+`addPathShape`'ten `_buildPathGroupContents` helper'ına çıkarıldı (ikisi de
+kullanıyor, drift riski yok). `COMMANDS.addPathToLayer` eklendi: `{ compId,
+layer, vertices[], inTangents?, outTangents?, closed?, fillColor?,
+strokeColor?, strokeWidth?, group? (addShapeOperator ile aynı property-path
+sözleşmesi, default `["ADBE Root Vectors Group"]`), groupName? (verilmezse
+AE'nin kendi "Group N" auto-name'i kalır) }` — hedef PropertyGroup'a
+`addProperty("ADBE Vector Group")` ile yeni bir sibling grup ekleyip içini
+dolduruyor. Şema: `shared/src/commands.js`. CORE MCP tool:
+`controller/src/mcpServer.js` (`ae_addPathToLayer`). Testler:
+`simulator/test/mockAeDom.test.js` (4 yeni test), `npm test` → 272/272
+yeşil.
+
+Canlıda doğrulandı (AE 26.5x89, gerçek proje `Signavio2026_V05.aep`, gerçek
+`01_W_Stroke1_TL-V1`..`Stroke4_V2-TR` (comp 1725) veya comp 1750'deki
+hiçbir layer'a dokunulmadan): panel `node tools/hot.mjs` ile güncellendi
+(`npm run deploy:panel` bu makinede `ZXPSignCmd`'nin x86_64 binary'si için
+Rosetta kurulu olmadığından "Bad CPU type in executable" ile başarısız
+oluyor — `hot.mjs` şu an tek çalışan güncelleme yolu, ayrı bir oturumda ele
+alınmalı), controller `launchctl kickstart -k` ile restart edildi. Atılabilir
+`mograph-mcp_addPathToLayer_TEST` compinde (itemId 4196) `addPathShape` ile
+tek path'li bir test layer'ı (`TestSeg1`) oluşturulup `addPathToLayer` ile
+ikinci bir path (`groupName:"Group 2"`) eklendi; `listShapeContents` kök
+Contents'in 2 sibling `ADBE Vector Group` içerdiğini ve `Group 2`'nin
+geçerli `Path 1`/`Stroke 1` taşıdığını, `getProperty` ise `Group 2`'nin Path
+değerinin gönderilen vertices'le birebir eşleştiğini doğruladı. Test compi
+silindi; ardından gerçek `01_W_Stroke1_TL-V1`'de `listShapeContents` tekrar
+çalıştırılıp Contents'inin hâlâ tek `Group 1`'e sahip olduğu (değişmediği)
+teyit edildi.
+
+**Açık uç (bu oturumun kapsamı dışı):** `npm run deploy:panel` bu makinede
+Rosetta eksikliğinden çalışmıyor — kalıcı (imzalı, AE restart'a dayanıklı)
+deploy için ya Rosetta kurulmalı (`softwareupdate --install-rosetta`, sistem
+düzeyinde onay gerektirir) ya da `zxp-provider`'ın arm64 bir `ZXPSignCmd`
+sürümü araştırılmalı. `hot.mjs` bellek-içi reload AE'nin bu oturumu (ve
+panel yeniden açılana/AE restart edilene kadar) için yeterli, ama kalıcı
+değil.

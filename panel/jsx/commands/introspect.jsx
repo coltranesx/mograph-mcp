@@ -71,6 +71,51 @@ function _groupSummary(group, depth) {
   return out;
 }
 
+// List the immediate children of a shape layer's vector PropertyGroup —
+// answers "what did AE actually name this?" without already knowing it.
+// Needed because AE auto-generates PropertyGroup names inside Contents that
+// don't derive predictably from anything the caller controls: menu commands
+// like Layer > "Create Shapes from Vector Layer" (see selectLayer,
+// docs/DEVLOG.md 2026-09-15) produce "Group 1"/"Stroke 1"/etc, and even
+// addShape's own auto-built stack isn't guaranteed stable across AE versions.
+// `addShapeOperator`'s `group` param already accepts a property-path array
+// to target a nested group (see its comment above, this file's layer.jsx
+// sibling) — this command exists to let a caller DISCOVER that path one
+// level at a time (re-call with an updated `group` to walk deeper) instead
+// of guessing. Deliberately shallow (one level), unlike getLayerDetails'
+// bounded-recursive `deep`/`depth` dump — that answers "show me everything
+// under this layer", this answers "what's directly inside this ONE group,
+// and is each child itself walkable or a leaf value I can read/set".
+COMMANDS.listShapeContents = function (p) {
+  var comp = AEB.requireComp(p);
+  var layer = AEB.requireLayer(comp, p);
+  var groupPath = p.group || ["ADBE Root Vectors Group"];
+  var group = AEB.resolveProperty(layer, groupPath);
+  // Only a PropertyGroup exposes numProperties/property(i) (see
+  // _groupSummary above, the same test this file already relies on to tell
+  // a group from a leaf Property) — a caller who passed the path to a leaf
+  // (e.g. ["ADBE Root Vectors Group", "ADBE Vector Group", "ADBE Vectors
+  // Group", "ADBE Vector Graphic - Stroke", "ADBE Vector Stroke Color"])
+  // gets a clear error here instead of an ExtendScript TypeError from
+  // .numProperties on undefined further down.
+  AEB.assert(group.numProperties !== undefined,
+    'Resolved property is not a PropertyGroup (no children to list): ' + groupPath.join(' > '));
+  var children = [];
+  for (var i = 1; i <= group.numProperties; i++) {
+    var pr = group.property(i);
+    var isGroup = (pr.numProperties !== undefined);
+    var node = { index: i, name: pr.name, matchName: pr.matchName, isGroup: isGroup };
+    if (isGroup) {
+      node.numProperties = pr.numProperties;
+    } else {
+      try { node.value = _safeValue(pr); } catch (e) {}
+      try { if (pr.expressionEnabled) node.expression = pr.expression; } catch (e) {}
+    }
+    children.push(node);
+  }
+  return { group: groupPath, name: group.name, matchName: group.matchName, numProperties: group.numProperties, children: children };
+};
+
 COMMANDS.getLayerDetails = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);

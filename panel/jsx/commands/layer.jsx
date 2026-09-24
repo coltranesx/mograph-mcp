@@ -401,6 +401,33 @@ COMMANDS.addShapeOperator = function (p) {
   });
 };
 
+// Shared by addPathShape (new layer) and addPathToLayer (existing layer,
+// see below) — builds the Path + optional Fill/Stroke property stack inside
+// a vector group's "ADBE Vectors Group" contents from the same wire shape:
+// { vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?,
+// strokeWidth? }. Factored out so the two commands can't drift out of sync
+// on the actual geometry-building part, which is the only part they share —
+// addPathShape also creates the layer + top-level ADBE Vector Group wrapper
+// and sets layer position; addPathToLayer targets an existing wrapper group
+// instead (its own group.jsx-equivalent creation logic lives there).
+function _buildPathGroupContents(contents, p) {
+  var pathGroup = contents.addProperty("ADBE Vector Shape - Group");
+  var s = new Shape();
+  s.vertices = p.vertices;
+  if (p.inTangents) s.inTangents = p.inTangents;
+  if (p.outTangents) s.outTangents = p.outTangents;
+  s.closed = (p.closed !== false);
+  pathGroup.property("ADBE Vector Shape").setValue(s);
+  if (p.fillColor) {
+    contents.addProperty("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue(AEB.normColor(p.fillColor));
+  }
+  if (p.strokeColor) {
+    var stroke = contents.addProperty("ADBE Vector Graphic - Stroke");
+    stroke.property("ADBE Vector Stroke Color").setValue(AEB.normColor(p.strokeColor));
+    if (p.strokeWidth) stroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
+  }
+}
+
 // Shape layer with a custom bezier path (vertices + tangents). For flames,
 // teardrops, blobs, custom logos, etc.
 COMMANDS.addPathShape = function (p) {
@@ -410,23 +437,44 @@ COMMANDS.addPathShape = function (p) {
     var layer = comp.layers.addShape();
     if (p.name) layer.name = p.name;
     var contents = layer.property("ADBE Root Vectors Group").addProperty("ADBE Vector Group").property("ADBE Vectors Group");
-    var pathGroup = contents.addProperty("ADBE Vector Shape - Group");
-    var s = new Shape();
-    s.vertices = p.vertices;
-    if (p.inTangents) s.inTangents = p.inTangents;
-    if (p.outTangents) s.outTangents = p.outTangents;
-    s.closed = (p.closed !== false);
-    pathGroup.property("ADBE Vector Shape").setValue(s);
-    if (p.fillColor) {
-      contents.addProperty("ADBE Vector Graphic - Fill").property("ADBE Vector Fill Color").setValue(AEB.normColor(p.fillColor));
-    }
-    if (p.strokeColor) {
-      var stroke = contents.addProperty("ADBE Vector Graphic - Stroke");
-      stroke.property("ADBE Vector Stroke Color").setValue(AEB.normColor(p.strokeColor));
-      if (p.strokeWidth) stroke.property("ADBE Vector Stroke Width").setValue(p.strokeWidth);
-    }
+    _buildPathGroupContents(contents, p);
     if (p.position) layer.property("Transform").property("Position").setValue(p.position);
     return AEB.layerInfo(layer);
+  });
+};
+
+// Append a NEW sibling "ADBE Vector Group" (Path + optional Fill/Stroke)
+// into an EXISTING shape layer's Contents, instead of always creating a
+// brand-new shape layer the way addPathShape does. Mirrors what the AE UI
+// does when you draw with the Pen tool while a shape layer is already
+// selected in the Timeline: a new "Group N" appended as a sibling alongside
+// whatever vector groups are already in that layer's "ADBE Root Vectors
+// Group". Needed for bundling multiple hand-traced path segments (e.g.
+// letterform stroke-centerlines) as sibling groups inside ONE shape layer,
+// matching the reference structure used elsewhere in this project (comp
+// 1750 "Signavio26_Page03_1"), rather than one layer per segment.
+// `group` reuses addShapeOperator's property-path convention (default
+// ["ADBE Root Vectors Group"], i.e. the layer's own Contents — pass a
+// deeper path to nest inside an existing group instead of appending at the
+// top level). `groupName` names the new group; omit it to keep AE's own
+// auto-name (e.g. "Group 2").
+COMMANDS.addPathToLayer = function (p) {
+  var comp = AEB.requireComp(p);
+  var layer = AEB.requireLayer(comp, p);
+  AEB.assert(p.vertices && p.vertices.length, "vertices[] is required");
+  return AEB.undo("mograph-mcp: addPathToLayer", function () {
+    var target = p.group ? AEB.resolveProperty(layer, p.group) : layer.property("ADBE Root Vectors Group");
+    AEB.assert(target, "target vector group not found (layer has no ADBE Root Vectors Group — is it a shape layer?)");
+    var newGroup = target.addProperty("ADBE Vector Group");
+    if (p.groupName) newGroup.name = p.groupName;
+    var contents = newGroup.property("ADBE Vectors Group");
+    _buildPathGroupContents(contents, p);
+    return {
+      groupIndex: newGroup.propertyIndex,
+      groupName: newGroup.name,
+      matchName: newGroup.matchName,
+      layer: AEB.layerInfo(layer)
+    };
   });
 };
 
@@ -586,6 +634,29 @@ COMMANDS.setLayerFlag = function (p) {
     else if (key === "frameblending") layer.frameBlending = val;
     else throw new Error("unknown flag: " + p.flag);
     return { ok: true };
+  });
+};
+
+// Layer.selected is a plain top-level boolean attribute on the AE Layer
+// object (not a keyframeable Property, so it can't be reached through
+// setLayerProperty's layer.property(name) path) — this is what menu commands
+// that act on "the selected layer" (e.g. Layer > Create Shapes from Vector
+// Layer) actually read. clearOthers (default true) mirrors normal Timeline
+// click behavior: deselect every other layer in the comp first, so exactly
+// one layer ends up selected, rather than accumulating a multi-selection.
+COMMANDS.selectLayer = function (p) {
+  var comp = AEB.requireComp(p);
+  var layer = AEB.requireLayer(comp, p);
+  var clearOthers = (p.clearOthers !== false);
+  return AEB.undo("mograph-mcp: selectLayer", function () {
+    if (clearOthers) {
+      for (var i = 1; i <= comp.numLayers; i++) {
+        var l = comp.layer(i);
+        if (l !== layer) l.selected = false;
+      }
+    }
+    layer.selected = true;
+    return { ok: true, index: layer.index, name: layer.name, selected: true };
   });
 };
 

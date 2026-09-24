@@ -709,6 +709,95 @@ describe('JSX Runner + Mock AE DOM', () => {
     });
   });
 
+  // addPathToLayer: appends a sibling ADBE Vector Group into an EXISTING
+  // shape layer's Contents, instead of always creating a new layer the way
+  // addPathShape does — for bundling multiple hand-traced path segments
+  // (letterform stroke-centerlines) as sibling groups inside ONE layer.
+  describe('addPathToLayer (append a sibling vector group to an existing layer)', () => {
+    it('appends a second sibling group alongside addPathShape\'s original one, each with its own valid Path', () => {
+      const comp = runner.dispatch('createComp', { name: 'APTL1' });
+      const compId = comp.result.compId;
+      const created = runner.dispatch('addPathShape', {
+        compId, name: 'MultiSeg',
+        vertices: [[0, 0], [100, 0], [50, 100]],
+        strokeColor: [1, 0, 0], strokeWidth: 2,
+      });
+      assert.equal(created.ok, true);
+
+      const appended = runner.dispatch('addPathToLayer', {
+        compId, layer: 'MultiSeg',
+        vertices: [[0, 0], [20, 0]],
+        strokeColor: [0, 1, 0], strokeWidth: 3,
+        groupName: 'Group 2',
+      });
+      assert.equal(appended.ok, true, appended.error);
+      assert.equal(appended.result.groupName, 'Group 2');
+      assert.equal(appended.result.groupIndex, 2);
+      assert.equal(appended.result.layer.name, 'MultiSeg');
+
+      const root = runner.dispatch('listShapeContents', { compId, layer: 'MultiSeg' });
+      assert.equal(root.ok, true);
+      assert.equal(root.result.children.length, 2, 'Contents should now hold 2 sibling groups');
+      assert.equal(root.result.children[0].matchName, 'ADBE Vector Group');
+      assert.equal(root.result.children[1].matchName, 'ADBE Vector Group');
+      assert.equal(root.result.children[1].name, 'Group 2');
+
+      // Both groups' own Path shape is readable and correct — not just that
+      // the group exists, but that _buildPathGroupContents wired the Shape
+      // value through the same way addPathShape's does.
+      // index-based path (matches addPathToLayer's returned groupIndex: 2) —
+      // the mock's property() resolves by matchName-or-index, same as real AE
+      // (see mockAeDom.js MockVectorGroup.property); "Group 2" is only this
+      // group's display .name, not a resolvable matchName-style key.
+      const path2 = runner.dispatch('getProperty', {
+        compId, layer: 'MultiSeg',
+        property: ['ADBE Root Vectors Group', 2, 'ADBE Vectors Group', 'ADBE Vector Shape - Group', 'ADBE Vector Shape'],
+      });
+      assert.equal(path2.ok, true, path2.error);
+      assert.deepEqual(Array.from(path2.result.value.vertices).map((v) => Array.from(v)), [[0, 0], [20, 0]]);
+
+      const stroke2 = runner.dispatch('listShapeContents', {
+        compId, layer: 'MultiSeg',
+        group: ['ADBE Root Vectors Group', 2, 'ADBE Vectors Group', 'ADBE Vector Graphic - Stroke'],
+      });
+      assert.equal(stroke2.ok, true, stroke2.error);
+      const color2 = stroke2.result.children.filter((c) => c.matchName === 'ADBE Vector Stroke Color')[0];
+      assert.deepEqual(color2.value, [0, 1, 0]);
+    });
+
+    it('defaults the group name to AE\'s own auto-name when groupName is omitted', () => {
+      const comp = runner.dispatch('createComp', { name: 'APTL2' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addPathToLayer', {
+        compId, layer: 1, vertices: [[0, 0], [10, 10]],
+      });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(r.result.matchName, 'ADBE Vector Group');
+      assert.equal(typeof r.result.groupName, 'string');
+    });
+
+    it('fails without vertices, same as addPathShape', () => {
+      const comp = runner.dispatch('createComp', { name: 'APTL3' });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', { compId, shape: 'rectangle' });
+      const r = runner.dispatch('addPathToLayer', { compId, layer: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /vertices/i);
+    });
+
+    it('fails clearly when the target layer has no vector content (not a shape layer)', () => {
+      const comp = runner.dispatch('createComp', { name: 'APTL4' });
+      const compId = comp.result.compId;
+      runner.dispatch('addSolid', { compId, name: 'NotShape', color: [1, 1, 1] });
+      const r = runner.dispatch('addPathToLayer', {
+        compId, layer: 'NotShape', vertices: [[0, 0], [10, 10]],
+      });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /ADBE Root Vectors Group|not found/i);
+    });
+  });
+
   describe('SHAPE keyframing (setKeyframe / setKeyframes on a path)', () => {
     const SHAPE_PATH = [
       'ADBE Root Vectors Group', 'ADBE Vector Group', 'ADBE Vectors Group',
@@ -1226,6 +1315,137 @@ describe('JSX Runner + Mock AE DOM', () => {
       const r = runner.dispatch('setAllStrokeLineCaps', { compId, layer: 1, lineCap: 'square' });
       assert.equal(r.ok, false);
       assert.match(r.error, /lineCap must be one of/i);
+    });
+  });
+
+  describe('selectLayer', () => {
+    it('selects a layer by index and reports selected:true', () => {
+      const comp = runner.dispatch('createComp', { name: 'SelBasic' });
+      const compId = comp.result.compId;
+      runner.dispatch('addSolid', { compId, name: 'S' });
+      const r = runner.dispatch('selectLayer', { compId, layer: 1 });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.selected, true);
+      assert.equal(r.result.name, 'S');
+      const layer = runner.dom.app.project.item(1).layer(1);
+      assert.equal(layer.selected, true);
+    });
+
+    it('clearOthers (default true) deselects every other layer in the comp', () => {
+      const comp = runner.dispatch('createComp', { name: 'SelClear' });
+      const compId = comp.result.compId;
+      runner.dispatch('addSolid', { compId, name: 'A' });
+      runner.dispatch('addSolid', { compId, name: 'B' });
+      const comp1 = runner.dom.app.project.item(1);
+      runner.dispatch('selectLayer', { compId, layer: 'A' });
+      runner.dispatch('selectLayer', { compId, layer: 'B' }); // should replace A's selection
+      assert.equal(comp1.layer('A').selected, false);
+      assert.equal(comp1.layer('B').selected, true);
+    });
+
+    it('clearOthers:false accumulates a multi-selection', () => {
+      const comp = runner.dispatch('createComp', { name: 'SelMulti' });
+      const compId = comp.result.compId;
+      runner.dispatch('addSolid', { compId, name: 'A' });
+      runner.dispatch('addSolid', { compId, name: 'B' });
+      const comp1 = runner.dom.app.project.item(1);
+      runner.dispatch('selectLayer', { compId, layer: 'A' });
+      runner.dispatch('selectLayer', { compId, layer: 'B', clearOthers: false });
+      assert.equal(comp1.layer('A').selected, true, 'A stays selected');
+      assert.equal(comp1.layer('B').selected, true, 'B also selected');
+      assert.deepEqual(comp1.selectedLayers.map((l) => l.name).sort(), ['A', 'B']);
+    });
+
+    it('rejects an out-of-range layer index', () => {
+      const comp = runner.dispatch('createComp', { name: 'SelBad' });
+      const r = runner.dispatch('selectLayer', { compId: comp.result.compId, layer: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /out of range/);
+    });
+  });
+
+  describe('listShapeContents', () => {
+    // addShape's own auto-built stack (layer.jsx COMMANDS.addShape) mirrors
+    // exactly what "Create Shapes from Vector Layer" produces live (AE
+    // 26.5x89, docs/DEVLOG.md 2026-09-15): Contents (ADBE Root Vectors Group)
+    // > an auto-named "Group 1" (ADBE Vector Group) > its own Contents (ADBE
+    // Vectors Group) > the shape/fill/stroke leaves — so it's a faithful
+    // fixture for this command without needing a live AE round-trip per test.
+    function makeStrokedRect(runner, compName) {
+      const comp = runner.dispatch('createComp', { name: compName });
+      const compId = comp.result.compId;
+      runner.dispatch('addShape', {
+        compId, shape: 'rectangle', fillColor: [0, 1, 0], strokeColor: [1, 0, 0],
+      });
+      return compId;
+    }
+
+    it('lists the root Contents group by default (no group param)', () => {
+      const compId = makeStrokedRect(runner, 'LSCRoot');
+      const r = runner.dispatch('listShapeContents', { compId, layer: 1 });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.matchName, 'ADBE Root Vectors Group');
+      assert.equal(r.result.children.length, 1);
+      assert.equal(r.result.children[0].matchName, 'ADBE Vector Group');
+      assert.equal(r.result.children[0].isGroup, true);
+      // a group child reports its own child count, not a leaf `value`
+      assert.equal(r.result.children[0].numProperties > 0, true);
+      assert.equal(r.result.children[0].value, undefined);
+    });
+
+    it('walks one level deeper via an explicit group path to reach the shape/fill/stroke leaves', () => {
+      const compId = makeStrokedRect(runner, 'LSCNested');
+      const group = ['ADBE Root Vectors Group', 'ADBE Vector Group', 'ADBE Vectors Group'];
+      const r = runner.dispatch('listShapeContents', { compId, layer: 1, group });
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.result.group, group);
+      const matchNames = r.result.children.map((c) => c.matchName);
+      assert.ok(matchNames.indexOf('ADBE Vector Shape - Rect') >= 0);
+      assert.ok(matchNames.indexOf('ADBE Vector Graphic - Fill') >= 0);
+      assert.ok(matchNames.indexOf('ADBE Vector Graphic - Stroke') >= 0);
+      // fill/stroke are themselves groups (they hold Color/Opacity/etc
+      // sub-properties) — isGroup should say so, not treat them as leaves.
+      const fill = r.result.children.filter((c) => c.matchName === 'ADBE Vector Graphic - Fill')[0];
+      assert.equal(fill.isGroup, true);
+    });
+
+    it('reaches a leaf property (Stroke Color) with its live value, matching getProperty', () => {
+      const compId = makeStrokedRect(runner, 'LSCLeaf');
+      const group = [
+        'ADBE Root Vectors Group', 'ADBE Vector Group', 'ADBE Vectors Group',
+        'ADBE Vector Graphic - Stroke',
+      ];
+      const r = runner.dispatch('listShapeContents', { compId, layer: 1, group });
+      assert.equal(r.ok, true);
+      const color = r.result.children.filter((c) => c.matchName === 'ADBE Vector Stroke Color')[0];
+      assert.equal(color.isGroup, false);
+      // addShape's strokeColor goes through AEB.normColor, which trims to
+      // RGB (host.jsx) — a pre-existing, unrelated design choice, not
+      // something this command changes.
+      assert.deepEqual(color.value, [1, 0, 0]);
+      const viaGetProperty = runner.dispatch('getProperty', {
+        compId, layer: 1, property: group.concat(['ADBE Vector Stroke Color']),
+      });
+      assert.deepEqual(viaGetProperty.result.value, color.value);
+    });
+
+    it('rejects a group path that resolves to a leaf property, not a PropertyGroup', () => {
+      const compId = makeStrokedRect(runner, 'LSCLeafAsGroup');
+      const group = [
+        'ADBE Root Vectors Group', 'ADBE Vector Group', 'ADBE Vectors Group',
+        'ADBE Vector Graphic - Stroke', 'ADBE Vector Stroke Color',
+      ];
+      const r = runner.dispatch('listShapeContents', { compId, layer: 1, group });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not a PropertyGroup/);
+    });
+
+    it('rejects an unresolvable group path with the same error as getProperty', () => {
+      const compId = makeStrokedRect(runner, 'LSCBadPath');
+      const group = ['ADBE Root Vectors Group', 'Nonexistent Group'];
+      const r = runner.dispatch('listShapeContents', { compId, layer: 1, group });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /Property path not found/);
     });
   });
 });

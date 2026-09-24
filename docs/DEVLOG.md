@@ -12,6 +12,231 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-09-24
+- **Yeni kalıcı yetenek: `addPathToLayer` — mevcut bir shape layer'ın
+  Contents'ine YENİ bir sibling `ADBE Vector Group` (Path + opsiyonel
+  Fill/Stroke) ekleyebilme.** İhtiyaç: "Signavio26_Page01_1" (compId 1725)
+  içinde harf stroke-centerline'ları elle path olarak trace edilirken
+  ("01_W" harfi zaten 4 ayrı sibling shape layer'a bölünmüş —
+  `01_W_Stroke1_TL-V1`..`Stroke4_V2-TR`, her biri tek path) referans yapı
+  (comp 1750 "Signavio26_Page03_1", örn. "Paste SVG 1N" layer'ı) bir
+  harfin TÜM stroke-segment path'lerini sibling `ADBE Vector Group`'lar
+  olarak TEK layer'ın Contents'inde ("Group 1", "Group 2", "Group 3"...)
+  topluyor — layer başına segment değil. `addPathShape` her zaman
+  `comp.layers.addShape()` ile YENİ bir layer yaratıyor (canlıda doğrulandı:
+  var olan bir shape layer seçiliyken tekrar çağrıldığında hedef layer'ın
+  kendi Contents'i (`numProperties`) değişmeden ayrı bir layer daha
+  çıkıyor) — bu referans yapıyı üretecek bir komut yoktu.
+  - **`panel/jsx/commands/layer.jsx`:** Path/Fill/Stroke property stack'ini
+    kuran kod `addPathShape`'ten `_buildPathGroupContents(contents, p)`
+    helper'ına çıkarıldı (aynı `{ vertices[], inTangents?, outTangents?,
+    closed?, fillColor?, strokeColor?, strokeWidth? }` wire şekli) —
+    `addPathShape` bu helper'ı çağıracak şekilde küçültüldü, davranışı
+    değişmedi. `COMMANDS.addPathToLayer` eklendi (`addPathShape`'in hemen
+    altına): `{ compId, layer, vertices[], inTangents?, outTangents?,
+    closed?, fillColor?, strokeColor?, strokeWidth?, group?, groupName? }`.
+    `group`, `addShapeOperator`'ın zaten kullandığı property-path-array
+    sözleşmesiyle aynı (default `["ADBE Root Vectors Group"]`, yani
+    layer'ın kendi Contents'i) — hedef PropertyGroup'a
+    `addProperty("ADBE Vector Group")` ile yeni bir sibling grup ekleyip
+    (`groupName` verilirse adlandırıp, verilmezse AE'nin kendi
+    "Group N" auto-name'ini bırakıp) içine `_buildPathGroupContents`'i
+    çağırıyor. `AEB.undo("mograph-mcp: addPathToLayer", ...)` ile sarmalı,
+    diğer tüm shape komutlarıyla aynı desen.
+  - **`shared/src/commands.js`:** `addPathShape`'in hemen altına
+    `LAYER_REF_SCHEMA` + `group: PROPERTY_SCHEMA` + `groupName: string`
+    ile `withDesc` kaydı.
+  - **`controller/src/mcpServer.js`:** `CORE` setine `addPathShape`'in
+    yanına `addPathToLayer` eklendi → `ae_addPathToLayer` ayrı bir MCP
+    tool.
+  - **Testler:** `simulator/test/mockAeDom.test.js`'e `addPathToLayer`
+    describe bloğu (4 test: addPathShape'in orijinal grubunun yanına ikinci
+    sibling grup ekleme + `listShapeContents` ile 2 grup doğrulama + her
+    ikisinin de gerçek/doğru Path değeri taşıdığının `getProperty` ile
+    teyidi, `groupName` verilmeden AE'nin auto-name'ini koruma, vertices
+    olmadan reddetme, shape-olmayan layer'da (Contents yok) net hatayla
+    reddetme). `npm test`: 272/272 yeşil.
+  - **Canlı doğrulama (AE 26.5x89, gerçek proje `Signavio2026_V05.aep`
+    açıkken, gerçek `01_W_Stroke1_TL-V1`..`Stroke4_V2-TR` (comp 1725) veya
+    comp 1750'deki hiçbir layer'a DOKUNULMADAN):** Controller zaten
+    `com.coltranesx.mograph-mcp.controller` LaunchAgent'ı üzerinden
+    ayaktaydı; panel `node tools/hot.mjs` ile (CDP üzerinden imza
+    bozulmadan bellek-içi reload — bu makinede `npm run deploy:panel`
+    ayrıca `ZXPSignCmd` x86_64 binary'sinin bu Apple Silicon makinede
+    Rosetta kurulu olmadığı için "Bad CPU type in executable" ile
+    başarısız olduğu için `hot.mjs` zaten tek çalışan yol) güncellendi,
+    ardından `launchctl kickstart -k` ile controller restart edildi (kod
+    `shared/src/commands.js`'i bellekte tuttuğu için, `selectLayer`
+    girişindeki aynı gerekçe). Atılabilir `mograph-mcp_addPathToLayer_TEST`
+    compi (itemId 4196) oluşturuldu, içine `addPathShape` ile tek path'li
+    bir shape layer (`TestSeg1`, kırmızı stroke) eklendi, `ae_addPathToLayer`
+    aynı layer'a ikinci bir path (yeşil stroke, `groupName:"Group 2"`)
+    eklemek için çağrıldı → `{ groupIndex:2, groupName:"Group 2",
+    matchName:"ADBE Vector Group" }` döndü. `ae_listShapeContents` kök
+    Contents'in artık 2 sibling `ADBE Vector Group` (`Group 1`, `Group 2`)
+    içerdiğini, `Group 2`'nin kendi Contents'inin geçerli bir `Path 1` +
+    `Stroke 1` taşıdığını doğruladı; `getProperty` ile `Group 2`'nin Path
+    değerinin gönderilen vertices'le (`[[0,0],[20,0],[10,20]]`, `closed:true`)
+    birebir eşleştiği teyit edildi. Test compi `deleteItem` ile silindi;
+    ardından gerçek `01_W_Stroke1_TL-V1` layer'ında `listShapeContents`
+    tekrar çalıştırılıp Contents'inin hâlâ değişmemiş tek `Group 1`'e sahip
+    olduğu (`numProperties:1`) doğrulandı.
+
+## 2026-09-15
+- **Yeni kalıcı yetenek: `selectLayer` — `Layer.selected`'ı scriptten set
+  edebilme.** İhtiyaç: bir Illustrator-layer footage layer'ını (footage
+  olarak import edilmiş, "ADBE Root Vectors Group" olmayan, `addShapeOperator`
+  ile "target vector group not found" veren AI vector footage layer) native
+  editable shape layer'a çevirmek gerekiyor — AE'nin tek yolu Timeline'da
+  sağ tık → "Create Shapes from Vector Layer" menü komutu, ve bu komut
+  **her zaman o an Timeline'da SEÇİLİ olan layer üzerinde çalışıyor**.
+  `ae_executeMenuCommand`/`ae_findMenuCommand` zaten vardı (dev:false), ama
+  seçimi programatik olarak set edecek hiçbir komut yoktu: `ae_getSelection`
+  salt-okunur, `setLayerProperty` ile `property:"selected"` denendiğinde
+  `Property "selected" not found on layer` hatası verdi. **Kök neden:**
+  `Layer.selected` AE scripting DOM'unda `layer.property(name)` ile erişilen
+  bir Property/PropertyGroup değil, Layer nesnesinin düz üst-seviye boolean
+  attribute'u (`layer.selected = true`) — generic `setLayerProperty`'nin
+  varsayımıyla (her şeyin bir Property olduğu) uyuşmuyor, bu yüzden kendi
+  komutunu istiyor.
+  - **`panel/jsx/commands/layer.jsx`:** `COMMANDS.selectLayer` eklendi
+    (`setLayerFlag`'in hemen altına) — `{ compId, layer|layerName|layerIndex,
+    clearOthers? (default true) }`. `clearOthers` true iken `comp.layer(i)`
+    üzerinde döngüyle hedef dışındaki her layer'ı `selected = false` yapıp
+    hedefi `selected = true` yapıyor (Timeline'da tek tıkla seçim davranışının
+    aynısı); false iken var olan seçime EKLEME yapıyor (çoklu seçim).
+    `AEB.undo("mograph-mcp: selectLayer", ...)` ile sarmalı, diğer tüm basit
+    layer komutlarıyla aynı desen.
+  - **`shared/src/commands.js`:** `LAYER_REF_SCHEMA` + `clearOthers: boolean`
+    ile `withDesc` kaydı, `setLayerFlag`'in hemen altına — var olan ~40
+    layer-ref komutuyla aynı şema sözleşmesi (`layer`/`layerName`/
+    `layerIndex` üçü de deklare, 2026-09-07 audit'inin kapsadığı hatayı
+    tekrarlamamak için).
+  - **`controller/src/mcpServer.js`:** `CORE` setine `setLayerFlag`'in yanına
+    eklendi → `ae_selectLayer` artık ayrı bir MCP tool.
+  - **`simulator/src/mockAeDom.js`:** `MockLayer`'a `selected` (varsayılan
+    `false`), `MockCompItem`'a `selectedLayers` getter'ı eklendi — ikisi de
+    daha önce hiç mock'lanmamıştı (yani var olan `getSelection` komutu da
+    şimdiye kadar simülatörde hiç egzersiz edilmemişti, sadece canlıda
+    kullanılmıştı). Kök nedene inip gerçek AE `CompItem.selectedLayers`
+    semantiğini birebir taklit edecek şekilde eklendi.
+  - **Testler:** `simulator/test/mockAeDom.test.js` içine `selectLayer`
+    describe bloğu (index ile seçme, `clearOthers` varsayılanının önceki
+    seçimi değiştirmesi, `clearOthers:false` ile çoklu seçim birikmesi,
+    aralık-dışı layer index reddi — 4 test) + `shared/test/commands.test.js`
+    içine şema/validate testleri (4 test). `npm test`: 259/259 yeşil.
+  - **Canlı doğrulama (AE 26.5x89, gerçek proje `Sİgnavio2026_V02.aep` açıkken,
+    gerçek `Signavio26_Page06_1` (compId 2026) veya layer'larına
+    DOKUNULMADAN):** Panel rebuild+redeploy edildi (`npm run build:jsx &&
+    npm run deploy:panel`), AE tamamen kapatılıp yeniden açıldı, panel tekrar
+    açıldı — CEP tarafı böyle güncelleniyor. Ayrıca controller process'inin
+    (`npm run controller`, 11:01'den beri ayaktaymış) eski `shared/src/
+    commands.js`'i bellekte tuttuğu fark edildi (`selectLayer` ilk denemede
+    "Unknown command" verdi) — controller da restart edilmesi gerekti (AE
+    panelinden ayrı bir Node process, kod değişince o da yeniden başlamalı;
+    bu repo'nun "controller kalıcı servis değil" notunun somut bir örneği).
+    Restart sonrası: geçici `mograph-mcp_selectLayer_TEMP` compi (id 2056)
+    oluşturuldu, içine iki solid (`TestSolidA`, `TestSolidB`) eklendi,
+    `ae_selectLayer` her ikisiyle de (varsayılan `clearOthers` VE
+    `clearOthers:false`) çağrıldı, her adımda `ae_getSelection` ile
+    doğrulandı — üçü de beklendiği gibi çalıştı (tekli seçim değişimi, çoklu
+    seçim birikmesi). `ae_findMenuCommand({commandName:"Create Shapes from
+    Vector Layer"})` → `commandId: 3973` döndü (AE 26.5x89, EN yerelleştirme).
+    Projede "spare/unused" AI vector footage aranmadı — `getProjectItems`
+    580 item döktü, hepsi Page01-Page49 gerçek sayfalarına ait (Ring/Line
+    içerenler dahil) — bu yüzden "Create Shapes" komutunun tam uçtan-uca
+    çalıştırma smoke testi (görev talimatındaki kaçış maddesi gereği)
+    ATLANDI; sadece commandId çözümlemesi doğrulandı. Test sonunda: aktif
+    comp tekrar 2026'ya (`Signavio26_Page06_1`) döndürüldü, geçici comp
+    (2056) `deleteItem` ile silindi, `getLayers(compId:2026)` ile gerçek
+    layer listesinin dokunulmamış olduğu teyit edildi.
+
+- **Yeni kalıcı yetenek: `listShapeContents` — shape layer Contents ağacında
+  AE'nin kendi verdiği isimleri keşfetme.** İhtiyaç: `selectLayer` +
+  "Create Shapes from Vector Layer" (yukarıdaki giriş) ile bir AI vector
+  footage layer'ı native shape layer'a çevrildiğinde, AE `Contents` içine
+  `"Group 1"`/`"Stroke 1"` gibi otomatik isimler atıyor — bunlar önceden
+  tahmin edilemiyor, ama `getProperty`/`setLayerProperty`/`setKeyframes`'in
+  `property` array-path parametresi tam olarak bu isimleri gerektiriyor.
+  `getLayerDetails{deep:true}` (`_groupSummary`, introspect.jsx) zaten var
+  olan bir genel-amaçlı derin ağaç dökücüydü ve bu soruyu cevaplayabiliyordu
+  (aşağıdaki canlı doğrulamada gerçekten kullanıldı), ama bounded-recursive
+  tam dump döndürüyor — hedefli, "bu TEK grubun içinde ne var, hangileri
+  yürünebilir (group) hangileri yaprak (leaf)" sorusuna `addShapeOperator`'ın
+  `group` parametresiyle aynı property-path-array sözleşmesiyle cevap veren
+  ayrı bir komut yoktu.
+  - **`panel/jsx/commands/introspect.jsx`:** `COMMANDS.listShapeContents`
+    eklendi (`getLayerDetails`'in hemen üstüne, `_safeValue`'yu paylaşarak)
+    — `{ compId, layer|layerName|layerIndex, group? (default
+    ["ADBE Root Vectors Group"], addShapeOperator ile aynı sözleşme) }`.
+    `AEB.resolveProperty` ile group'u çözüp `numProperties`/`property(i)`
+    üzerinden TEK seviye (recursive değil) çocuklarını listeliyor; her
+    çocuk `{ index, name, matchName, isGroup }` + leaf ise `{ value,
+    expression? }`, group ise `{ numProperties }`. `isGroup` testi
+    `_groupSummary`'nin zaten kullandığı aynı deseni tekrar kullanıyor
+    (`pr.numProperties !== undefined` — sadece PropertyGroup'ta var).
+    Group yerine bir leaf property path'i verilirse (`.numProperties`
+    undefined) ExtendScript TypeError yerine net bir `AEB.assert` hatası.
+  - **`shared/src/commands.js`:** `getLayerDetails`'in hemen altına
+    `withDesc` kaydı, `LAYER_REF_SCHEMA` + `group: PROPERTY_SCHEMA`.
+  - **`controller/src/mcpServer.js`:** `CORE`'a `getProperty`'nin yanına
+    eklendi → `ae_listShapeContents`.
+  - **`simulator/src/mockAeDom.js`'te gerçek bir eksiklik bulundu ve
+    düzeltildi:** `MockProperty`'nin (leaf property'leri simüle eden sınıf)
+    hiç `matchName` alanı yoktu — sadece `name`. Gerçek AE'de her Property'nin
+    ayrı, değişmez bir `matchName`'i var (bu girinin (a) maddesindeki canlı
+    `getProperty` sonucu: `name:"Color"`, `matchName:"ADBE Vector Stroke
+    Color"`), ve `MockVectorGroup` (aynı dosya) bunu zaten doğru
+    modelliyordu (`this.matchName = matchName; this.name = matchName;`,
+    sonradan sadece `.name` yeniden atanabiliyor — `addShapeOperator`'ın
+    `added.name = p.name`'i gibi). `MockProperty`'ye aynı desen taşındı.
+    Önceden hiçbir testin `matchName`'i bu leaf'lerde kontrol etmemesi
+    şimdiye kadar fark edilmemesinin nedeniydi; `listShapeContents`
+    `matchName`'i döndürdüğü için bu boşluk ilk kez gerçek bir test
+    başarısızlığı olarak ortaya çıktı, kök nedene inilerek düzeltildi
+    (bkz. CLAUDE.md — geçici yama değil).
+  - **Testler:** `shared/test/commands.test.js` içine şema/validate testleri
+    (4 test) + `simulator/test/mockAeDom.test.js` içine `listShapeContents`
+    describe bloğu (5 test: varsayılan root listeleme, iç içe group'a bir
+    seviye inme, bir leaf'e (Stroke Color) ulaşıp `getProperty` ile aynı
+    değeri doğrulama, group yerine leaf verilince net hata, çözülemeyen
+    path'te `getProperty` ile aynı hata mesajı). `npm test`: 268/268 yeşil.
+  - **Operasyonel bulgu: `tools/hot.mjs`'te rebrand'den kalma ölü bir eşleşme
+    vardı.** CDP hedefini `com.ae-bridge.panel` (upstream'in fork-öncesi
+    extension ID'si) regex'iyle arıyordu; bu fork'ta gerçek ID
+    `com.coltranesx.mograph-mcp.panel` olduğu için eşleşme HİÇ tutmuyor ve
+    sessizce `targets[0]`'a (CDP'nin ilk döndürdüğü hedef, panel olduğu
+    garanti değil) düşüyordu — bu oturumda ilk `node tools/hot.mjs` çalıştığı
+    an fark edildi (çalıştı ama şansına, tek CDP target vardı). Regex'e
+    fork'un gerçek ID'si önce, eski ID fallback olarak eklendi. Bu script'in
+    ne kadar süredir bu şekilde şansa bağlı çalıştığı bilinmiyor.
+  - **Canlı doğrulama (AE 26.5x89, gerçek proje `Sİgnavio2026_V02.aep` açıkken,
+    gerçek `Signavio26_Page07_1` (compId 2089) veya layer'larına
+    DOKUNULMADAN, salt-okunur):** Önce `getLayerDetails({compId:2089,
+    layer:"Layer 06 Line 1 Outlines 2", deep:true, depth:6})` ile ağaç
+    dökülüp Stroke'un yeri bulundu: `Contents ("ADBE Root Vectors Group") >
+    Group 1 ("ADBE Vector Group") > Contents ("ADBE Vectors Group") >
+    Stroke 1 ("ADBE Vector Graphic - Stroke") > Color ("ADBE Vector Stroke
+    Color")` — hem isim hem matchName path'i `getProperty` ile ayrı ayrı
+    doğrulandı (ikisi de çözüldü, değer `[1,1,1,1]` — beyaz). Panel `npm run
+    build:jsx && npm run deploy:panel` ile deploy edildi, sonra AE'yi kapat/
+    aç yerine `node tools/hot.mjs` (CDP üzerinden imza bozulmadan bellek-içi
+    reload, `cmds=120`) kullanıldı — controller zaten `com.coltranesx.
+    mograph-mcp.controller` LaunchAgent'ı üzerinden ayaktaydı (bu repo'nun
+    üst-seviye notlarındaki "henüz LaunchAgent yok" artık güncel değil,
+    bu oturumda LaunchAgent bulundu ve KeepAlive sayesinde eski process'i
+    `kill` etmek yeni kodu almış bir restart'ı otomatik tetikledi).
+    Ardından **atılabilir** `mograph-mcp_listShapeContents_TEMP` compi
+    (id 2139) oluşturuldu, içine dolgu+stroke'lu bir ellipse (`TestStroke`)
+    eklendi; `listShapeContents` varsayılan root'ta `Group 1`'i, `group`
+    ile bir seviye inince `Ellipse Path 1`/`Fill 1`/`Stroke 1`'i, Stroke'un
+    içine inince `Color` (`[1,0,0,1]`, kırmızı) leaf'ini doğru raporladı —
+    keşfedilen path `getProperty`'ye verilince aynı değeri döndürdü. İki
+    hata yolu da (leaf'i group gibi listeletmeye çalışmak, çözülemeyen path)
+    live'da doğru mesajları verdi. Test compi `deleteItem` ile silindi;
+    sonda gerçek layer'ın Stroke Color'ı tekrar `getProperty` ile okunup
+    hâlâ `[1,1,1,1]` (dokunulmamış) olduğu teyit edildi.
+
 ## 2026-09-11
 - **Yeni kalıcı yetenek: `importLayeredComp` — katmanlı AI/PSD'yi dialog'suz
   "Composition + Merged Layers + Document Size" ile import etme.** Signavio

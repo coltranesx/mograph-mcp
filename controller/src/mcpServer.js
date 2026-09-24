@@ -27,12 +27,12 @@ const CORE = new Set([
   'setInterpolation', 'removeKeyframes', 'getEase', 'copyKeyframes', 'copyKeyframesBatch',
   'addMask', 'addRectMask', 'setMaskProperty',
   'setTextDocument', 'addTextAnimator', 'alignLayer', 'alignAnchor', 'setBlendMode',
-  'setTrackMatte', 'setLayerFlag', 'setCompSettings', 'setWorkArea', 'clearComp',
-  'getProperty', 'getCompDetails', 'resolveSafePosition', 'measureText',
+  'setTrackMatte', 'setLayerFlag', 'selectLayer', 'setCompSettings', 'setWorkArea', 'clearComp',
+  'getProperty', 'getCompDetails', 'resolveSafePosition', 'measureText', 'listShapeContents',
 
   // Tier 2 — vitrin/farklılaştırıcı (same roadmap item)
   'applyWordReveal', 'applyCharScale', 'applyLowerThird', 'fireEffect', 'smokeEffect',
-  'glitchEffect', 'cinematicGrade', 'neonGlow', 'addShapeOperator', 'addPathShape',
+  'glitchEffect', 'cinematicGrade', 'neonGlow', 'addShapeOperator', 'addPathShape', 'addPathToLayer',
   'addResponsiveBox', 'addCamera', 'addLight', 'setAllStrokeLineCaps',
 
   // Tier 3 — ikincil yardımcılar (same roadmap item, 2026-08-11)

@@ -28,7 +28,16 @@ const expr = `new Promise(function(resolve){ new CSInterface().evalScript(${JSON
 
 let targets;
 try { targets = await getTargets(); } catch { console.log('[hot] no debug port (panel open?)'); process.exit(1); }
-const t = targets.find((x) => /com\.ae-bridge\.panel/.test(x.url)) || targets[0];
+// com.ae-bridge.panel was upstream aftr's extension ID pre-fork; this fork's
+// panel is registered as com.coltranesx.mograph-mcp.panel (see CLAUDE.md /
+// README) — matching only the old ID meant this always silently fell through
+// to `targets[0]` (whichever CDP target happened to be first, not
+// necessarily this panel) on every fork checkout. Match either so a stray
+// upstream install alongside this fork still works, but this fork's own ID
+// takes priority.
+const t = targets.find((x) => /com\.coltranesx\.mograph-mcp\.panel/.test(x.url))
+  || targets.find((x) => /com\.ae-bridge\.panel/.test(x.url))
+  || targets[0];
 if (!t) { console.log('[hot] no panel target'); process.exit(1); }
 
 const ws = new WebSocket(t.webSocketDebuggerUrl);

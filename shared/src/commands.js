@@ -482,6 +482,23 @@ Object.assign(COMMANDS, {
       closed: { type: 'boolean' }, fillColor: { type: 'array', items: { type: 'number' } },
       strokeColor: { type: 'array', items: { type: 'number' } }, strokeWidth: { type: 'number' },
       position: { type: 'array', items: { type: 'number' } }, name: { type: 'string' } }),
+  addPathToLayer: withDesc(
+    'Append a NEW sibling vector group (Path + optional Fill/Stroke) into an EXISTING shape layer\'s Contents — ' +
+      'unlike addPathShape, which always creates a brand-new shape layer, this targets a layer that already has ' +
+      'shape content and adds a sibling "ADBE Vector Group", matching what the AE UI does when you draw with the ' +
+      'Pen tool while a shape layer is already selected in the Timeline (see selectLayer). ' +
+      '{ compId, layer, vertices[], inTangents?, outTangents?, closed?, fillColor?, strokeColor?, strokeWidth?, group?, groupName? }. ' +
+      'group is a property-path array from the layer (default ["ADBE Root Vectors Group"], the layer\'s own Contents — ' +
+      'same convention as addShapeOperator\'s `group`; pass a deeper path to nest inside an existing group instead of ' +
+      'appending at the top level). groupName sets the new group\'s name; omit it to keep AE\'s own auto-name (e.g. "Group 2").',
+    ['compId'],
+    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA,
+      vertices: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      inTangents: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      outTangents: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
+      closed: { type: 'boolean' }, fillColor: { type: 'array', items: { type: 'number' } },
+      strokeColor: { type: 'array', items: { type: 'number' } }, strokeWidth: { type: 'number' },
+      group: PROPERTY_SCHEMA, groupName: { type: 'string' } }),
   addResponsiveBox: withDesc('A rect shape layer whose size tracks another layer\'s rendered bounds LIVE via an expression (re-evaluates every frame, e.g. if fitTo\'s text changes later) — not a one-time size like addShape. { compId, fitTo (layer|layerIndex|layerName, required), padding? ([w,h], default [60,40]), fillColor?, strokeColor?, strokeWidth?, position?, name? }', ['compId', 'fitTo'],
     { compId: { type: 'integer' }, fitTo: { anyOf: [{ type: 'string' }, { type: 'number' }] },
       padding: { type: 'array', items: { type: 'number' } }, fillColor: { type: 'array', items: { type: 'number' } },
@@ -900,6 +917,15 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA }),
   getLayerDetails: withDesc('Full layer snapshot (transform/effects/flags, deep? tree). { compId, layer, deep?, depth? }', ['compId'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, deep: { type: 'boolean' }, depth: { type: 'integer' } }),
+  listShapeContents: withDesc(
+    'List the immediate children of a shape layer\'s vector PropertyGroup — for discovering AE-auto-assigned names ' +
+      '(e.g. "Group 1"/"Stroke 1" from Layer > "Create Shapes from Vector Layer", see selectLayer) that can\'t be predicted, ' +
+      'before you can build a property path for getProperty/setLayerProperty/setKeyframes. Each child reports ' +
+      '{ index, name, matchName, isGroup } plus, for leaf properties, { value, expression? } — re-call with group set to a ' +
+      'child\'s path (append its name or matchName) to walk one level deeper, same convention as addShapeOperator\'s `group`. ' +
+      '{ compId, layer, group? } — group is a property-path array from the layer (default ["ADBE Root Vectors Group"]).',
+    ['compId'],
+    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, group: PROPERTY_SCHEMA }),
   getCompDetails: withDesc('Comp settings + all layers.', ['compId'], { compId: { type: 'integer' } }),
   getProjectItems: withDesc('List all project items.', []),
 
@@ -975,6 +1001,8 @@ Object.assign(COMMANDS, {
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, type: { type: 'string' }, matteLayer: { anyOf: [{ type: 'string' }, { type: 'number' }] } }),
   setLayerFlag: withDesc('Toggle a layer flag (motionBlur|adjustment|guide|threeD|collapse|solo|shy|lock|frameBlending). { compId, layer, flag, value? }', ['compId', 'flag'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, flag: { type: 'string' }, value: { type: 'boolean' } }),
+  selectLayer: withDesc('Set a layer\'s Timeline selection state (Layer.selected — a top-level boolean, not a keyframeable property). Needed before menu commands that act on "the selected layer" (e.g. executeMenuCommand with "Create Shapes from Vector Layer"). { compId, layer, clearOthers? (default true, deselects every other layer in the comp first) }', ['compId'],
+    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, clearOthers: { type: 'boolean' } }),
   addLayerMarker: withDesc('Add a layer marker. { compId, layer, time, comment?, duration? }', ['compId', 'time'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, time: { type: 'number' }, comment: { type: 'string' }, duration: { type: 'number' } }),
   setTimeStretch: withDesc('Set layer time stretch percent. { compId, layer, stretch }', ['compId', 'stretch'],

@@ -682,6 +682,61 @@ describe('validateCommand', () => {
       assert.match(r.error, /lineCap/);
     });
   });
+
+  describe('selectLayer (registry-level validation)', () => {
+    it('validates with layer + compId only (clearOthers defaults on the JSX side)', () => {
+      const r = validateCommand('selectLayer', { compId: 1, layer: 1 });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.compId, 1);
+      assert.equal(r.params.layer, 1);
+    });
+
+    it('accepts layerName / layerIndex refs, same as other LAYER_REF_SCHEMA commands', () => {
+      const r = validateCommand('selectLayer', { compId: 1, layerName: 'hero_fill' });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.layerName, 'hero_fill');
+    });
+
+    it('accepts an explicit clearOthers: false', () => {
+      const r = validateCommand('selectLayer', { compId: 1, layer: 'B', clearOthers: false });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.clearOthers, false);
+    });
+
+    it('rejects without compId', () => {
+      const r = validateCommand('selectLayer', { layer: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /compId/);
+    });
+  });
+
+  describe('listShapeContents (registry-level validation)', () => {
+    it('validates with compId + layer only (group defaults on the JSX side)', () => {
+      const r = validateCommand('listShapeContents', { compId: 1, layer: 1 });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.compId, 1);
+      assert.equal(r.params.layer, 1);
+    });
+
+    it('accepts layerName / layerIndex refs, same as other LAYER_REF_SCHEMA commands', () => {
+      const r = validateCommand('listShapeContents', { compId: 1, layerName: 'hero_fill' });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.layerName, 'hero_fill');
+    });
+
+    it('accepts an explicit group property-path array', () => {
+      const group = ['ADBE Root Vectors Group', 'Group 1', 'ADBE Vectors Group'];
+      const r = validateCommand('listShapeContents', { compId: 1, layer: 1, group });
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.params.group, group);
+    });
+
+    it('rejects without compId', () => {
+      const r = validateCommand('listShapeContents', { layer: 1 });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /compId/);
+    });
+  });
 });
 
 describe('commandList', () => {
