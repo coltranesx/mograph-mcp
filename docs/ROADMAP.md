@@ -669,10 +669,12 @@ silindi; ardından gerçek `01_W_Stroke1_TL-V1`'de `listShapeContents` tekrar
 çalıştırılıp Contents'inin hâlâ tek `Group 1`'e sahip olduğu (değişmediği)
 teyit edildi.
 
-**Açık uç (bu oturumun kapsamı dışı):** `npm run deploy:panel` bu makinede
-Rosetta eksikliğinden çalışmıyor — kalıcı (imzalı, AE restart'a dayanıklı)
-deploy için ya Rosetta kurulmalı (`softwareupdate --install-rosetta`, sistem
-düzeyinde onay gerektirir) ya da `zxp-provider`'ın arm64 bir `ZXPSignCmd`
-sürümü araştırılmalı. `hot.mjs` bellek-içi reload AE'nin bu oturumu (ve
-panel yeniden açılana/AE restart edilene kadar) için yeterli, ama kalıcı
-değil.
+**~~Açık uç~~ ✅ çözüldü (2026-09-28):** `npm run deploy:panel` bu makinede
+Rosetta eksikliğinden çalışmıyordu (`ZXPSignCmd` x86_64 binary'si, "Bad CPU
+type in executable"). `softwareupdate --install-rosetta --agree-to-license`
+ile Rosetta 2 kuruldu; ardından `deploy:panel` imzalayıp kurulumu başarıyla
+tamamladı (manifest + signature present) ve AE restart sonrası yeni bundle
+canlıda yüklendi (batch undo-group fix'i ile doğrulandı). Not: 2026-09-15 ile
+2026-09-28 arası panel güncellemeleri yalnızca `hot.mjs` ile bellek-içi
+yapılmıştı; diske kurulu imzalı sürüm 09-15'te kalmıştı. arm64 `ZXPSignCmd`
+araştırması artık gerekli değil.
