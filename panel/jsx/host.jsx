@@ -301,11 +301,33 @@ AEB.color4 = function (c) {
   return [n[0], n[1], n[2], a];
 };
 
-// undo wrapper
+// undo wrapper — the ONLY place in the whole command surface that is allowed
+// to touch app.beginUndoGroup/endUndoGroup (COMMANDS.batch routes through
+// this too, see advanced.jsx). Every write command wraps its work in
+// AEB.undo(name, fn), including ones that run as one of `batch`'s inner
+// commands. AE's undo groups do NOT support true nesting: a second
+// beginUndoGroup before the matching endUndoGroup leaves the undo stack in a
+// state AE can only detect and "fix" later — typically the next time the
+// user touches the timeline — at which point it shows "Undo group mismatch,
+// will attempt to fix" and can roll back the ENTIRE outer group, silently
+// discarding everything a `batch` call did (reproduced live 2026-09-28: any
+// batch of write commands, each of which independently calls AEB.undo,
+// nested a begin/end pair per command inside batch's own begin/end pair).
+// Fix: track reentrancy depth here; only the OUTERMOST AEB.undo call opens/
+// closes a real AE undo group. Inner (nested) calls just run fn() inline —
+// still guaranteed correct via try/finally even if fn throws, so the depth
+// counter and the native group can never go out of sync with each other.
+AEB._undoDepth = 0;
 AEB.undo = function (name, fn) {
-  app.beginUndoGroup(name);
-  try { return fn(); }
-  finally { app.endUndoGroup(); }
+  var isOutermost = (AEB._undoDepth === 0);
+  if (isOutermost) app.beginUndoGroup(name);
+  AEB._undoDepth++;
+  try {
+    return fn();
+  } finally {
+    AEB._undoDepth--;
+    if (isOutermost) app.endUndoGroup();
+  }
 };
 
 // Back-compat alias used by earlier command files.

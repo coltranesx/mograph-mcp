@@ -1448,4 +1448,110 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.match(r.error, /Property path not found/);
     });
   });
+
+  // Regression coverage for the live 2026-09-28 bug: a `batch` of write
+  // commands (each of which independently wraps itself in AEB.undo) nested a
+  // beginUndoGroup/endUndoGroup pair per inner command inside batch's own
+  // pair. AE does not support nested undo groups — it can only detect and
+  // "fix" the mismatch later (typically on the next manual timeline edit),
+  // which rolled back the ENTIRE batch. See host.jsx's AEB.undo and
+  // advanced.jsx's COMMANDS.batch for the fix (a single reentrant wrapper).
+  describe('undo group handling (batch)', () => {
+    it('opens exactly ONE native undo group for a batch of many nested write commands', () => {
+      const compId = runner.dispatch('createComp', { name: 'UndoBatch' }).result.compId;
+      runner.dispatch('addSolid', { compId, name: 'L1' });
+      runner.dispatch('addSolid', { compId, name: 'L2' });
+      runner.dom.app._undoCallLog.length = 0; // ignore setup calls above
+
+      const commands = [];
+      for (let i = 0; i < 20; i++) {
+        commands.push({
+          command: 'setLayerProperty',
+          params: { compId, layer: (i % 2) + 1, property: 'startTime', value: i * 0.1 },
+        });
+      }
+      const r = runner.dispatch('batch', { commands, undoName: 'test batch' });
+
+      assert.equal(r.ok, true);
+      assert.equal(r.result.ok, 20);
+      assert.equal(r.result.failed, 0);
+
+      // The whole point of the fix: only ONE begin + ONE end at the native
+      // AE level, no matter how many inner commands (each calling AEB.undo
+      // themselves) ran inside it.
+      assert.equal(runner.dom.app._undoCallLog.length, 2);
+      assert.equal(runner.dom.app._undoCallLog[0].type, 'begin');
+      assert.equal(runner.dom.app._undoCallLog[0].name, 'test batch');
+      assert.equal(runner.dom.app._undoCallLog[1].type, 'end');
+      assert.equal(runner.dom.app._nestedUndoGroupViolation, false);
+      assert.equal(runner.dom.app._undoDepth, 0);
+    });
+
+    it('still closes exactly ONE native undo group when an inner command throws mid-batch', () => {
+      const compId = runner.dispatch('createComp', { name: 'UndoBatchErr' }).result.compId;
+      runner.dispatch('addSolid', { compId, name: 'L1' });
+      runner.dom.app._undoCallLog.length = 0;
+
+      const r = runner.dispatch('batch', {
+        commands: [
+          { command: 'setLayerProperty', params: { compId, layer: 1, property: 'startTime', value: 1 } },
+          // Unresolvable property — throws from inside AEB.resolveProperty,
+          // which runs INSIDE setLayerProperty's own AEB.undo callback, i.e.
+          // exactly the nested-and-then-exception path that used to leave
+          // the depth counter/native group out of sync.
+          { command: 'setLayerProperty', params: { compId, layer: 1, property: 'totallyBogusPropertyXYZ', value: 1 } },
+          { command: 'setLayerProperty', params: { compId, layer: 1, property: 'startTime', value: 2 } },
+        ],
+        undoName: 'test batch with error',
+      });
+
+      assert.equal(r.ok, true); // batch itself always succeeds; failures are per-command
+      assert.equal(r.result.ok, 2);
+      assert.equal(r.result.failed, 1);
+      assert.equal(r.result.results[1].ok, false);
+
+      assert.equal(runner.dom.app._undoCallLog.length, 2);
+      assert.equal(runner.dom.app._undoCallLog[0].type, 'begin');
+      assert.equal(runner.dom.app._undoCallLog[1].type, 'end');
+      assert.equal(runner.dom.app._nestedUndoGroupViolation, false);
+      assert.equal(runner.dom.app._undoDepth, 0);
+    });
+
+    it('refuses quitApp/closeProject/openProject/saveProject as inner batch commands instead of running them', () => {
+      runner.dispatch('createComp', { name: 'UndoBatchUnsafe' });
+      runner.dom.app._undoCallLog.length = 0;
+
+      const r = runner.dispatch('batch', {
+        commands: [
+          { command: 'saveProject', params: {} },
+          { command: 'quitApp', params: {} },
+        ],
+      });
+
+      assert.equal(r.ok, true);
+      const saveResult = r.result.results[0];
+      const quitResult = r.result.results[1];
+      assert.equal(saveResult.ok, false);
+      assert.match(saveResult.error, /cannot run inside batch/);
+      assert.equal(quitResult.ok, false);
+      assert.match(quitResult.error, /cannot run inside batch/);
+
+      // Confirms quitApp/saveProject were genuinely skipped, not executed:
+      // the mock project is still open and untouched.
+      const info = runner.dispatch('getProjectInfo');
+      assert.equal(info.result.name, 'Untitled');
+
+      assert.equal(runner.dom.app._undoCallLog.length, 2);
+      assert.equal(runner.dom.app._nestedUndoGroupViolation, false);
+      assert.equal(runner.dom.app._undoDepth, 0);
+    });
+
+    it('createComp still closes its undo group cleanly (regression: used to call begin/end directly, unguarded)', () => {
+      runner.dom.app._undoCallLog.length = 0;
+      const r = runner.dispatch('createComp', { name: 'PlainCreateComp' });
+      assert.equal(r.ok, true);
+      assert.equal(runner.dom.app._undoCallLog.length, 2);
+      assert.equal(runner.dom.app._undoDepth, 0);
+    });
+  });
 });

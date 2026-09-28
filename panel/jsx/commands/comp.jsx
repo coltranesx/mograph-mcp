@@ -29,11 +29,15 @@ COMMANDS.createComp = function (p) {
   var dur = p.duration || 10;
   var fps = p.frameRate || 25;
 
-  app.beginUndoGroup("mograph-mcp: createComp");
-  var comp = app.project.items.addComp(p.name, w, h, 1, dur, fps);
-  app.endUndoGroup();
-
-  return { compId: comp.id, name: comp.name };
+  // Routed through AEB.undo (not a bare beginUndoGroup/endUndoGroup pair)
+  // so an exception from addComp (e.g. a bad dimension) can't leave a
+  // native undo group open forever — AEB.undo's try/finally always closes
+  // it, and it's also then safe to nest this inside `batch`. See host.jsx's
+  // AEB.undo and advanced.jsx's batch for the full nested-undo-group story.
+  return AEB.undo("mograph-mcp: createComp", function () {
+    var comp = app.project.items.addComp(p.name, w, h, 1, dur, fps);
+    return { compId: comp.id, name: comp.name };
+  });
 };
 
 COMMANDS.setCompSettings = function (p) {

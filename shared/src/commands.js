@@ -1055,7 +1055,7 @@ Object.assign(COMMANDS, {
   lumetriParams: withDesc('List the friendly Lumetri param names the bridge supports.', []),
 
   // orchestration-grade tooling
-  batch: withDesc('Run many commands in ONE round-trip + ONE undo group. { commands:[{command,params}], undoName?, stopOnError? }. CAUTION: a `quitApp` inside the list ends the AE process mid-batch — the undo group never closes and any results after it are lost.', ['commands'],
+  batch: withDesc('Run many commands in ONE round-trip + ONE undo group. { commands:[{command,params}], undoName?, stopOnError? }. quitApp/closeProject/openProject/saveProject are refused as inner commands (returned as ok:false, not executed) — they end the process or replace/persist the whole project mid-transaction; call them as their own top-level command after batch completes.', ['commands'],
     { commands: { type: 'array', items: { type: 'object', properties: { command: { type: 'string' }, params: { type: 'object' } }, required: ['command'] } },
       undoName: { type: 'string' }, stopOnError: { type: 'boolean' } }),
   getCompTime: withDesc('Read comp playhead/work-area/frame info. { compId }', ['compId'],

@@ -1,16 +1,47 @@
 // advanced.jsx — orchestration-grade tooling (ES3).
 
+// Commands that end the AE process, or replace/persist the whole project,
+// mid-transaction. Refused as inner `batch` commands (see COMMANDS.batch
+// below) rather than run and hope for the best:
+//   - quitApp: app.quit() can end the process before batch's own AEB.undo
+//     wrapper ever gets to close its group — already called out as unsafe
+//     in this command's schema doc (shared/src/commands.js) before this fix.
+//   - closeProject/openProject: replace app.project outright, so every
+//     comp/layer reference any later command in the same batch resolves
+//     (by id/name) would silently point at the wrong (or a closed) project.
+//   - saveProject: persists to disk while the batch's own undo group is
+//     still logically "in flight" (nested AEB.undo calls before this fix
+//     made that worse; kept excluded on top of the depth-counter fix as a
+//     hygiene rule, not a proven independent corruption path). Run it as
+//     its own top-level call after batch completes.
+var UNSAFE_IN_BATCH = { quitApp: 1, closeProject: 1, openProject: 1, saveProject: 1 };
+
 // batch — run many commands in ONE socket round-trip + ONE undo group.
 // Massively cuts loop latency for the agent (N edits, 1 trip, 1 undo).
 // { commands:[{command,params}], undoName?, stopOnError? }
+//
+// Routes its begin/end through AEB.undo (host.jsx) like every other write
+// command, instead of calling app.beginUndoGroup/endUndoGroup directly —
+// that shared wrapper is what makes it safe for inner commands (nearly all
+// of which call AEB.undo themselves) to run nested inside batch's own group
+// without opening a second native AE undo group. See host.jsx's AEB.undo
+// comment for the full story of why that used to silently roll back an
+// entire batch later in the session.
 COMMANDS.batch = function (p) {
   AEB.assert(p.commands && p.commands.length, "commands[] is required");
   var results = [];
-  app.beginUndoGroup(p.undoName || "mograph-mcp: batch");
-  try {
+  AEB.undo(p.undoName || "mograph-mcp: batch", function () {
     for (var i = 0; i < p.commands.length; i++) {
       var c = p.commands[i];
       try {
+        if (UNSAFE_IN_BATCH[c.command]) {
+          results.push({
+            ok: false, command: c.command,
+            error: c.command + " cannot run inside batch (ends the process, or replaces/persists the project mid-transaction); call it as its own top-level command after batch completes."
+          });
+          if (p.stopOnError) break;
+          continue;
+        }
         var fn = COMMANDS[c.command];
         if (!fn) { results.push({ ok: false, command: c.command, error: "Unknown command: " + c.command }); if (p.stopOnError) break; continue; }
         var r = fn(c.params || {});
@@ -20,9 +51,7 @@ COMMANDS.batch = function (p) {
         if (p.stopOnError) break;
       }
     }
-  } finally {
-    app.endUndoGroup();
-  }
+  });
   var okCount = 0;
   for (var j = 0; j < results.length; j++) if (results[j].ok) okCount++;
   return { count: results.length, ok: okCount, failed: results.length - okCount, results: results };

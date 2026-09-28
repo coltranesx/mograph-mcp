@@ -689,13 +689,28 @@ class MockApp {
     this.effects = _mockEffectsList();
     this.project = new MockProject();
     this._undoDepth = 0;
+    // Full begin/end call log ({type:'begin', name} | {type:'end'}), so tests
+    // can assert exact call counts/ordering, not just the final depth.
+    this._undoCallLog = [];
+    // Real AE's app.beginUndoGroup/endUndoGroup do not support nesting: a
+    // second beginUndoGroup call before the matching endUndoGroup leaves the
+    // undo stack in a state AE can only detect and "fix" later (the live
+    // "Undo group mismatch, will attempt to fix" dialog AE shows, which can
+    // roll back the entire outer group -- reproduced live 2026-09-28, root
+    // cause of the `batch` undo-rollback bug). Flag it here so a regression
+    // to nested native calls fails a test immediately instead of only
+    // surfacing hours later in a live AE session.
+    this._nestedUndoGroupViolation = false;
   }
 
-  beginUndoGroup(_name) {
+  beginUndoGroup(name) {
+    if (this._undoDepth > 0) this._nestedUndoGroupViolation = true;
     this._undoDepth++;
+    this._undoCallLog.push({ type: 'begin', name });
   }
 
   endUndoGroup() {
+    this._undoCallLog.push({ type: 'end' });
     if (this._undoDepth > 0) this._undoDepth--;
   }
 
@@ -703,6 +718,8 @@ class MockApp {
   reset() {
     this.project = new MockProject();
     this._undoDepth = 0;
+    this._undoCallLog = [];
+    this._nestedUndoGroupViolation = false;
     _nextId = 1;
   }
 }
