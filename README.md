@@ -473,7 +473,7 @@ Layers:
 `addSolid`, `addTextLayer`, `addNull`, `addAdjustmentLayer`, `addCamera`, `addLight`, `addShape`, `addPathShape` (custom bezier paths), `addShapeOperator` (trim/repeater onto a vector group, see [section 1](#1-what-you-can-do-with-it)), `addResponsiveBox` (rect that tracks another layer's bounds live via expression), `addFootageLayer`, `setLayerProperty`, `getLayerDetails`, `getProperty`, `setParent`, `trimLayer`, `moveLayer`, `duplicateLayer`, `deleteLayer`, `getLayers`, `setBlendMode`, `setTrackMatte`, `setLayerFlag`, `addLayerMarker`, `setTimeStretch`, `enableTimeRemap`, `replaceSource`, `alignLayer`, `alignAnchor` (sit a layer's own anchor point on its rendered content), `sequenceLayers`.
 
 Animation:
-`setKeyframe`, `setKeyframes` (bulk + ease, also SHAPE-typed path properties), `setEase`, `setInterpolation`, `removeKeyframes`, `setExpression`, `removeExpression`, `enableExpression`.
+`setKeyframe`, `setKeyframes` (bulk + ease, also SHAPE-typed path properties), `setEase`, `setInterpolation`, `removeKeyframes`, `shiftKeyframes` (move key times by ±seconds, losslessly: ease per dimension, spatial tangents, continuous/auto-bezier, roving, labels; one layer, `layers[]`, `allLayers`, or `layerType`; `timeRange`/`keyIndices`; refuses on collision, `dryRun`), `setExpression`, `removeExpression`, `enableExpression`.
 
 Effects:
 `addEffect` (by matchName), `setEffectParam`, `listEffects`, `addExpressionControl`. Any nested effect param is reachable via a property path through `setLayerProperty` or `setExpression`, for example `["ADBE Effect Parade","FN","ADBE Fractal Noise-0012"]`.

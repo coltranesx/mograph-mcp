@@ -12,6 +12,70 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 
 ---
 
+## 2026-09-30
+- **Yeni kalıcı yetenek: `shiftKeyframes` — keyframe zamanlarını kayıpsız
+  kaydırma.** İhtiyaç: 14 comp'taki text-layer key'lerini -0.2 sn
+  kaydırmak `removeKeyframes` + `setKeyframe` + `setInterpolation` +
+  `setEase` ile yapıldı; bu yol yalnızca time/value/interpolation/temporal
+  ease taşıdığı için spatial tangent, roving, continuous/auto-bezier
+  bayrakları, per-dimension ease ve label'ı sessizce düşürüyor, güvenliği
+  için kare-kare örnekleme kontrolü gerekiyordu.
+  - **`panel/jsx/commands/keyframe.jsx`:** `COMMANDS.shiftKeyframes`
+    `{ compId, offset, layer | layers[] | allLayers | layerType, property?,
+    keyIndices?, timeRange?, dryRun? }`. `property` verilmezse layer'ın tüm
+    property ağacı gezilir (marker hariç), key'i olan her Property alınır.
+    Önce TÜM plan (her layer/property/key) salt-okunur çıkarılır ve çakışma
+    kontrolü yapılır: kaydırılan bir key, kaydırılmayan bir key'in zamanına
+    düşüyorsa komut hiçbir şeyi değiştirmeden hata verir. Uygulama:
+    taşınacak key'ler yüksek indeksten başlayarak silinir, sonra yeni
+    zamanda `setValueAtTime` ile eklenip her nitelik geri yazılır (sıra:
+    temporal ease → interpolation → temporal continuous/autoBezier →
+    spatial tangent → spatial continuous/autoBezier → label; roving en
+    sonda, çünkü AE roving key zamanını komşulardan yeniden çözer). Silmeden
+    sonra ekleme, kaydırılan key'lerin birbirinin (eski) yuvasını
+    ezmesini imkânsız kılıyor — işaret bağımsız. Expression property'de
+    durduğu için dokunulmaz. Locked layer: açıkça hedeflenirse hata,
+    toplu modda atlanır (`skipped`). `newTimes` AE'den geri okunur.
+    Tek `AEB.undo("mograph-mcp: shiftKeyframes")`, batch içinde reentrant
+    wrapper sayesinde tek native grup.
+  - **`shared/src/commands.js`** şema+açıklama, **`controller/src/
+    mcpServer.js`** CORE'a eklendi (`ae_shiftKeyframes`), README komut listesi.
+  - **Simülatör:** `MockProperty` artık key'leri zamana göre sıralı ekliyor /
+    aynı zamandaki key'i yerinde değiştiriyor (gerçek AE gibi), ve
+    spatial tangent / continuous / autoBezier / roving / label / 
+    `nearestKeyIndex` / `propertyType` API'lerini taşıyor; `keyValue` artık
+    `0` değerini `null`'a çevirmiyor (eski bir mock hatasıydı); layer
+    property ağacı gezilebilir (`numProperties`, sayısal `property(i)`),
+    `PropertyType` ve `instanceof TextLayer/ShapeLayer` sandbox'a eklendi.
+  - **Test:** `simulator/test/mockAeDom.test.js` `shiftKeyframes` bloğu
+    (9 test). **Canlı AE'de doğrulanmadı** — panelin yeni JSX'i yüklemesi
+    için `npm run build:jsx && npm run deploy:panel`, controller'ın yeniden
+    başlatılması ve AE'nin kapatıp açılması gerekiyor. Gerçek AE'de
+    henüz doğrulanmamış varsayımlar: `setTemporalEaseAtKey`'in interpolation
+    type'ı nasıl etkilediği (kod ease'i interpolation'dan ÖNCE yazıyor),
+    `keyLabel`/`setLabelAtKey` varlığı (try/catch'li).
+  - **Canlı test + düzeltme (aynı gün, AE 26.5x89):** Geçici kompta
+    (kavisli Position + custom ease + hold + ayrık X/Y) ve Page19_1'in
+    geçici kopyasında (text layer'lar, ±0.2s) çalıştırıldı. Değerler iki
+    aşamada karşılaştırıldı: önce kare kare örneklenip (`setCompTime` +
+    `getProperty`), sonra `getEase` ile geri okundu. **Bulunan bug:** AE
+    bazı key'lerde influence'ı **0** raporluyor, ama
+    `setTemporalEaseAtKey` sadece 0.1..100 aralığını kabul ediyor. Yazma
+    hata verdi, try/catch bunu yuttu, yeniden eklenen key de AE'nin
+    varsayılan ease'iyle kaldı (eğri 243 px saptı). **Düzeltme:**
+    `_shEaseArray` influence'ı [0.1, 100] aralığına sıkıştırıyor.
+    Interpolation artık ease'den hem önce hem sonra yazılıyor. Ease
+    yazılamazsa hata yutulmuyor; sonuçta property başına `warnings[]` ve
+    toplam `warnings` sayısı olarak dönüyor. Mock'un
+    `setTemporalEaseAtKey`'i de artık 0.1 altını reddediyor, ayrıca bir
+    regresyon testi eklendi (291 test). **Düzeltme sonrası:** text
+    kopyası iki yönde 0 fark verdi. Sentetik kompta, influence'ı 0
+    raporlanan key'lerin çevresinde en fazla ~1.1 px fark kaldı
+    (0 → 0.1 sıkıştırmasından; AE UI zaten 0.1 altına izin vermiyor).
+    Çakışma reddi canlıda doğrulandı, hiçbir şey değişmedi. Panel
+    `tools/hot.mjs` ile AE yeniden başlatılmadan güncellendi, ardından
+    `deploy:panel` ile kalıcı hale getirildi.
+
 ## 2026-09-24
 - **Yeni kalıcı yetenek: `addPathToLayer` — mevcut bir shape layer'ın
   Contents'ine YENİ bir sibling `ADBE Vector Group` (Path + opsiyonel

@@ -26,6 +26,17 @@ class KeyframeEase {
 }
 globalThis.KeyframeEase = KeyframeEase;
 
+// Property tree walking (shiftKeyframes) needs the real PropertyType enum,
+// and layer-type detection (AEB.layerType) needs instanceof TextLayer etc.
+// Both are identity-only here; the layer classes match on MockLayer._type.
+const PropertyType = { PROPERTY: 'PROPERTY', INDEXED_GROUP: 'INDEXED_GROUP', NAMED_GROUP: 'NAMED_GROUP' };
+globalThis.PropertyType = PropertyType;
+const _layerClass = (type) => class { static [Symbol.hasInstance](o) { return !!o && o._type === type; } };
+globalThis.TextLayer = _layerClass('text');
+globalThis.ShapeLayer = _layerClass('shape');
+globalThis.CameraLayer = _layerClass('camera');
+globalThis.LightLayer = _layerClass('light');
+
 // ---------------------------------------------------------------------------
 // Property value holder — simulates AE property objects (Position, Opacity, etc.)
 // ---------------------------------------------------------------------------
@@ -53,14 +64,28 @@ class MockProperty {
   }
   get value() { return this._value; }
   setValue(v) { this._value = v; }
+  // Mirrors AE: keys are kept sorted by time; a key at (effectively) the same
+  // time is replaced in place, keeping its interpolation/ease attributes.
   setValueAtTime(t, v) {
     this._value = v;
-    this._keys = (this._keys || 0) + 1;
     this._keyValues = this._keyValues || [];
-    this._keyValues[this._keys - 1] = v;
     this._keyTimes = this._keyTimes || [];
-    this._keyTimes[this._keys - 1] = t;
-    this._ensureKeyDefaults(this._keys - 1);
+    const n = this._keys || 0;
+    for (let i = 0; i < n; i++) {
+      if (Math.abs(this._keyTimes[i] - t) < 1e-9) { this._keyValues[i] = v; return; }
+    }
+    let at = n;
+    for (let i = 0; i < n; i++) { if (this._keyTimes[i] > t) { at = i; break; } }
+    this._keyValues.splice(at, 0, v);
+    this._keyTimes.splice(at, 0, t);
+    for (const a of ['_inInterp', '_outInterp', '_inEase', '_outEase']) {
+      this[a] = this[a] || [];
+      this[a].splice(at, 0, undefined);
+    }
+    this._kx = this._kx || [];
+    this._kx.splice(at, 0, undefined);
+    this._keys = n + 1;
+    this._ensureKeyDefaults(at);
   }
   setValuesAtTimes(times, values) {
     this._keyValues = values.slice();
@@ -71,6 +96,7 @@ class MockProperty {
     this._outInterp = [];
     this._inEase = [];
     this._outEase = [];
+    this._kx = [];
     for (let i = 0; i < this._keys; i++) this._ensureKeyDefaults(i);
   }
   // New keys default to LINEAR/no-custom-ease, matching what a freshly
@@ -86,7 +112,7 @@ class MockProperty {
     if (this._inEase[i] === undefined) this._inEase[i] = [new KeyframeEase(0, 0)];
     if (this._outEase[i] === undefined) this._outEase[i] = [new KeyframeEase(0, 0)];
   }
-  keyValue(index) { return (this._keyValues && this._keyValues[index - 1]) || null; }
+  keyValue(index) { const v = this._keyValues && this._keyValues[index - 1]; return v === undefined ? null : v; }
   keyTime(index) { return (this._keyTimes && this._keyTimes[index - 1]); }
   get numKeys() { return this._keys || 0; }
   removeKey(index) {
@@ -98,6 +124,7 @@ class MockProperty {
     if (this._outInterp) this._outInterp.splice(i, 1);
     if (this._inEase) this._inEase.splice(i, 1);
     if (this._outEase) this._outEase.splice(i, 1);
+    if (this._kx) this._kx.splice(i, 1);
     this._keys -= 1;
     this._value = this._keyValues[this._keys - 1];
   }
@@ -109,12 +136,52 @@ class MockProperty {
   keyInInterpolationType(index) { return this._inInterp && this._inInterp[index - 1]; }
   keyOutInterpolationType(index) { return this._outInterp && this._outInterp[index - 1]; }
   setTemporalEaseAtKey(index, inEase, outEase) {
+    // Real AE rejects influence outside 0.1..100 even though it can REPORT 0
+    // on a key (confirmed live 2026-09-30, AE 26.5).
+    for (const e of [...inEase, ...outEase]) {
+      if (!(e.influence >= 0.1 && e.influence <= 100)) throw new Error('After Effects error: influence must be between 0.1 and 100');
+    }
     this._ensureKeyDefaults(index - 1);
     this._inEase[index - 1] = inEase;
     this._outEase[index - 1] = outEase;
   }
   keyInTemporalEase(index) { return (this._inEase && this._inEase[index - 1]) || [new KeyframeEase(0, 0)]; }
   keyOutTemporalEase(index) { return (this._outEase && this._outEase[index - 1]) || [new KeyframeEase(0, 0)]; }
+  get propertyType() { return PropertyType.PROPERTY; }
+  // Spatial keyframe extras (Position/Anchor Point only in this mock) plus the
+  // continuous/auto-bezier/roving/label flags, stored per key in _kx.
+  get isSpatial() { return this.name === 'Position'; }
+  nearestKeyIndex(t) {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < this.numKeys; i++) {
+      const d = Math.abs(this._keyTimes[i] - t);
+      if (d < bd) { bd = d; best = i + 1; }
+    }
+    return best;
+  }
+  _kxAt(i) {
+    this._kx = this._kx || [];
+    if (!this._kx[i - 1]) {
+      const z = this.value && this.value.length ? this.value.map(() => 0) : [0];
+      this._kx[i - 1] = { tc: false, tab: false, sc: false, sab: true, roving: false, label: 0, inTan: z.slice(), outTan: z.slice() };
+    }
+    return this._kx[i - 1];
+  }
+  keyTemporalContinuous(i) { return this._kxAt(i).tc; }
+  setTemporalContinuousAtKey(i, b) { this._kxAt(i).tc = !!b; }
+  keyTemporalAutoBezier(i) { return this._kxAt(i).tab; }
+  setTemporalAutoBezierAtKey(i, b) { this._kxAt(i).tab = !!b; }
+  keySpatialContinuous(i) { return this._kxAt(i).sc; }
+  setSpatialContinuousAtKey(i, b) { this._kxAt(i).sc = !!b; }
+  keySpatialAutoBezier(i) { return this._kxAt(i).sab; }
+  setSpatialAutoBezierAtKey(i, b) { this._kxAt(i).sab = !!b; }
+  keyInSpatialTangent(i) { return this._kxAt(i).inTan.slice(); }
+  keyOutSpatialTangent(i) { return this._kxAt(i).outTan.slice(); }
+  setSpatialTangentsAtKey(i, a, b) { const x = this._kxAt(i); x.inTan = a.slice(); x.outTan = b.slice(); x.sab = false; }
+  keyRoving(i) { return this._kxAt(i).roving; }
+  setRovingAtKey(i, b) { this._kxAt(i).roving = !!b; }
+  keyLabel(i) { return this._kxAt(i).label; }
+  setLabelAtKey(i, l) { this._kxAt(i).label = l; }
   // Separate Dimensions (Position only, in this mock). Real AE: the leader
   // keeps its (now derived) value; followers are scalar, non-spatial props.
   get isSeparationLeader() { return this.name === 'Position'; }
@@ -182,6 +249,7 @@ globalThis.PropertyValueType = PropertyValueType;
 class MockShapeProperty {
   constructor() {
     this.propertyValueType = PropertyValueType.SHAPE;
+    this.propertyType = PropertyType.PROPERTY;
     this._value = new Shape();
     this._keys = 0;
     this._keyValues = [];
@@ -335,6 +403,7 @@ const VECTOR_AUTO_CHILDREN = {
 
 class MockVectorGroup {
   constructor(matchName) {
+    this.propertyType = PropertyType.NAMED_GROUP;
     this.matchName = matchName;
     this.name = matchName;
     this._items = [];
@@ -493,9 +562,34 @@ class MockLayer {
   // group, e.g. layer.property("Transform").property("Position"). Returning
   // null for the leaf names here is deliberate, so JSX that takes the wrong
   // path fails in the simulator exactly as it would in After Effects.
+  _transformList() {
+    const t = this._transform;
+    return [t.Position, t.Scale, t.Rotation, t.Opacity];
+  }
+
+  // Top-level property groups in AE's display order, for numeric access and
+  // tree walking (shiftKeyframes): Transform, then Source Text / Effects /
+  // Contents when present.
+  _topLevel() {
+    const items = [this.property('Transform')];
+    if (this._sourceText) items.push(this._sourceText);
+    if (this._effects) items.push(this._effects);
+    if (this._rootVectors) items.push(this._rootVectors);
+    return items;
+  }
+  get numProperties() { return this._topLevel().length; }
   property(name) {
+    if (typeof name === 'number') return this._topLevel()[name - 1] || null;
     if (name === 'Transform' || name === 'ADBE Transform Group') {
-      return { property: (n) => this._transformProp(n) };
+      if (!this._transformGroup) {
+        const layer = this;
+        this._transformGroup = {
+          name: 'Transform', matchName: 'ADBE Transform Group', propertyType: PropertyType.NAMED_GROUP,
+          get numProperties() { return layer._transformList().length; },
+          property: (n) => (typeof n === 'number' ? layer._transformList()[n - 1] || null : this._transformProp(n)),
+        };
+      }
+      return this._transformGroup;
     }
     if (name === 'Source Text' && this._sourceText) {
       return this._sourceText;
@@ -766,6 +860,11 @@ export function createMockAeDom() {
     PropertyValueType,
     KeyframeInterpolationType,
     KeyframeEase,
+    PropertyType: globalThis.PropertyType,
+    TextLayer: globalThis.TextLayer,
+    ShapeLayer: globalThis.ShapeLayer,
+    CameraLayer: globalThis.CameraLayer,
+    LightLayer: globalThis.LightLayer,
     reset() { mockApp.reset(); },
   };
 }

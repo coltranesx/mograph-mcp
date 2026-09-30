@@ -1605,4 +1605,168 @@ describe('JSX Runner + Mock AE DOM', () => {
       assert.equal(runner.dom.app._undoDepth, 0);
     });
   });
+  describe('shiftKeyframes', () => {
+    const POS = ['Transform', 'Position'];
+    const KeyframeEase = (...a) => new runner.dom.KeyframeEase(...a);
+    const KIT = () => runner.dom.KeyframeInterpolationType;
+    function setup(name, type = 'text') {
+      const compId = runner.dispatch('createComp', { name, frameRate: 25 }).result.compId;
+      if (type === 'text') runner.dispatch('addTextLayer', { compId, text: 'T' });
+      else runner.dispatch('addSolid', { compId, name: 'S' });
+      return compId;
+    }
+    // Position with rich per-key attributes; Opacity plain.
+    function richKeys(compId, layer = 1) {
+      runner.dispatch('setKeyframes', { compId, layer, property: 'position', times: [1, 2, 3], values: [[0, 0], [100, 50], [200, 0]] });
+      runner.dispatch('setKeyframes', { compId, layer, property: 'opacity', times: [1, 2], values: [0, 100] });
+      const pos = runner.dom.app.project.item(1).layer(layer).property('Transform').property('Position');
+      pos.setTemporalEaseAtKey(2, [KeyframeEase(5, 70)], [KeyframeEase(9, 20)]);
+      pos.setInterpolationTypeAtKey(2, KIT().BEZIER, KIT().HOLD);
+      pos.setSpatialTangentsAtKey(2, [-10, 4], [12, -3]);
+      pos.setSpatialContinuousAtKey(2, true);
+      pos.setTemporalAutoBezierAtKey(2, true);
+      pos.setRovingAtKey(2, true);
+      pos.setLabelAtKey(2, 5);
+      return pos;
+    }
+
+    it('restores an influence-0 ease (AE reports it, but only accepts 0.1..100) instead of dropping it', () => {
+      const compId = setup('SK0');
+      const pos = richKeys(compId);
+      // Simulate what live AE reports next to a hold side: influence 0.
+      pos._inEase[2] = [KeyframeEase(0, 0)];
+      pos._inEase[1] = [KeyframeEase(0, 85)];
+      const r = runner.dispatch('shiftKeyframes', { compId, layer: 1, property: POS, offset: 0.4 });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(r.result.warnings, 0);
+      assert.equal(pos.keyInTemporalEase(3)[0].influence, 0.1);
+      assert.equal(pos.keyInTemporalEase(2)[0].influence, 85);
+    });
+
+    it('shifts every keyframed property on a layer and preserves all key attributes', () => {
+      const compId = setup('SK1');
+      const pos = richKeys(compId);
+      const before = { ease: [pos.keyInTemporalEase(2)[0].speed, pos.keyOutTemporalEase(2)[0].influence] };
+      const r = runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: -0.2 });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(r.result.movedKeys, 5);
+      const props = r.result.layers[0].properties;
+      const p = props.find((x) => x.path.join('/') === 'Transform/Position');
+      assert.deepEqual(p.oldTimes, [1, 2, 3]);
+      assert.deepEqual(p.newTimes.map((t) => +t.toFixed(3)), [0.8, 1.8, 2.8]);
+      assert.equal(r.result.offFrame, false);
+      assert.deepEqual([...pos.keyValue(2)], [100, 50]);
+      assert.deepEqual([pos.keyInTemporalEase(2)[0].speed, pos.keyOutTemporalEase(2)[0].influence], before.ease);
+      assert.equal(pos.keyInInterpolationType(2), KIT().BEZIER);
+      assert.equal(pos.keyOutInterpolationType(2), KIT().HOLD);
+      assert.deepEqual([...pos.keyInSpatialTangent(2)], [-10, 4]);
+      assert.deepEqual([...pos.keyOutSpatialTangent(2)], [12, -3]);
+      assert.equal(pos.keySpatialContinuous(2), true);
+      assert.equal(pos.keySpatialAutoBezier(2), false);
+      assert.equal(pos.keyTemporalAutoBezier(2), true);
+      assert.equal(pos.keyRoving(2), true);
+      assert.equal(pos.keyLabel(2), 5);
+      assert.equal(pos.keyTime(1), 1 - 0.2);
+    });
+
+    it('keeps key order for both offset signs (no key overwrites another)', () => {
+      const compId = setup('SK2');
+      const pos = richKeys(compId);
+      // +0.5 with 1s spacing: moving key1 onto 1.5 etc. must not collide
+      let r = runner.dispatch('shiftKeyframes', { compId, layer: 1, property: POS, offset: 1 });
+      assert.equal(r.ok, true, r.error); // 1,2,3 -> 2,3,4 (keys overtake each other's old slots)
+      assert.equal(pos.numKeys, 3);
+      assert.deepEqual([1, 2, 3].map((i) => pos.keyTime(i)), [2, 3, 4]);
+      assert.deepEqual([...pos.keyValue(1)], [0, 0]);
+      assert.deepEqual([...pos.keyValue(2)], [100, 50]);
+      r = runner.dispatch('shiftKeyframes', { compId, layer: 1, property: POS, offset: -2 });
+      assert.equal(r.ok, true, r.error);
+      assert.deepEqual([1, 2, 3].map((i) => pos.keyTime(i)), [0, 1, 2]);
+      assert.deepEqual([...pos.keyValue(3)], [200, 0]);
+    });
+
+    it('timeRange / keyIndices move only the selected keys', () => {
+      const compId = setup('SK3');
+      const pos = richKeys(compId);
+      let r = runner.dispatch('shiftKeyframes', { compId, layer: 1, property: 'position', offset: 0.25, timeRange: { from: 2, to: 3 } });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(r.result.movedKeys, 2);
+      assert.deepEqual([1, 2, 3].map((i) => pos.keyTime(i)), [1, 2.25, 3.25]);
+      r = runner.dispatch('shiftKeyframes', { compId, layer: 1, property: 'position', offset: -0.5, keyIndices: [1] });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(pos.keyTime(1), 0.5);
+      assert.equal(runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: 1, keyIndices: [1] }).ok, false);
+    });
+
+    it('refuses (and changes nothing) if a shifted key would land on an unmoved key', () => {
+      const compId = setup('SK4');
+      const pos = richKeys(compId);
+      const r = runner.dispatch('shiftKeyframes', { compId, layer: 1, property: 'position', offset: 1, keyIndices: [1] });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /would land on unmoved key/);
+      assert.deepEqual([1, 2, 3].map((i) => pos.keyTime(i)), [1, 2, 3]);
+      // opacity is not touched either even though the layer-wide call is atomic
+      const all = runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: 1, timeRange: { from: 1, to: 1 } });
+      assert.equal(all.ok, false);
+    });
+
+    it('dryRun reports times without modifying', () => {
+      const compId = setup('SK5');
+      const pos = richKeys(compId);
+      const r = runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: -0.5, dryRun: true });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.dryRun, true);
+      assert.deepEqual([1, 2, 3].map((i) => pos.keyTime(i)), [1, 2, 3]);
+      assert.deepEqual(r.result.layers[0].properties[0].newTimes, [0.5, 1.5, 2.5]);
+    });
+
+    it('comp-wide layerType filter and layers[] both work; flags off-frame offsets', () => {
+      const compId = setup('SK6');
+      runner.dispatch('addSolid', { compId, name: 'S' });
+      runner.dispatch('setKeyframes', { compId, layer: 'S', property: 'opacity', times: [1, 2], values: [0, 100] });
+      runner.dispatch('setKeyframes', { compId, layer: 2, property: 'opacity', times: [1, 2], values: [0, 100] });
+      let r = runner.dispatch('shiftKeyframes', { compId, layerType: 'text', offset: -0.2 });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(r.result.layers.length, 1);
+      assert.equal(r.result.layers[0].name, 'T');
+      const solid = runner.dom.app.project.item(1).layer('S').property('Transform').property('Opacity');
+      assert.equal(solid.keyTime(1), 1);
+      r = runner.dispatch('shiftKeyframes', { compId, layers: ['S', 2], offset: 0.03 });
+      assert.equal(r.ok, true, r.error);
+      assert.equal(r.result.offFrame, true);
+      assert.equal(solid.keyTime(1), 1.03);
+      assert.equal(runner.dispatch('shiftKeyframes', { compId, offset: 1 }).ok, false); // no layer scope
+    });
+
+    it('errors on an unknown property and on a bad offset; property omitted skips unkeyed layers', () => {
+      const compId = setup('SK7');
+      assert.equal(runner.dispatch('shiftKeyframes', { compId, layer: 1, property: 'nope', offset: 1 }).ok, false);
+      assert.equal(runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: 'x' }).ok, false);
+      const r = runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: 1 });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.movedKeys, 0);
+    });
+
+    it('runs inside batch with a single native undo group', () => {
+      const compId = setup('SK8');
+      richKeys(compId);
+      runner.dom.app._undoCallLog.length = 0;
+      const r = runner.dispatch('batch', { commands: [
+        { command: 'shiftKeyframes', params: { compId, layer: 1, offset: -0.2 } },
+        { command: 'shiftKeyframes', params: { compId, layer: 1, offset: -0.2 } },
+      ], undoName: 'sk batch' });
+      assert.equal(r.result.ok, 2);
+      assert.equal(runner.dom.app._undoCallLog.length, 2);
+      assert.equal(runner.dom.app._nestedUndoGroupViolation, false);
+    });
+
+    it('standalone call opens exactly one undo group named mograph-mcp: shiftKeyframes', () => {
+      const compId = setup('SK9');
+      richKeys(compId);
+      runner.dom.app._undoCallLog.length = 0;
+      runner.dispatch('shiftKeyframes', { compId, layer: 1, offset: 0.5 });
+      assert.equal(runner.dom.app._undoCallLog.length, 2);
+      assert.equal(runner.dom.app._undoCallLog[0].name, 'mograph-mcp: shiftKeyframes');
+    });
+  });
 });

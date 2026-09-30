@@ -28,6 +28,11 @@ export function createJsxRunner() {
     PropertyValueType: dom.PropertyValueType,
     KeyframeInterpolationType: dom.KeyframeInterpolationType,
     KeyframeEase: dom.KeyframeEase,
+    PropertyType: dom.PropertyType,
+    TextLayer: dom.TextLayer,
+    ShapeLayer: dom.ShapeLayer,
+    CameraLayer: dom.CameraLayer,
+    LightLayer: dom.LightLayer,
     // $ is the ExtendScript global object.
     $: {
       evalFile: function () { /* no-op in simulator */ },

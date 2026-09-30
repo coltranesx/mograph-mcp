@@ -300,3 +300,298 @@ COMMANDS.separateDimensions = function (p) {
     return { ok: true, separated: separated, leader: prop.matchName, followers: followers, followerNames: followerNames };
   });
 };
+
+// --- shiftKeyframes --------------------------------------------------------
+// Move keyframes in time WITHOUT losing anything. The old recipe
+// (removeKeyframes + setKeyframe + setInterpolation + setEase) only ever
+// carried time/value/interpolation/temporal-ease, silently dropping spatial
+// tangents, roving, continuous/auto-bezier flags, per-dimension ease and
+// labels. Here every key's full attribute set is read first, then the moved
+// keys are removed and re-added at time+offset with ALL of it re-applied.
+// Unmoved keys are never touched. Expressions live on the property, not on
+// keys, so they are left as-is.
+//
+// Safety: the whole plan (every layer/property/key) is built and
+// collision-checked BEFORE anything is modified — if any shifted key would
+// land on an UNMOVED key's time, the command throws and changes nothing.
+
+// Read every attribute of key k. Each optional API is guarded: older AE
+// versions (keyLabel) or property kinds (spatial/roving on 1-D props) that
+// do not support it are simply omitted from the record.
+function _shReadKey(prop, k, spatial) {
+  var rec = { time: prop.keyTime(k), value: prop.keyValue(k) };
+  try {
+    rec.inType = prop.keyInInterpolationType(k);
+    rec.outType = prop.keyOutInterpolationType(k);
+  } catch (e1) {}
+  try {
+    rec.inEase = _kfEaseSnapshot(prop.keyInTemporalEase(k));
+    rec.outEase = _kfEaseSnapshot(prop.keyOutTemporalEase(k));
+  } catch (e2) {}
+  try { rec.tempContinuous = prop.keyTemporalContinuous(k); } catch (e3) {}
+  try { rec.tempAutoBezier = prop.keyTemporalAutoBezier(k); } catch (e4) {}
+  if (spatial) {
+    try {
+      rec.inTan = prop.keyInSpatialTangent(k);
+      rec.outTan = prop.keyOutSpatialTangent(k);
+    } catch (e5) {}
+    try { rec.spatContinuous = prop.keySpatialContinuous(k); } catch (e6) {}
+    try { rec.spatAutoBezier = prop.keySpatialAutoBezier(k); } catch (e7) {}
+    try { rec.roving = prop.keyRoving(k); } catch (e8) {}
+  }
+  try { rec.label = prop.keyLabel(k); } catch (e9) {}
+  return rec;
+}
+
+// AE reports influence 0 on some keys (e.g. next to a hold/linear side) but
+// setTemporalEaseAtKey rejects anything outside 0.1..100 — confirmed live
+// 2026-09-30: the write threw, was swallowed, and the re-added key kept AE's
+// default ease (visible curve change). Clamp to the settable range instead.
+function _shEaseArray(specs) {
+  var out = [];
+  for (var i = 0; i < specs.length; i++) {
+    var inf = specs[i].influence;
+    if (!(inf >= 0.1)) inf = 0.1;
+    if (inf > 100) inf = 100;
+    out.push(new KeyframeEase(specs[i].speed, inf));
+  }
+  return out;
+}
+
+// Re-apply a record onto key index idx. Interpolation type first so the
+// ease lands on the right side types, then ease (which can flip a side to
+// bezier), then the type again to undo any such flip, then the
+// continuous/auto-bezier flags (auto-bezier recomputes handles, so it must
+// come after the explicit values it would otherwise overwrite).
+// Roving is applied later, once every key is in place (see _shApplyProp).
+// Returns a list of warnings instead of silently swallowing failed writes.
+function _shWriteKey(prop, idx, rec, spatial) {
+  var warn = [];
+  var hasType = rec.inType !== undefined && rec.outType !== undefined;
+  if (hasType) prop.setInterpolationTypeAtKey(idx, rec.inType, rec.outType);
+  if (rec.inEase && rec.outEase) {
+    try { prop.setTemporalEaseAtKey(idx, _shEaseArray(rec.inEase), _shEaseArray(rec.outEase)); }
+    catch (e1) { warn.push("ease not restored on key at " + rec.newTime + "s: " + e1.toString()); }
+  }
+  if (hasType) prop.setInterpolationTypeAtKey(idx, rec.inType, rec.outType);
+  if (rec.tempContinuous !== undefined) { try { prop.setTemporalContinuousAtKey(idx, rec.tempContinuous); } catch (e2) {} }
+  if (rec.tempAutoBezier !== undefined) { try { prop.setTemporalAutoBezierAtKey(idx, rec.tempAutoBezier); } catch (e3) {} }
+  if (spatial) {
+    if (rec.inTan && rec.outTan && !rec.spatAutoBezier) {
+      try { prop.setSpatialTangentsAtKey(idx, rec.inTan, rec.outTan); } catch (e4) {}
+    }
+    if (rec.spatContinuous !== undefined) { try { prop.setSpatialContinuousAtKey(idx, rec.spatContinuous); } catch (e5) {} }
+    if (rec.spatAutoBezier !== undefined) { try { prop.setSpatialAutoBezierAtKey(idx, rec.spatAutoBezier); } catch (e6) {} }
+  }
+  if (rec.label !== undefined) { try { prop.setLabelAtKey(idx, rec.label); } catch (e7) {} }
+  return warn;
+}
+
+function _shIsSpatial(prop) {
+  try { return !!prop.isSpatial; } catch (e) { return false; }
+}
+
+// Depth-first collect of every keyframed Property under `group` (a layer or
+// property group), skipping markers. path = display names from the layer.
+function _shWalk(group, path, out) {
+  var n = 0;
+  try { n = group.numProperties; } catch (e) { return; }
+  for (var i = 1; i <= n; i++) {
+    var child = null;
+    try { child = group.property(i); } catch (e2) { child = null; }
+    if (!child) continue;
+    var mn = "";
+    try { mn = child.matchName; } catch (e3) {}
+    if (mn === "ADBE Marker") continue;
+    var childPath = path.concat([child.name]);
+    var isProp = false;
+    try { isProp = (child.propertyType === PropertyType.PROPERTY); } catch (e4) {}
+    if (isProp) {
+      var nk = 0;
+      try { nk = child.numKeys; } catch (e5) { nk = 0; }
+      if (nk > 0) out.push({ prop: child, path: childPath, matchName: mn });
+    } else {
+      _shWalk(child, childPath, out);
+    }
+  }
+}
+
+function _shTimeInRange(t, range, eps) {
+  if (!range) return true;
+  if (range.from !== undefined && range.from !== null && t < range.from - eps) return false;
+  if (range.to !== undefined && range.to !== null && t > range.to + eps) return false;
+  return true;
+}
+
+// Plan one property: snapshot all keys, decide which move, detect collisions.
+function _shPlanProp(entry, p, offset, eps, layerName, conflicts) {
+  var prop = entry.prop;
+  var spatial = _shIsSpatial(prop);
+  var n = prop.numKeys;
+  var pick = null;
+  if (p.keyIndices) {
+    pick = {};
+    for (var ii = 0; ii < p.keyIndices.length; ii++) pick[p.keyIndices[ii]] = true;
+  }
+  var keys = [], moved = [], unmovedTimes = [];
+  for (var k = 1; k <= n; k++) {
+    var rec = _shReadKey(prop, k, spatial);
+    rec.oldIndex = k;
+    var move = _shTimeInRange(rec.time, p.timeRange, eps) && (!pick || pick[k] === true);
+    rec.move = move;
+    keys.push(rec);
+    if (move) moved.push(rec); else unmovedTimes.push(rec.time);
+  }
+  for (var m = 0; m < moved.length; m++) {
+    var nt = moved[m].time + offset;
+    moved[m].newTime = nt;
+    for (var u = 0; u < unmovedTimes.length; u++) {
+      if (Math.abs(unmovedTimes[u] - nt) <= eps) {
+        conflicts.push(layerName + " > " + entry.path.join(" > ") + ": key " + moved[m].oldIndex +
+          " (" + moved[m].time + "s) would land on unmoved key at " + unmovedTimes[u] + "s");
+      }
+    }
+  }
+  return { prop: prop, path: entry.path, matchName: entry.matchName, spatial: spatial, keys: keys, moved: moved };
+}
+
+// Perform the move for one planned property. Returns the times before/after
+// (after = read back from AE, so roving/rounding effects are reported truthfully).
+function _shApplyProp(plan, eps) {
+  var prop = plan.prop, moved = plan.moved, i, idx, warnings = [];
+  // 1) remove moved keys, highest index first so lower indices stay valid
+  for (i = moved.length - 1; i >= 0; i--) prop.removeKey(moved[i].oldIndex);
+  // 2) re-add at the new time, all attributes restored. Ascending by new time
+  //    (removal above guarantees no moved key can collide with another).
+  var order = moved.slice(0).sort(function (a, b) { return a.newTime - b.newTime; });
+  for (i = 0; i < order.length; i++) {
+    var rec = order[i];
+    prop.setValueAtTime(rec.newTime, rec.value);
+    idx = prop.nearestKeyIndex(rec.newTime);
+    AEB.assert(Math.abs(prop.keyTime(idx) - rec.newTime) <= eps,
+      "shiftKeyframes: key did not land at " + rec.newTime + "s on " + plan.path.join(" > "));
+    warnings = warnings.concat(_shWriteKey(prop, idx, rec, plan.spatial));
+  }
+  // 3) roving last: it recomputes a key's time from its neighbours, so it can
+  //    only be switched on once every key is in place.
+  if (plan.spatial) {
+    for (i = 0; i < order.length; i++) {
+      if (order[i].roving === true) {
+        idx = prop.nearestKeyIndex(order[i].newTime);
+        try { prop.setRovingAtKey(idx, true); } catch (e) {}
+      }
+    }
+  }
+  var after = [];
+  for (var k = 1; k <= prop.numKeys; k++) after.push(prop.keyTime(k));
+  return { times: after, warnings: warnings };
+}
+
+COMMANDS.shiftKeyframes = function (p) {
+  var comp = AEB.requireComp(p);
+  AEB.assert(typeof p.offset === "number" && isFinite(p.offset), "offset (seconds, number) is required");
+  var offset = p.offset;
+  var fd = (comp.frameRate > 0) ? 1 / comp.frameRate : 0.04;
+  var eps = fd * 0.01;
+  if (p.timeRange) {
+    AEB.assert(typeof p.timeRange === "object" && (p.timeRange.from !== undefined || p.timeRange.to !== undefined),
+      "timeRange must be { from?, to? } in seconds");
+  }
+  if (p.keyIndices) {
+    AEB.assert(p.keyIndices.length !== undefined && p.property !== undefined && p.property !== null,
+      "keyIndices[] (1-based) requires an explicit property");
+  }
+
+  // --- resolve target layers --------------------------------------------
+  var layers = [], seen = {}, i;
+  function addLayer(l) { if (!seen[l.index]) { seen[l.index] = true; layers.push(l); } }
+  var hasRef = (p.layer !== undefined && p.layer !== null) || (p.layerName !== undefined && p.layerName !== null) ||
+    (p.layerIndex !== undefined && p.layerIndex !== null);
+  var wide = (p.allLayers === true) || (!hasRef && !p.layers && p.layerType);
+  AEB.assert(hasRef || p.layers || wide, "specify layer, layers[], allLayers:true or layerType");
+  if (hasRef) addLayer(AEB.requireLayer(comp, p));
+  if (p.layers) for (i = 0; i < p.layers.length; i++) addLayer(AEB.resolveLayer(comp, p.layers[i]));
+  if (wide) for (i = 1; i <= comp.numLayers; i++) addLayer(comp.layer(i));
+  if (p.layerType) {
+    var want = String(p.layerType).toLowerCase(), kept = [];
+    for (i = 0; i < layers.length; i++) if (AEB.layerType(layers[i]) === want) kept.push(layers[i]);
+    layers = kept;
+  }
+  var explicit = !wide;
+
+  // --- plan (read-only) ---------------------------------------------------
+  var plans = [], conflicts = [], skipped = [], propFound = 0;
+  for (i = 0; i < layers.length; i++) {
+    var layer = layers[i];
+    var entries = [];
+    if (p.property !== undefined && p.property !== null) {
+      var one = null;
+      try { one = AEB.resolveProperty(layer, p.property); } catch (e) { one = null; }
+      if (one) {
+        propFound++;
+        var pth = (typeof p.property === "string") ? [p.property] : p.property;
+        if (one.numKeys > 0) entries.push({ prop: one, path: pth, matchName: one.matchName });
+      } else if (!explicit || layers.length > 1) {
+        skipped.push({ layer: layer.name, reason: "property not found" });
+        continue;
+      }
+    } else {
+      _shWalk(layer, [], entries);
+    }
+    if (!entries.length) continue;
+    if (layer.locked) {
+      AEB.assert(wide, 'Layer "' + layer.name + '" is locked');
+      skipped.push({ layer: layer.name, reason: "locked" });
+      continue;
+    }
+    var lp = { layer: layer, props: [] };
+    for (var e2 = 0; e2 < entries.length; e2++) {
+      var pl = _shPlanProp(entries[e2], p, offset, eps, layer.name, conflicts);
+      if (pl.moved.length) lp.props.push(pl);
+    }
+    if (lp.props.length) plans.push(lp);
+  }
+  if (p.property !== undefined && p.property !== null) {
+    AEB.assert(propFound > 0, "Property not found on any targeted layer: " + (typeof p.property === "string" ? p.property : p.property.join(" > ")));
+  }
+  AEB.assert(!conflicts.length, "shiftKeyframes refused (nothing changed): " + conflicts.join("; "));
+
+  var frac = Math.abs(offset / fd);
+  var offFrame = Math.abs(frac - Math.round(frac)) > 0.01;
+
+  // --- apply ----------------------------------------------------------------
+  function run() {
+    var outLayers = [], totalMoved = 0, totalWarnings = 0;
+    for (var a = 0; a < plans.length; a++) {
+      var props = [];
+      for (var b = 0; b < plans[a].props.length; b++) {
+        var pl2 = plans[a].props[b];
+        var oldTimes = [], j;
+        for (j = 0; j < pl2.keys.length; j++) oldTimes.push(pl2.keys[j].time);
+        var newTimes, warnings = [];
+        if (p.dryRun === true) {
+          newTimes = [];
+          for (j = 0; j < pl2.keys.length; j++) newTimes.push(pl2.keys[j].move ? pl2.keys[j].time + offset : pl2.keys[j].time);
+          newTimes.sort(function (x, y) { return x - y; });
+        } else {
+          try {
+            var applied = _shApplyProp(pl2, eps);
+            newTimes = applied.times; warnings = applied.warnings;
+          } catch (err) {
+            throw new Error("shiftKeyframes failed on " + plans[a].layer.name + " > " + pl2.path.join(" > ") +
+              " (property may be partially modified; run undo): " + ((err && err.message) ? err.message : String(err)));
+          }
+        }
+        totalMoved += pl2.moved.length;
+        props.push({ path: pl2.path, matchName: pl2.matchName, numKeys: pl2.keys.length,
+          moved: pl2.moved.length, oldTimes: oldTimes, newTimes: newTimes, warnings: warnings });
+        totalWarnings += warnings.length;
+      }
+      outLayers.push({ index: plans[a].layer.index, name: plans[a].layer.name, properties: props });
+    }
+    return { ok: true, dryRun: p.dryRun === true, offset: offset, offFrame: offFrame, movedKeys: totalMoved,
+      warnings: totalWarnings, layers: outLayers, skipped: skipped };
+  }
+  if (p.dryRun === true) return run();
+  return AEB.undo("mograph-mcp: shiftKeyframes", run);
+};
