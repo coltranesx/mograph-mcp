@@ -258,3 +258,45 @@ COMMANDS.copyKeyframesBatch = function (p) {
     };
   });
 };
+
+// --- separateDimensions ----------------------------------------------------
+// Toggle "Separate Dimensions" (Property.dimensionsSeparated) on a
+// separation-leader property (Position). Once separated, the X/Y(/Z) followers
+// ("ADBE Position_0"/"_1"/"_2", reached via property path
+// ["ADBE Transform Group","ADBE Position_1"]) are ordinary 1-D, non-spatial
+// properties, so every keyframe/ease/expression command works on them through
+// the normal AEB.resolveProperty array-path branch — no special casing.
+// Why it exists: the spatial Position property cannot overshoot its last key
+// along the path (outBack-style eases); a scalar follower can.
+COMMANDS.separateDimensions = function (p) {
+  var comp = AEB.requireComp(p);
+  var layer = AEB.requireLayer(comp, p);
+  var separated = (p.separated !== false);
+  var ref = (p.property === undefined || p.property === null) ? "position" : p.property;
+  return AEB.undo("mograph-mcp: separateDimensions", function () {
+    var prop = null;
+    if (typeof ref === "string" && !AEB.TRANSFORM[ref.toLowerCase()]) {
+      // matchName such as "ADBE Position": look under the Transform group first.
+      try { prop = layer.property("ADBE Transform Group").property(ref); } catch (e) { prop = null; }
+    }
+    if (!prop) prop = AEB.resolveProperty(layer, ref);
+    var leader = false;
+    try { leader = !!prop.isSeparationLeader; } catch (e) {}
+    AEB.assert(leader, 'Property "' + prop.name + '" (' + prop.matchName +
+      ') is not a separation leader — only Position (and similar) supports separated dimensions');
+    prop.dimensionsSeparated = separated;
+    AEB.assert(!!prop.dimensionsSeparated === separated,
+      "AE did not apply dimensionsSeparated=" + separated + " on " + prop.matchName);
+    var followers = [], followerNames = [];
+    if (separated) {
+      var v = prop.value;
+      var n = (v && v.length !== undefined) ? v.length : 2;
+      for (var d = 0; d < n; d++) {
+        var f = prop.getSeparationFollower(d);
+        followers.push(f.matchName);
+        followerNames.push(f.name);
+      }
+    }
+    return { ok: true, separated: separated, leader: prop.matchName, followers: followers, followerNames: followerNames };
+  });
+};

@@ -918,6 +918,57 @@ describe('JSX Runner + Mock AE DOM', () => {
     });
   });
 
+  describe('separateDimensions', () => {
+    const Y = ['ADBE Transform Group', 'ADBE Position_1'];
+    function setup(name) {
+      const compId = runner.dispatch('createComp', { name }).result.compId;
+      runner.dispatch('addSolid', { compId, name: 'L' });
+      return compId;
+    }
+
+    it('separates Position and reports follower matchNames', () => {
+      const compId = setup('SD1');
+      const r = runner.dispatch('separateDimensions', { compId, layer: 'L' });
+      assert.equal(r.ok, true);
+      assert.equal(r.result.separated, true);
+      assert.deepEqual(r.result.followers, ['ADBE Position_0', 'ADBE Position_1']);
+    });
+
+    it('accepts a matchName and separated:false', () => {
+      const compId = setup('SD2');
+      const on = runner.dispatch('separateDimensions', { compId, layer: 'L', property: 'ADBE Position' });
+      assert.equal(on.ok, true);
+      const off = runner.dispatch('separateDimensions', { compId, layer: 'L', separated: false });
+      assert.equal(off.result.separated, false);
+      assert.deepEqual(off.result.followers, []);
+    });
+
+    it('errors clearly on a non-leader property', () => {
+      const compId = setup('SD3');
+      const r = runner.dispatch('separateDimensions', { compId, layer: 'L', property: 'opacity' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /not a separation leader/);
+    });
+
+    it('existing commands work on the Y follower path', () => {
+      const compId = setup('SD4');
+      runner.dispatch('separateDimensions', { compId, layer: 'L' });
+      const k = runner.dispatch('setKeyframes', { compId, layer: 'L', property: Y, times: [0, 1], values: [0, 100] });
+      assert.equal(k.result.numKeys, 2);
+      assert.equal(runner.dispatch('setInterpolation', { compId, layer: 'L', property: Y, keyIndex: 1, inType: 'bezier' }).ok, true);
+      assert.equal(runner.dispatch('setEase', { compId, layer: 'L', property: Y, keyIndex: 1, outSpeed: 470, outInfluence: 33.333 }).ok, true);
+      const e = runner.dispatch('getEase', { compId, layer: 'L', property: Y, keyIndex: 1 });
+      assert.equal(e.result.outEase.length, 1);
+      assert.equal(e.result.outEase[0].speed, 470);
+      const g = runner.dispatch('getProperty', { compId, layer: 'L', property: Y });
+      assert.equal(g.result.matchName, 'ADBE Position_1');
+      assert.equal(g.result.numKeys, 2);
+      assert.equal(runner.dispatch('setLayerProperty', { compId, layer: 'L', property: Y, value: 5 }).ok, true);
+      runner.dispatch('setExpression', { compId, layer: 'L', property: Y, expression: 'time' });
+      assert.equal(runner.dispatch('removeExpression', { compId, layer: 'L', property: Y }).ok, true);
+    });
+  });
+
   describe('keyframe copy (getEase / copyKeyframes / copyKeyframesBatch)', () => {
     // Builds a source layer with 2 Scale keyframes carrying DIFFERENT,
     // non-default temporal ease on each side of each key — so a passing

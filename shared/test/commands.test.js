@@ -137,6 +137,14 @@ describe('validateCommand', () => {
     assert.match(r.error, /outputPath/);
   });
 
+  describe('separateDimensions (registry-level validation)', () => {
+    it('validates with compId only and with optional fields', () => {
+      assert.equal(validateCommand('separateDimensions', { compId: 6, layer: 'L' }).ok, true);
+      const r = validateCommand('separateDimensions', { compId: 6, layer: 'L', property: ['ADBE Transform Group', 'ADBE Position'], separated: false });
+      assert.equal(r.ok, true);
+    });
+  });
+
   describe('copyKeyframes / copyKeyframesBatch / getEase (registry-level validation)', () => {
     it('validates copyKeyframes with all required fields', () => {
       const r = validateCommand('copyKeyframes', {

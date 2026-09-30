@@ -606,6 +606,8 @@ Object.assign(COMMANDS, {
       stopOnError: { type: 'boolean' },
       undoName: { type: 'string' },
     }),
+  separateDimensions: withDesc('Toggle Separate Dimensions on Position (or another separation-leader property). { compId, layer, property? (default "position"; friendly name, matchName like "ADBE Position", or property path array), separated? (default true) }. Returns { ok, separated, leader, followers: [matchNames, e.g. "ADBE Position_0","ADBE Position_1"], followerNames }. Followers are 1-D non-spatial properties, addressable as property ["ADBE Transform Group","ADBE Position_1"] in setKeyframes/setEase/getProperty/etc. (e.g. scalar Y Position can overshoot with an outBack-style ease, which the spatial Position cannot). Errors if the property is not a separation leader.', ['compId'],
+    { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA, separated: { type: 'boolean' } }),
   setExpression: withDesc('Set an expression string. { compId, layer, property, expression }', ['compId', 'property', 'expression'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, property: PROPERTY_SCHEMA, expression: { type: 'string' } }),
   removeExpression: withDesc('Remove an expression. { compId, layer, property }', ['compId', 'property'],

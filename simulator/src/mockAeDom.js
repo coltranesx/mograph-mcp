@@ -115,6 +115,22 @@ class MockProperty {
   }
   keyInTemporalEase(index) { return (this._inEase && this._inEase[index - 1]) || [new KeyframeEase(0, 0)]; }
   keyOutTemporalEase(index) { return (this._outEase && this._outEase[index - 1]) || [new KeyframeEase(0, 0)]; }
+  // Separate Dimensions (Position only, in this mock). Real AE: the leader
+  // keeps its (now derived) value; followers are scalar, non-spatial props.
+  get isSeparationLeader() { return this.name === 'Position'; }
+  get dimensionsSeparated() { return !!this._separated; }
+  set dimensionsSeparated(b) {
+    if (!this.isSeparationLeader) throw new Error('property is not a separation leader');
+    this._separated = !!b;
+    if (this._separated && !this._followers) {
+      this._followers = this._value.map((c, i) => {
+        const f = new MockProperty('XYZ'[i] + ' Position', c);
+        f.matchName = 'ADBE Position_' + i;
+        return f;
+      });
+    }
+  }
+  getSeparationFollower(i) { return this._followers ? this._followers[i] : null; }
   set expression(e) { this._expr = e; }
   get expression() { return this._expr || ''; }
   get expressionEnabled() { return !!this._expr; }
@@ -458,6 +474,19 @@ class MockLayer {
     }
   }
 
+  // Transform-group lookup: friendly names plus the real matchNames that the
+  // separated-dimensions feature needs ("ADBE Position", and the followers
+  // "ADBE Position_0"/"_1"/"_2" once Position.dimensionsSeparated is true).
+  _transformProp(n) {
+    if (this._transform[n]) return this._transform[n];
+    const pos = this._transform.Position;
+    if (n === 'ADBE Position') return pos;
+    const m = /^ADBE Position_(\d)$/.exec(n);
+    if (m && pos.dimensionsSeparated) return pos.getSeparationFollower(Number(m[1]));
+    const alias = { 'ADBE Scale': 'Scale', 'ADBE Rotate Z': 'Rotation', 'ADBE Opacity': 'Opacity' };
+    return alias[n] ? this._transform[alias[n]] : null;
+  }
+
   // Simulate AE's layer.property(name) accessor. Mirrors real AE: property()
   // only resolves DIRECT children. Transform leaves (Position/Scale/Rotation/
   // Opacity) are NOT direct children — they must be reached via the Transform
@@ -465,8 +494,8 @@ class MockLayer {
   // null for the leaf names here is deliberate, so JSX that takes the wrong
   // path fails in the simulator exactly as it would in After Effects.
   property(name) {
-    if (name === 'Transform') {
-      return { property: (n) => this._transform[n] || null };
+    if (name === 'Transform' || name === 'ADBE Transform Group') {
+      return { property: (n) => this._transformProp(n) };
     }
     if (name === 'Source Text' && this._sourceText) {
       return this._sourceText;

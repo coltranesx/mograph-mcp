@@ -24,7 +24,7 @@ const CORE = new Set([
 
   // Tier 1 — core edit (docs/ROADMAP.md "MCP tool şema tamamlama", 2026-08-11)
   'setKeyframe', 'setParent', 'moveLayer', 'duplicateLayer', 'deleteLayer', 'setEase',
-  'setInterpolation', 'removeKeyframes', 'getEase', 'copyKeyframes', 'copyKeyframesBatch',
+  'setInterpolation', 'removeKeyframes', 'separateDimensions', 'getEase', 'copyKeyframes', 'copyKeyframesBatch',
   'addMask', 'addRectMask', 'setMaskProperty',
   'setTextDocument', 'addTextAnimator', 'alignLayer', 'alignAnchor', 'setBlendMode',
   'setTrackMatte', 'setLayerFlag', 'selectLayer', 'setCompSettings', 'setWorkArea', 'clearComp',
