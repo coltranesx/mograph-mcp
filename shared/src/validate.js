@@ -35,6 +35,18 @@ function numericLike(val) {
   return NaN;
 }
 
+// Lowercased, separator-free spellings -> canonical name understood by
+// AEB.resolveJustification (panel/jsx/commands/text.jsx).
+const JUSTIFICATION_NAMES = {
+  left: 'left', leftjustify: 'left',
+  right: 'right', rightjustify: 'right',
+  center: 'center', centre: 'center', centerjustify: 'center',
+  full: 'full', justify: 'full', fulljustifylastlinefull: 'full',
+  fullleft: 'fullLeft', fulljustifylastlineleft: 'fullLeft',
+  fullright: 'fullRight', fulljustifylastlineright: 'fullRight',
+  fullcenter: 'fullCenter', fulljustifylastlinecenter: 'fullCenter',
+};
+
 export const v = {
   requiredString(params, field) {
     const val = params[field];
@@ -139,6 +151,27 @@ export const v = {
       } catch { /* falls through to the failure below */ }
     }
     fail(field, 'must be an object');
+    return undefined; // unreachable — fail() always throws
+  },
+  // paragraph justification for text layers. Accepts a name (left|right|
+  // center|full|fullLeft|fullRight|fullCenter, case-insensitive, "centre"
+  // too) or an integer: the legacy 0/1/2 index (left/right/center) or a raw
+  // AE ParagraphJustification enum value (e.g. 7415, as getProperty reads it
+  // back). Names are canonicalized; integers pass through and are resolved
+  // against the live enum in JSX (AEB.resolveJustification), which rejects
+  // unknown ones. Before 2026-10-01 anything but 0/1/2 silently became LEFT.
+  optionalJustification(params, field, dflt = undefined) {
+    const raw = params[field];
+    if (raw === undefined || raw === null) return dflt;
+    const num = numericLike(raw);
+    if (Number.isInteger(num)) return num;
+    if (typeof raw === 'string') {
+      const key = raw.replace(/[\s_-]/g, '').toLowerCase();
+      const canon = JUSTIFICATION_NAMES[key];
+      if (canon) return canon;
+    }
+    fail(field, `must be one of ${[...new Set(Object.values(JUSTIFICATION_NAMES))].join('|')}, `
+      + 'a 0/1/2 index (left/right/center) or an AE ParagraphJustification value');
     return undefined; // unreachable — fail() always throws
   },
   // nested array param whose items are objects (e.g. addShape's dashes:

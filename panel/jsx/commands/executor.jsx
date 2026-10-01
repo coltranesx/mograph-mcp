@@ -100,10 +100,7 @@ function _realizeTreatment(comp, prefix, tr, segStart, segEnd) {
       var sp = tl.property("Source Text"), doc = sp.value;
       if (tr.fontSize) doc.fontSize = tr.fontSize;
       if (tr.fillColor) { doc.applyFill = true; doc.fillColor = AEB.normColor(tr.fillColor); }
-      if (tr.justification !== undefined) {
-        var JJ = [ParagraphJustification.LEFT_JUSTIFY, ParagraphJustification.RIGHT_JUSTIFY, ParagraphJustification.CENTER_JUSTIFY];
-        doc.justification = JJ[tr.justification] || JJ[0];
-      }
+      if (tr.justification !== undefined) doc.justification = AEB.resolveJustification(tr.justification);
       sp.setValue(doc);
     }
     if (tr.position && !(tr.keyframes && tr.keyframes.position)) {

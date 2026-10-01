@@ -217,6 +217,33 @@ describe('validateCommand', () => {
     assert.deepEqual(r.params.position, [960, 540]);
   });
 
+  describe('text justification', () => {
+    it('canonicalizes names and passes integers through (setTextDocument)', () => {
+      const cases = [['center', 'center'], ['Centre', 'center'], ['CENTER_JUSTIFY', 'center'],
+        ['full-left', 'fullLeft'], [2, 2], ['2', 2], [7415, 7415]];
+      for (const [input, want] of cases) {
+        const r = validateCommand('setTextDocument', { compId: 1, layer: 1, justification: input });
+        assert.equal(r.ok, true, String(input));
+        assert.equal(r.params.justification, want, String(input));
+      }
+    });
+    it('rejects unknown names instead of silently going LEFT', () => {
+      const r = validateCommand('setTextDocument', { compId: 1, layer: 1, justification: 'middle' });
+      assert.equal(r.ok, false);
+      assert.match(r.error, /justification/);
+    });
+    it('addTextLayer keeps justification/font/fillColor/name', () => {
+      const r = validateCommand('addTextLayer', {
+        compId: 1, text: 'Hi', justification: 'center', font: 'Graphik-Semibold', fillColor: [1, 1, 1], name: 'T',
+      });
+      assert.equal(r.ok, true);
+      assert.equal(r.params.justification, 'center');
+      assert.equal(r.params.font, 'Graphik-Semibold');
+      assert.deepEqual(r.params.fillColor, [1, 1, 1]);
+      assert.equal(r.params.name, 'T');
+    });
+  });
+
   it('rejects addTextLayer with bad position', () => {
     const r = validateCommand('addTextLayer', {
       compId: 1, text: 'Hello', position: [960],

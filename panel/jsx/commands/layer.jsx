@@ -23,11 +23,7 @@ COMMANDS.addTextLayer = function (p) {
       if (p.fontSize) td.fontSize = p.fontSize;
       if (p.font) td.font = p.font;
       if (p.fillColor) { td.applyFill = true; td.fillColor = AEB.normColor(p.fillColor); }
-      if (p.justification !== undefined) {
-        // 0 left, 1 right, 2 center
-        var J = [ParagraphJustification.LEFT_JUSTIFY, ParagraphJustification.RIGHT_JUSTIFY, ParagraphJustification.CENTER_JUSTIFY];
-        td.justification = J[p.justification] || J[0];
-      }
+      if (p.justification !== undefined) td.justification = AEB.resolveJustification(p.justification);
       tp.setValue(td);
     }
     if (p.position) layer.property("Transform").property("Position").setValue(p.position);

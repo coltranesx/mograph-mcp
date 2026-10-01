@@ -52,6 +52,7 @@ const LAYER_REF_SCHEMA = {
 // by the time the COMMANDS object literal below references it — a `const`
 // declared after that literal would be in its temporal dead zone at the
 // point of use and throw at module load.
+const JUSTIFICATION_SCHEMA = { anyOf: [{ type: 'string' }, { type: 'integer' }] };
 const PROPERTY_SCHEMA = { anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] };
 const VALUE_SCHEMA = {
   anyOf: [{ type: 'number' }, { type: 'string' }, { type: 'boolean' }, { type: 'array' }, { type: 'object' }],
@@ -133,14 +134,24 @@ export const COMMANDS = {
     description: 'Add a text layer to a comp. Returns { layerIndex }.',
     schema: {
       compId: { type: 'integer' }, text: { type: 'string' },
-      fontSize: { type: 'number' },
+      fontSize: { type: 'number' }, font: { type: 'string' },
+      fillColor: { type: 'array', items: { type: 'number' } },
+      justification: JUSTIFICATION_SCHEMA, name: { type: 'string' },
       position: { type: 'array', items: { type: 'number' } },
     },
     validate(p) {
+      // Every field the JSX side (layer.jsx) honours must be listed here:
+      // this return value REPLACES the params, so an unlisted field is
+      // dropped silently (font/fillColor/justification/name were, until
+      // 2026-10-01).
       return {
         compId: v.requiredInt(p, 'compId'),
         text: v.requiredString(p, 'text'),
         fontSize: v.optionalPositiveNumber(p, 'fontSize'),
+        font: v.optionalString(p, 'font'),
+        fillColor: v.optionalColor(p, 'fillColor'),
+        justification: v.optionalJustification(p, 'justification'),
+        name: v.optionalString(p, 'name'),
         position: v.optionalPoint(p, 'position'),
       };
     },
@@ -226,6 +237,16 @@ function requireFields(p, names) {
 // types (crucially `type:'array'`) so the ae_<name> MCP tool's inputSchema
 // doesn't silently mangle array-valued params.
 const withDesc = (description, required, schema) => ({ description, schema, validate: (p) => requireFields(p, required) });
+// Layers optionalJustification on top of a pass-through validate, so a bad
+// justification fails before AE instead of silently becoming LEFT.
+const withJustification = (def) => ({
+  ...def,
+  validate: (p) => {
+    const out = def.validate(p);
+    if (out.justification !== undefined) out.justification = v.optionalJustification(out, 'justification');
+    return out;
+  },
+});
 
 // (PROPERTY_SCHEMA / VALUE_SCHEMA now declared up near LAYER_REF_SCHEMA,
 // before the first COMMANDS object literal — see the comment there.)
@@ -730,13 +751,13 @@ Object.assign(COMMANDS, {
       property: { type: 'string' }, value: VALUE_SCHEMA }),
 
   // text
-  setTextDocument: withDesc('Style a text layer (text/font/size/tracking/fill/stroke/justification/...). { compId, layer, ... }', ['compId'],
+  setTextDocument: withJustification(withDesc('Style a text layer (text/font/size/tracking/fill/stroke/justification/...). { compId, layer, ..., justification? (left|right|center|full|fullLeft|fullRight|fullCenter, or 0/1/2, or an AE ParagraphJustification value) }', ['compId'],
     { compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, text: { type: 'string' }, font: { type: 'string' },
       fontSize: { type: 'number' }, tracking: { type: 'number' }, leading: { type: 'number' },
       applyFill: { type: 'boolean' }, fillColor: { type: 'array', items: { type: 'number' } },
       applyStroke: { type: 'boolean' }, strokeColor: { type: 'array', items: { type: 'number' } },
       strokeWidth: { type: 'number' }, fauxBold: { type: 'boolean' }, fauxItalic: { type: 'boolean' },
-      allCaps: { type: 'boolean' }, justification: { type: 'integer' } }),
+      allCaps: { type: 'boolean' }, justification: JUSTIFICATION_SCHEMA })),
   addTextAnimator: {
     description: 'Add a text animator (Animate panel). { compId, layer, name?, properties:{position,scale,rotation,opacity,tracking,blur}, selector:{basedOn,shape,easeHigh,easeLow,start,end,offset}, animate:{field:offset|start|end, from, to, startFrame, endFrame, ease:easeOut|easyEase, bezier?[4], outStartFrame?, outEndFrame?} (or an array of these), motionBlur? }',
     schema: {

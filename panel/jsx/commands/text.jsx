@@ -3,6 +3,33 @@
 // Based On / Shape / Ease, and keyframed Offset/Start) so pro text styles from
 // the Animate panel can be built declaratively.
 
+// Resolve a justification param to a live ParagraphJustification value.
+// Accepts the canonical names from shared/src/validate.js
+// (optionalJustification), the legacy 0/1/2 index (left/right/center), or a
+// raw enum value as getProperty reads it back (e.g. 7415). Integers are
+// matched against the live enum rather than hardcoded. Anything else throws:
+// before 2026-10-01 unknown values silently fell back to LEFT_JUSTIFY.
+// Used by setTextDocument here and addTextLayer (layer.jsx) / applySpec
+// titles (executor.jsx) — call sites run after the whole bundle has loaded.
+AEB.resolveJustification = function (v) {
+  var PJ = ParagraphJustification;
+  var byName = {
+    left: PJ.LEFT_JUSTIFY, right: PJ.RIGHT_JUSTIFY, center: PJ.CENTER_JUSTIFY,
+    full: PJ.FULL_JUSTIFY_LASTLINE_FULL, fullLeft: PJ.FULL_JUSTIFY_LASTLINE_LEFT,
+    fullRight: PJ.FULL_JUSTIFY_LASTLINE_RIGHT, fullCenter: PJ.FULL_JUSTIFY_LASTLINE_CENTER
+  };
+  if (typeof v === "string" && byName.hasOwnProperty(v)) return byName[v];
+  var n = AEB.numericLike(v);
+  if (n !== null) {
+    var legacy = [PJ.LEFT_JUSTIFY, PJ.RIGHT_JUSTIFY, PJ.CENTER_JUSTIFY];
+    if (n >= 0 && n < legacy.length) return legacy[n];
+    for (var k in byName) {
+      if (byName.hasOwnProperty(k) && Number(byName[k]) === n) return byName[k];
+    }
+  }
+  throw new Error("justification: unknown value '" + v + "' (use left|right|center|full|fullLeft|fullRight|fullCenter, 0/1/2, or a ParagraphJustification value)");
+};
+
 COMMANDS.setTextDocument = function (p) {
   var comp = AEB.requireComp(p);
   var layer = AEB.requireLayer(comp, p);
@@ -22,10 +49,7 @@ COMMANDS.setTextDocument = function (p) {
     if (p.fauxBold !== undefined) { try { d.fauxBold = !!p.fauxBold; } catch (e) {} }
     if (p.fauxItalic !== undefined) { try { d.fauxItalic = !!p.fauxItalic; } catch (e) {} }
     if (p.allCaps !== undefined) { try { d.allCaps = !!p.allCaps; } catch (e) {} }
-    if (p.justification !== undefined) {
-      var J = [ParagraphJustification.LEFT_JUSTIFY, ParagraphJustification.RIGHT_JUSTIFY, ParagraphJustification.CENTER_JUSTIFY];
-      d.justification = J[p.justification] || J[0];
-    }
+    if (p.justification !== undefined) d.justification = AEB.resolveJustification(p.justification);
     sp.setValue(d);
     return { ok: true };
   });
