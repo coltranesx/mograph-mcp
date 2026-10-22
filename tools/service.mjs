@@ -29,7 +29,14 @@
 // — that specific string does need a real Developer ID, which wasn't
 // wanted here (private single-user tool, nobody else ever sees this list).
 //
-// Usage: node tools/service.mjs install|uninstall|status|restart
+// On-demand, not always-on (2026-10-22): the agent is loaded at login but
+// RunAtLoad is false, so nothing runs until `start` (or the ae-up skill)
+// kickstarts it. KeepAlive only relaunches on a crash (SuccessfulExit=false):
+// `stop` sends SIGTERM, server.js exits 0 on it, and launchd leaves it down.
+// The old RunAtLoad+KeepAlive=true kept it running forever and respawned it
+// whenever it was killed.
+//
+// Usage: node tools/service.mjs install|uninstall|start|stop|status|restart
 
 import { existsSync, mkdirSync, writeFileSync, rmSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -87,9 +94,12 @@ function plistXml() {
     <string>${PATH}</string>
   </dict>
   <key>RunAtLoad</key>
-  <true/>
+  <false/>
   <key>KeepAlive</key>
-  <true/>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
   <key>StandardOutPath</key>
   <string>${OUT_LOG}</string>
   <key>StandardErrorPath</key>
@@ -206,8 +216,33 @@ function install() {
   tryLaunchctl(['bootout', serviceTarget]);
   bootstrapWithRetry();
   launchctl(['enable', serviceTarget]);
-  console.log(`Loaded ${LABEL} — logs: ${OUT_LOG}`);
-  status();
+  console.log(`Loaded ${LABEL} (not started — run \`npm run service:start\`) — logs: ${OUT_LOG}`);
+}
+
+function isLoaded() {
+  try {
+    launchctl(['print', serviceTarget]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function start() {
+  if (!isLoaded()) {
+    console.error(`${LABEL} is not loaded — run \`npm run service:install\` first.`);
+    process.exit(1);
+  }
+  // No -k: a no-op if it's already running.
+  launchctl(['kickstart', serviceTarget]);
+  console.log(`Started ${LABEL} — http://127.0.0.1:8787`);
+}
+
+function stop() {
+  // SIGTERM → server.js shuts down with exit 0, which KeepAlive's
+  // SuccessfulExit=false treats as "leave it down".
+  tryLaunchctl(['kill', 'SIGTERM', serviceTarget]);
+  console.log(`Stopped ${LABEL}.`);
 }
 
 function uninstall() {
@@ -234,9 +269,11 @@ const cmd = process.argv[2];
 switch (cmd) {
   case 'install': install(); break;
   case 'uninstall': uninstall(); break;
+  case 'start': start(); break;
+  case 'stop': stop(); break;
   case 'status': status(); break;
   case 'restart': restart(); break;
   default:
-    console.error('Usage: node tools/service.mjs install|uninstall|status|restart');
+    console.error('Usage: node tools/service.mjs install|uninstall|start|stop|status|restart');
     process.exit(1);
 }

@@ -303,10 +303,11 @@ macOS specifics:
    ```bash
    npm run controller        # http://127.0.0.1:8787
    ```
-   On macOS you'd rather it survive terminal/session closes and reboots, run it
-   as a per-user LaunchAgent instead:
+   On macOS you can run it as an on-demand per-user LaunchAgent instead (not
+   tied to a terminal, restarted only if it crashes, not started at login):
    ```bash
-   npm run service:install    # loads it, logs to ~/Library/Logs/mograph-mcp/
+   npm run service:install    # one-time: loads it, logs to ~/Library/Logs/mograph-mcp/
+   npm run service:start      # when you need it; service:stop when you're done
    npm run service:status     # or: npm run service:uninstall / service:restart
    ```
 2. Launch After Effects.

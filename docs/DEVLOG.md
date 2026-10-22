@@ -10,6 +10,26 @@ Yeni giriş eklerken en üste (en yeni en üstte) ekle:
 - Ne değişti, neden. Varsa alternatif ve neden elenmediği.
 ```
 
+## 2026-10-22
+- Controller LaunchAgent'ı her zaman açıktan isteğe bağlıya çevrildi
+  (`tools/service.mjs`): `RunAtLoad` false, `KeepAlive` yalnızca
+  `SuccessfulExit=false` (sadece çökünce yeniden başlar). Yeni
+  `service:start` (kickstart) / `service:stop` (SIGTERM → server.js exit 0
+  → launchd geri açmıyor). Neden: AE kullanılmadığı zamanlarda da sürekli
+  arka planda çalışıyordu, öldürülünce KeepAlive hemen geri açıyordu.
+  2026-08-08 (2)'deki "unutulunca failed to connect" sorunu ae-up
+  skill'inin kapalı controller'ı kendisinin başlatmasıyla karşılanıyor.
+  Elenen: servisi tamamen kaldırıp `npm run controller` ile elle
+  başlatmak. Terminal kapanınca ölüyor, eski sorun geri geliyor. Elenen:
+  launchd socket activation (port 8787'ye bağlanınca otomatik başlatma).
+  Node, launchd'nin verdiği soketi doğrudan alamıyor, native köprü ister.
+- `addTextAnimator`'a `fillColor` animator özelliği eklendi (`[r,g,b(,a)]`,
+  0..1, `ADBE Text Fill Color`). Karakter bazlı renk geçişi için gerekiyordu.
+- `AEB.layerInfo` (getLayers vb.) artık AV layer'larda `sourceId`,
+  `sourceName`, `sourceType` (comp|solid|footage) ve `isTrackMatte`
+  döndürüyor. Neden: layer adı kaynağından farklı olabildiği için precomp
+  ağacını gezmek isimle güvenilir değildi, gerçek item id lazım.
+
 ---
 
 ## 2026-09-30

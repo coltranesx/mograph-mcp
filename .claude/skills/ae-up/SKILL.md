@@ -14,15 +14,14 @@ one implies the other. Report which layer failed, not just "not connected".
 curl -s -m 3 http://127.0.0.1:8787/api/status
 ```
 
-- **Connection refused / timeout** → the controller process itself isn't
-  running. Bring it up as the LaunchAgent (the persistent service — see
-  `docs/DEVLOG.md` 2026-08-08 for why it's a LaunchAgent and not a manual
-  `npm run controller`):
+- **Connection refused / timeout** → the controller process isn't running.
+  That's the normal idle state: the LaunchAgent is on-demand (loaded at
+  login, not started — see `docs/DEVLOG.md` 2026-10-22). Start it:
   ```bash
-  npm run service:status     # loaded but crashed? check the log paths it prints
-  npm run service:install    # (re)installs + starts it; safe to re-run
+  npm run service:start      # kickstarts the LaunchAgent
   ```
-  Then re-run the `curl` above. If it still refuses, read
+  If that says "not loaded", run `npm run service:install` once, then
+  `service:start` again. Give it a second, then re-run the `curl` above. If it still refuses, read
   `~/Library/Logs/mograph-mcp/controller.err.log` for the actual error
   (port already taken by a stray manual process is the usual cause — check
   `lsof -i :8787 -sTCP:LISTEN` and kill anything that isn't the LaunchAgent).
@@ -67,5 +66,5 @@ as the final confirmation.
 Report exactly one of:
 - ✅ up end-to-end, AE `<version>`, project `<name>`.
 - ⚠️ controller up, panel not connected — told user to open AE/the panel.
-- ❌ controller itself down and `service:install` didn't fix it — paste the
+- ❌ controller itself down and `service:start` didn't fix it — paste the
   `controller.err.log` tail so the user can see why.

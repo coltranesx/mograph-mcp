@@ -7,8 +7,9 @@ ya da "bitti" diye işaretlenir.
 ## Doğrulanmış ortam (2026-08-08, Faz 0 sonrası)
 
 - `npm test` → 111/111 geçiyor.
-- Controller artık LaunchAgent, 127.0.0.1:8787, `claude mcp list` →
-  mograph-mcp connected. `npm run service:status` ile kontrol edilir.
+- Controller isteğe bağlı LaunchAgent, 127.0.0.1:8787: girişte başlamaz,
+  `npm run service:start` / `service:stop` ile açılıp kapanır (ae-up skill'i
+  kapalıysa kendisi başlatır). `npm run service:status` ile kontrol edilir.
 - AE 2026 (`/Applications/Adobe After Effects 2026/aerender` mevcut),
   ffmpeg `/opt/homebrew/bin/ffmpeg`.
 - Bridge'de 103 komut; MCP'ye açılan set daha dar (`AE_MCP_TOOLS=all` hepsini
