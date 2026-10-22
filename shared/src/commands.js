@@ -759,7 +759,7 @@ Object.assign(COMMANDS, {
       strokeWidth: { type: 'number' }, fauxBold: { type: 'boolean' }, fauxItalic: { type: 'boolean' },
       allCaps: { type: 'boolean' }, justification: JUSTIFICATION_SCHEMA })),
   addTextAnimator: {
-    description: 'Add a text animator (Animate panel). { compId, layer, name?, properties:{position,scale,rotation,opacity,tracking,blur}, selector:{basedOn,shape,easeHigh,easeLow,start,end,offset}, animate:{field:offset|start|end, from, to, startFrame, endFrame, ease:easeOut|easyEase, bezier?[4], outStartFrame?, outEndFrame?} (or an array of these), motionBlur? }',
+    description: 'Add a text animator (Animate panel). { compId, layer, name?, properties:{position,scale,rotation,opacity,tracking,blur,fillColor([r,g,b(,a)] 0..1)}, selector:{basedOn,shape,easeHigh,easeLow,start,end,offset}, animate:{field:offset|start|end, from, to, startFrame, endFrame, ease:easeOut|easyEase, bezier?[4], outStartFrame?, outEndFrame?} (or an array of these), motionBlur? }',
     schema: {
       compId: { type: 'integer' }, ...LAYER_REF_SCHEMA, name: { type: 'string' },
       properties: {
@@ -769,6 +769,7 @@ Object.assign(COMMANDS, {
           scale: { anyOf: [{ type: 'number' }, { type: 'array', items: { type: 'number' } }] },
           rotation: { type: 'number' }, opacity: { type: 'number' }, tracking: { type: 'number' },
           blur: { anyOf: [{ type: 'number' }, { type: 'array', items: { type: 'number' } }] },
+          fillColor: { type: 'array', items: { type: 'number' } },
         },
       },
       selector: {

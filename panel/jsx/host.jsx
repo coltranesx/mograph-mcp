@@ -148,7 +148,7 @@ AEB.requireLayer = function (comp, p) {
 };
 
 AEB.layerInfo = function (layer) {
-  return {
+  var info = {
     index: layer.index,
     layerIndex: layer.index, // back-compat alias (v1 contract)
     name: layer.name,
@@ -158,6 +158,20 @@ AEB.layerInfo = function (layer) {
     outPoint: layer.outPoint,
     type: AEB.layerType(layer)
   };
+  // Source item of AV layers (precomp / footage / solid). The layer name can
+  // be renamed away from its source, so walking a comp's precomp tree needs
+  // the real item id, not the name.
+  try {
+    var src = layer.source;
+    if (src) {
+      info.sourceId = src.id;
+      info.sourceName = src.name;
+      info.sourceType = (src instanceof CompItem) ? "comp" :
+        ((src.mainSource && src.mainSource instanceof SolidSource) ? "solid" : "footage");
+    }
+  } catch (e) {}
+  try { info.isTrackMatte = !!layer.isTrackMatte; } catch (e2) {}
+  return info;
 };
 
 AEB.layerType = function (layer) {

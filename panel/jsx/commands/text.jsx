@@ -58,7 +58,8 @@ COMMANDS.setTextDocument = function (p) {
 var _TA_PROP = {
   position: "ADBE Text Position 3D", scale: "ADBE Text Scale 3D",
   rotation: "ADBE Text Rotation", opacity: "ADBE Text Opacity",
-  tracking: "ADBE Text Tracking Amount", blur: "ADBE Text Blur"
+  tracking: "ADBE Text Tracking Amount", blur: "ADBE Text Blur",
+  fillcolor: "ADBE Text Fill Color"
 };
 
 function _taCoerce(key, v) {
@@ -75,6 +76,7 @@ function _taCoerce(key, v) {
     if (v && v.length !== undefined) return [v[0], v[1]];
     return [v, v];
   }
+  if (key === "fillcolor") return [v[0], v[1], v[2], (v[3] !== undefined ? v[3] : 1)]; // RGBA, 0..1
   // 1D
   if (v && v.length !== undefined) return v[0];
   return v;
